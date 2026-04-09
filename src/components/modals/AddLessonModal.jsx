@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import BottomSheetModal from "./BottomSheetModal";
 
 const AddLessonModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -8,8 +8,6 @@ const AddLessonModal = ({ isOpen, onClose }) => {
     struggles: "",
     nextAction: "",
   });
-
-  if (!isOpen) return null;
 
   const handleChange = (e) => {
     setFormData({
@@ -20,80 +18,72 @@ const AddLessonModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = () => {
     console.log("Lesson Data:", formData);
-    onClose(); // close modal
+    onClose();
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-    >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.2 }}
-        className="bg-white rounded-xl w-full max-w-md p-6"
-      >
-        {/* Header */}
-        <h2 className="text-lg font-semibold mb-4">Add Lesson</h2>
+    <BottomSheetModal isOpen={isOpen} onClose={onClose}>
+      {/* Drag Handle */}
+      <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
 
-        {/* Form */}
-        <div className="space-y-4">
-          <input
-            type="text"
-            name="objective"
-            placeholder="Lesson Objective"
-            value={formData.objective}
-            onChange={handleChange}
-            className="w-full  rounded-lg px-3 py-2"
-          />
+      {/* Header */}
+      <h2 className="text-lg font-semibold mb-4">Add Lesson</h2>
 
-          <select
-            name="achieved"
-            value={formData.achieved}
-            onChange={handleChange}
-            className="w-full  rounded-lg px-3 py-2"
-          >
-            <option value="yes">Achieved</option>
-            <option value="no">Not Achieved</option>
-          </select>
+      {/* Form */}
+      <div className="space-y-4">
+        <input
+          type="text"
+          name="objective"
+          placeholder="Lesson Objective"
+          value={formData.objective}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-3 py-2 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-(--color-primary)/30"
+        />
 
-          <textarea
-            name="struggles"
-            placeholder="Where did the student struggle?"
-            value={formData.struggles}
-            onChange={handleChange}
-            className="w-full  rounded-lg px-3 py-2"
-          />
+        <select
+          name="achieved"
+          value={formData.achieved}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-3 py-2 text-sm cursor-pointer"
+        >
+          <option value="yes">Achieved</option>
+          <option value="no">Not Achieved</option>
+        </select>
 
-          <textarea
-            name="nextAction"
-            placeholder="Next action / recommendation"
-            value={formData.nextAction}
-            onChange={handleChange}
-            className="w-full  rounded-lg px-3 py-2"
-          />
-        </div>
+        <textarea
+          name="struggles"
+          placeholder="Where did the student struggle?"
+          value={formData.struggles}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-3 py-2 text-sm cursor-pointer"
+        />
 
-        {/* Actions */}
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border rounded-lg cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
-          >
-            Cancel
-          </button>
+        <textarea
+          name="nextAction"
+          placeholder="Next action / recommendation"
+          value={formData.nextAction}
+          onChange={handleChange}
+          className="w-full border rounded-lg px-3 py-2 text-sm cursor-pointer"
+        />
+      </div>
 
-          <button
-            onClick={handleSubmit}
-            className="bg-(--color-primary) text-white px-4 py-2 rounded-lg cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
-          >
-            Save Lesson
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
+      {/* Actions */}
+      <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 border rounded-lg cursor-pointer transition hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleSubmit}
+          className="bg-(--color-primary) text-white px-4 py-2 rounded-lg cursor-pointer transition hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto"
+        >
+          Save Lesson
+        </button>
+      </div>
+    </BottomSheetModal>
   );
 };
 

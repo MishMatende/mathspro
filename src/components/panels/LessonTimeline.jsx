@@ -38,7 +38,7 @@ const LessonTimeline = () => {
             const isAchieved = lesson.achieved;
 
             return (
-              <div key={lesson.id} className="relative pl-10 sm:pl-12">
+              <div key={lesson.id} className="relative pl-8 sm:pl-10">
                 {/* Dot (smaller on mobile) */}
                 <div
                   className={`absolute left-0 top-2 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold
@@ -56,7 +56,7 @@ const LessonTimeline = () => {
                 </div>
 
                 {/* Card */}
-                <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm">
+                <div className="bg-white rounded-xl p-3 sm:p-5 shadow-sm w-full">
                   {/* Top row */}
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
                     <div>

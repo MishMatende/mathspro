@@ -1,7 +1,9 @@
 import { learners } from "../data/mockData";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const LearnersList = ({ onSelect }) => {
+  const navigate = useNavigate();
   const [selectedId, setSelectedId] = useState(null);
 
   const handleSelect = (learner) => {
@@ -21,7 +23,7 @@ const LearnersList = ({ onSelect }) => {
           return (
             <div
               key={learner.id}
-              onClick={() => handleSelect(learner)}
+              onClick={() => navigate(`/learners/${learner.id}`)}
               className={`p-3 sm:p-4 rounded-xl cursor-pointer transition-all duration-200
                 ${
                   isActive

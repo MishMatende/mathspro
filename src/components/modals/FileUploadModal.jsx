@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import BottomSheetModal from "./BottomSheetModal";
+import { Upload, X } from "lucide-react";
 
 const FileUploadModal = ({ isOpen, onClose, title }) => {
   const [file, setFile] = useState(null);
-
-  if (!isOpen) return null;
 
   const handleSubmit = () => {
     console.log("Uploaded file:", file);
@@ -12,45 +11,62 @@ const FileUploadModal = ({ isOpen, onClose, title }) => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-    >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.2 }}
-        className="bg-white rounded-xl w-full max-w-md p-6"
-      >
-        {/* Header */}
-        <h2 className="text-lg font-semibold mb-4">{title}</h2>
+    <BottomSheetModal isOpen={isOpen} onClose={onClose}>
+      {/* Drag Handle */}
+      <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
 
-        {/* File Input */}
-        <input
-          type="file"
-          onChange={(e) => setFile(e.target.files[0])}
-          className="w-full rounded-lg px-3 py-2 cursor-pointer"
-        />
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">{title}</h2>
+
+        <button onClick={onClose} className="cursor-pointer">
+          <X size={18} />
+        </button>
+      </div>
+
+      {/* File Upload Area */}
+      <div className="space-y-4">
+        <label className="block">
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition">
+            <Upload className="mx-auto mb-2 text-gray-400" size={20} />
+
+            <p className="text-sm text-gray-600">
+              {file ? file.name : "Tap to upload PDF"}
+            </p>
+
+            <input
+              type="file"
+              hidden
+              onChange={(e) => setFile(e.target.files[0])}
+            />
+          </div>
+        </label>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3 mt-6">
+        <div className="flex flex-col sm:flex-row gap-3 mt-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 border rounded-lg cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
+            className="px-4 py-2 border rounded-lg cursor-pointer transition hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto"
           >
             Cancel
           </button>
 
           <button
             onClick={handleSubmit}
-            className="bg-(--color-primary) text-white px-4 py-2 rounded-lg cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
+            disabled={!file}
+            className={`px-4 py-2 rounded-lg text-white w-full sm:w-auto cursor-pointer transition
+              ${
+                file
+                  ? "bg-(--color-primary) hover:opacity-90"
+                  : "bg-gray-300 cursor-not-allowed"
+              }
+            `}
           >
             Upload
           </button>
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </BottomSheetModal>
   );
 };
 

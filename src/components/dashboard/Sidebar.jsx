@@ -1,6 +1,17 @@
+import { useNavigate, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, FileText, ClipboardList } from "lucide-react";
 
 const Sidebar = ({ open, setOpen }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const menu = [
+    { label: "Dashboard", icon: LayoutDashboard, path: "/tutor-dashboard" },
+    { label: "Learners", icon: Users, path: "/learners" },
+    { label: "Homework", icon: FileText, path: "/homework" },
+    { label: "Tests", icon: ClipboardList, path: "/tests" },
+  ];
+
   return (
     <>
       {/* Backdrop */}
@@ -11,7 +22,6 @@ const Sidebar = ({ open, setOpen }) => {
         />
       )}
 
-      {/* Sidebar */}
       <div
         className={`fixed lg:static z-40 h-screen w-64 bg-white px-6 py-8 flex flex-col
         transition-transform duration-300 ease-in-out
@@ -21,25 +31,26 @@ const Sidebar = ({ open, setOpen }) => {
         <h1 className="text-2xl font-bold text-primary mb-10">MathsPro</h1>
 
         <nav className="flex flex-col gap-2 text-sm">
-          <button className="flex items-center gap-3 px-4 py-2 rounded-lg bg-gray-100 cursor-pointer">
-            <LayoutDashboard size={18} />
-            Dashboard
-          </button>
+          {menu.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname.startsWith(item.path);
 
-          <button className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-            <Users size={18} />
-            Learners
-          </button>
-
-          <button className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-            <FileText size={18} />
-            Homework
-          </button>
-
-          <button className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-            <ClipboardList size={18} />
-            Tests
-          </button>
+            return (
+              <button
+                key={item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  setOpen(false);
+                }}
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer transition
+                  ${isActive ? "bg-gray-100 font-medium" : "hover:bg-gray-100"}
+                `}
+              >
+                <Icon size={18} />
+                {item.label}
+              </button>
+            );
+          })}
         </nav>
       </div>
     </>

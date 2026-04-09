@@ -3,9 +3,11 @@ import LessonTimeline from "./LessonTimeline";
 import HomeworkPanel from "./HomeworkPanel";
 import { motion } from "framer-motion";
 import { User, BookOpen, FileText, ClipboardList } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const LearnerProfile = ({ learner, onBack }) => {
+const LearnerProfile = ({ learner }) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const navigate = useNavigate();
 
   if (!learner) {
     return (
@@ -28,14 +30,14 @@ const LearnerProfile = ({ learner, onBack }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="h-full flex flex-col"
+      className="h-full flex flex-col min-w-0"
     >
       {/* HEADER (Mobile optimized) */}
       <div className="px-4 py-4 lg:p-6 bg-white">
         {/* Back + Title row */}
         <div className="flex items-center gap-3 mb-3 lg:hidden">
           <button
-            onClick={onBack}
+            onClick={() => navigate(-1)}
             className="text-sm text-gray-500 cursor-pointer"
           >
             ←
@@ -75,8 +77,8 @@ const LearnerProfile = ({ learner, onBack }) => {
       </div>
 
       {/* TABS (Scrollable on mobile) */}
-      <div className="px-4 lg:px-6 pt-2 pb-3 bg-white">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+      <div className="px-4 lg:px-6 pt-2 pb-3 bg-white overflow-hidden">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar max-w-full">
           {tabs.map((tab) => {
             const Icon = tab.icon;
 

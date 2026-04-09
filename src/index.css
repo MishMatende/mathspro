@@ -4,6 +4,10 @@
   --color-primary: #ff7832;
 }
 
+* {
+  max-width: 100%;
+}
+
 body {
   @apply bg-white text-gray-900;
   font-family: Inter, sans-serif;

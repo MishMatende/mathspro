@@ -35,10 +35,10 @@ const HomeworkPanel = () => {
         {homeworkList.map((hw) => (
           <div
             key={hw.id}
-            className="bg-white border border-gray-100 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-sm"
+            className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-sm"
           >
             {/* Assignment Header */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3 sm:mb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
               <div>
                 <p className="font-semibold text-gray-800 text-sm sm:text-base">
                   {hw.title}
@@ -59,7 +59,7 @@ const HomeworkPanel = () => {
                 return (
                   <div
                     key={index}
-                    className="bg-gray-50 border border-gray-100 rounded-lg sm:rounded-xl p-3 sm:p-4"
+                    className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4"
                   >
                     {/* Top row */}
                     <div className="flex justify-between items-center mb-2">
@@ -80,14 +80,14 @@ const HomeworkPanel = () => {
                     </div>
 
                     {/* Actions (stack on mobile) */}
-                    <button className="flex items-center gap-2 text-xs sm:text-sm text-blue-600 cursor-pointer">
+                    <button className="flex items-center gap-2 text-xs sm:text-sm text-blue-600 cursor-pointer mt-2">
                       <Download size={14} />
                       Download Submission
                     </button>
 
                     <button
                       onClick={() => setIsMarkedModalOpen(true)}
-                      className="flex items-center gap-2 text-xs sm:text-sm text-green-600 cursor-pointer"
+                      className="flex items-center gap-2 text-xs sm:text-sm text-green-600 cursor-pointer mt-1"
                     >
                       <Upload size={14} />
                       Upload Marked
@@ -96,7 +96,7 @@ const HomeworkPanel = () => {
                     {/* Remarks */}
                     <textarea
                       placeholder="Write feedback for the student..."
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm mb-3 cursor-pointer focus:outline-none focus:ring-2 focus:ring-(--color-primary)/30"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm mt-3 mb-3"
                     />
 
                     <button className="bg-(--color-primary) text-white px-4 py-2 rounded-lg text-xs sm:text-sm cursor-pointer hover:opacity-90 transition w-full sm:w-fit">
