@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
-import LearnerProfile from "../components/panels/LearnerProfile";
-import { learners } from "../components/data/mockData";
+import LearnerProfile from "../../components/panels/LearnerProfile";
+import { learners } from "../../components/data/mockData";
 
 const LearnerProfilePage = () => {
   const { id } = useParams();

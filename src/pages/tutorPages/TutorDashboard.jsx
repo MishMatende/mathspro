@@ -1,12 +1,13 @@
-import { learners, lessons, homework } from "../components/data/mockData";
+import { learners, lessons, homework } from "../../components/data/mockData";
 import {
   Users,
   BookOpen,
   FileText,
   AlertCircle,
   ClipboardList,
+  Info,
 } from "lucide-react";
-import Card from "../components/Card";
+import Card from "../../components/Card";
 
 const TutorDashboard = () => {
   // Metrics
@@ -28,6 +29,10 @@ const TutorDashboard = () => {
   return (
     <div className="p-4 lg:p-6 space-y-6">
       {/* Title */}
+      <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs sm:text-sm rounded-lg px-3 py-2 mb-4">
+        <Info size={16} className="mt-0.5" />
+        <p>Access your metrics on this page.</p>
+      </div>
       <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
 
       {/* METRICS GRID */}
@@ -85,22 +90,6 @@ const TutorDashboard = () => {
               ))}
             </div>
           )}
-        </div>
-
-        {/* Average Progress */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-800 mb-4">Average Progress</h2>
-
-          <div className="w-full h-3 bg-gray-200 rounded-full">
-            <div
-              className="h-3 rounded-full bg-(--color-primary)"
-              style={{ width: `${avgProgress}%` }}
-            />
-          </div>
-
-          <p className="text-sm text-gray-600 mt-2">
-            {Math.round(avgProgress)}% overall progress
-          </p>
         </div>
       </div>
     </div>

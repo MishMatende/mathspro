@@ -1,5 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, FileText, ClipboardList } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  ClipboardList,
+  Calendar,
+} from "lucide-react";
 
 const Sidebar = ({ open, setOpen }) => {
   const navigate = useNavigate();
@@ -7,6 +13,7 @@ const Sidebar = ({ open, setOpen }) => {
 
   const menu = [
     { label: "Dashboard", icon: LayoutDashboard, path: "/tutor-dashboard" },
+    { label: "Schedule", icon: Calendar, path: "/tutor-schedule" },
     { label: "Learners", icon: Users, path: "/learners" },
     { label: "Homework", icon: FileText, path: "/homework" },
     { label: "Tests", icon: ClipboardList, path: "/tests" },
