@@ -355,10 +355,10 @@ const Login = () => {
           font-weight: 600;
         }
 
-        /* right side - orange panel */
+        /* right side */
         .login-right {
           width: 55%;
-          background: #FF6400;
+          background: #f7751e;
           position: relative;
           overflow: hidden;
           display: flex;
@@ -372,7 +372,7 @@ const Login = () => {
           inset: 0;
           background-image:
             radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
-            radial-gradient(circle at 20% 80%, rgba(0, 0, 0, 0.15) 0%, transparent 50%);
+            radial-gradient(circle at 20% 80%, rgba(0, 0, 0, 0.1) 0%, transparent 50%);
           pointer-events: none;
         }
 
@@ -390,7 +390,7 @@ const Login = () => {
           inset: 0;
           pointer-events: none;
           font-family: 'Space Mono', monospace;
-          color: rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 0.12);
           font-weight: 700;
         }
 
@@ -402,69 +402,24 @@ const Login = () => {
         .sym-5 { top: 45%; left: 5%; font-size: 1.2rem; }
         .sym-6 { top: 65%; right: 8%; font-size: 1.6rem; }
 
-        .dashed-arc {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 320px;
-          height: 320px;
-          border-radius: 50%;
-          border: 1.5px dashed rgba(255, 255, 255, 0.25);
-        }
-
-        .plane {
-          position: absolute;
-          top: 22%;
-          right: 18%;
-          font-size: 1.6rem;
-          animation: drift 4s ease-in-out infinite;
-        }
-
-        @keyframes drift {
-          0%, 100% { transform: translate(0, 0) rotate(-15deg); }
-          50% { transform: translate(6px, -8px) rotate(-20deg); }
-        }
-
         .illustration {
           position: relative;
           z-index: 2;
           text-align: center;
+          padding: 40px;
         }
 
-        .books {
-          position: relative;
-          width: 140px;
-          height: 120px;
-          margin: 0 auto 16px;
-        }
-
-        .book {
-          position: absolute;
-          border-radius: 4px 8px 8px 4px;
-          box-shadow: 3px 6px 16px rgba(0, 0, 0, 0.25);
-        }
-
-        .book-1 { width: 130px; height: 28px; background: #fff; bottom: 0; left: 0; }
-        .book-2 { width: 118px; height: 26px; background: #0a0a0a; bottom: 28px; left: 6px; }
-        .book-3 { width: 124px; height: 26px; background: #ffb347; bottom: 54px; left: 3px; }
-        .book-4 { width: 110px; height: 24px; background: #fff; bottom: 80px; left: 8px; }
-
-        .person {
-          position: absolute;
-          right: -10px;
-          bottom: 90px;
-          font-size: 3.2rem;
-          animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
+        .illustration img {
+          width: 100%;
+          max-width: 420px;
+          height: auto;
+          display: block;
+          margin: 0 auto 28px;
+          filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.15));
         }
 
         .tagline {
-          color: rgba(255, 255, 255, 0.9);
+          color: rgba(255, 255, 255, 0.95);
           font-size: 1.15rem;
           font-weight: 600;
           letter-spacing: -0.01em;
@@ -597,7 +552,6 @@ const Login = () => {
           {/* right side - illustration */}
           <div className="login-right">
             <div className="grid-bg" />
-            <div className="dashed-arc" />
 
             <div className="math-symbols">
               <span className="sym sym-1">∑</span>
@@ -608,16 +562,8 @@ const Login = () => {
               <span className="sym sym-6">∞</span>
             </div>
 
-            <div className="plane">✈</div>
-
             <div className="illustration">
-              <div className="books">
-                <div className="book book-1" />
-                <div className="book book-2" />
-                <div className="book book-3" />
-                <div className="book book-4" />
-                <div className="person">🧑‍🎓</div>
-              </div>
+              <img src="/Thesis-pana.svg" alt="Student studying" />
               <div className="tagline">
                 Master <strong>Math</strong><br />One Step at a Time
               </div>
