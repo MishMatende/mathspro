@@ -140,58 +140,41 @@ const Hero = () => {
                 </button>
               </div>
             </div>
-          </div>
 
             {/* Contact */}
-<div className="col-span-2 md:col-span-1">
-  <p className="text-sm font-semibold text-gray-700 mb-4">Contact Us</p>
-  <div className="flex flex-col gap-4">
+            <div className="col-span-2 md:col-span-1">
+              <p className="text-sm font-semibold text-gray-700 mb-4">Contact Us</p>
+              <div className="flex flex-col gap-3">
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Email</p>
+                  
+                    <a href="mailto:hello@mathspro.com"
+                    className="text-sm text-gray-600 hover:text-orange-500 transition">
+                  
+                    hello@mathspro.com
+                  </a>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Phone</p>
+                  
+                  <a href="tel:+27000000000"
+                    className="text-sm text-gray-600 hover:text-orange-500 transition"
+                  >
+                    +27 00 000 0000
+                  </a>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Address</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    123 Learning Lane<br />
+                    Nairobi, Kenya
+                    
+                  </p>
+                </div>
+              </div>
+            </div>
 
-    <div className="flex items-start gap-3">
-      <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <span className="text-orange-400 text-xs">@</span>
-      </div>
-      <div>
-        <p className="text-xs text-gray-400 mb-0.5">Email</p>
-        
-         <a href="mailto:hello@mathspro.com"
-          className="text-sm text-gray-600 hover:text-orange-500 transition break-all"
-        >
-          hello@mathspro.com
-        </a>
-      </div>
-    </div>
-
-    <div className="flex items-start gap-3">
-      <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <span className="text-orange-400 text-xs">📞</span>
-      </div>
-      <div>
-        <p className="text-xs text-gray-400 mb-0.5">Phone</p>
-        
-         <a href="tel:+254700000000"
-          className="text-sm text-gray-600 hover:text-orange-500 transition"
-        >
-          +254 700 000 000
-        </a>
-      </div>
-    </div>
-
-    <div className="flex items-start gap-3">
-      <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <span className="text-orange-400 text-xs">📍</span>
-      </div>
-      <div>
-        <p className="text-xs text-gray-400 mb-0.5">Address</p>
-        <p className="text-sm text-gray-600 leading-relaxed">
-          123 Learning Lane<br />
-          Nairobi, Kenya
-        </p>
-      </div>
-    </div>
-
-  </div>
-</div>
+          </div>
 
           {/* bottom bar - copyright */}
 <div className="border-t border-gray-100 pt-6 text-center">
