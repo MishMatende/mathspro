@@ -446,11 +446,9 @@ const Login = () => {
 
       <div className="login-page">
         <div className="login-card">
-
           {/* left side */}
           <div className="login-left">
             <div className="login-form-inner">
-
               {/* step 1 - pick a role */}
               {step === "role" && (
                 <div className="step-enter">
@@ -458,29 +456,34 @@ const Login = () => {
                   <p className="role-sub">How are you logging in today?</p>
 
                   <div className="role-cards">
-                    <div className="role-card" onClick={() => handleRoleSelect("student")}>
+                    <div
+                      className="role-card"
+                      onClick={() => handleRoleSelect("student")}
+                    >
                       <div className="role-icon">🎓</div>
                       <div>
                         <div className="role-card-title">I'm a Student</div>
-                        <div className="role-card-desc">Access lessons, homework and track your progress</div>
+                        <div className="role-card-desc">
+                          Access lessons, homework and track your progress
+                        </div>
                       </div>
                       <span className="role-arrow">→</span>
                     </div>
 
-                    <div className="role-card" onClick={() => handleRoleSelect("tutor")}>
+                    <div
+                      className="role-card"
+                      onClick={() => handleRoleSelect("tutor")}
+                    >
                       <div className="role-icon">📐</div>
                       <div>
                         <div className="role-card-title">I'm a Tutor</div>
-                        <div className="role-card-desc">Manage learners, set homework and view reports</div>
+                        <div className="role-card-desc">
+                          Manage learners, set homework and view reports
+                        </div>
                       </div>
                       <span className="role-arrow">→</span>
                     </div>
                   </div>
-
-                  <p className="signup-redirect">
-                    Don't have an account?{" "}
-                    <span onClick={() => navigate("/signup")}>Sign Up</span>
-                  </p>
                 </div>
               )}
 
@@ -491,9 +494,17 @@ const Login = () => {
                     ← Back
                   </button>
 
-                  <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      marginBottom: "16px",
+                    }}
+                  >
                     <span className="role-badge">
-                      {role === "student" ? "🎓 Student Login" : "📐 Tutor Login"}
+                      {role === "student"
+                        ? "🎓 Student Login"
+                        : "📐 Tutor Login"}
                     </span>
                   </div>
 
@@ -520,32 +531,23 @@ const Login = () => {
                       required
                     />
 
-                    <div className="forgot-link" onClick={() => navigate("/forgot-password")}>
+                    <div
+                      className="forgot-link"
+                      onClick={() => navigate("/forgot-password")}
+                    >
                       Forgot Password?
                     </div>
 
-                    <button className="btn-login" type="submit" disabled={loading}>
+                    <button
+                      className="btn-login"
+                      type="submit"
+                      disabled={loading}
+                    >
                       {loading ? "Logging in..." : "Login"}
                     </button>
                   </form>
-
-                  <div className="login-divider">
-                    <hr />
-                    <span>or continue with</span>
-                    <hr />
-                  </div>
-
-                  <button className="btn-google-login" type="button">
-                    <span>G</span> Sign in with Google
-                  </button>
-
-                  <p className="signup-redirect">
-                    Don't have an account?{" "}
-                    <span onClick={() => navigate("/signup")}>Sign Up</span>
-                  </p>
                 </div>
               )}
-
             </div>
           </div>
 
@@ -565,14 +567,15 @@ const Login = () => {
             <div className="illustration">
               <img src="/Thesis-pana.svg" alt="Student studying" />
               <div className="tagline">
-                Master <strong>Math</strong><br />One Step at a Time
+                Master <strong>Math</strong>
+                <br />
+                One Step at a Time
               </div>
               <div className="tagline-sub">
                 Smart lessons · Instant feedback · Real progress
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </>

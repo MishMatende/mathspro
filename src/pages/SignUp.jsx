@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { signup } = useAuth();
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -41,15 +43,22 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      console.log("Signup Data:", formData);
+      const res = await signup({
+        email: formData.email,
+        password: formData.password,
+        name: `${formData.firstName} ${formData.lastName}`,
+        role: "student", // default role
+      });
 
-      setTimeout(() => {
-        setLoading(false);
-        navigate("/dashboard");
-      }, 1000);
+      if (!res.success) {
+        throw new Error(res.error);
+      }
+
+      navigate("/dashboard");
     } catch (error) {
+      alert(error.message || "Signup failed");
+    } finally {
       setLoading(false);
-      alert("Signup failed");
     }
   };
 
@@ -432,7 +441,6 @@ const Signup = () => {
 
       <div className="signup-page">
         <div className="signup-card">
-
           {/* left side - illustration */}
           <div className="signup-illus">
             <div className="signup-grid-bg" />
@@ -455,10 +463,14 @@ const Signup = () => {
 
             <div className="icon-ring">🧮</div>
             <div className="illus-heading">
-              Start your <span>math</span><br />journey today
+              Start your <span>math</span>
+              <br />
+              journey today
             </div>
             <div className="illus-sub">
-              Join thousands of students<br />mastering math with guidance.
+              Join thousands of students
+              <br />
+              mastering math with guidance.
             </div>
 
             <div className="stats-row">
@@ -529,11 +541,12 @@ const Signup = () => {
                     onChange={handleChange}
                     required
                   >
-                    <option value="" disabled>Your Math Level</option>
-                    <option value="beginner">Beginner — Basic Arithmetic</option>
-                    <option value="elementary">Elementary — Fractions & Algebra</option>
-                    <option value="intermediate">Intermediate — Geometry & Trig</option>
-                    <option value="advanced">Advanced — Calculus & Beyond</option>
+                    <option value="" disabled>
+                      Your Curriculumn
+                    </option>
+                    <option value="CBC">CBC</option>
+                    <option value="Cambridge">Cambridge</option>
+                    <option value="BI">BI</option>
                   </select>
                 </div>
 
@@ -548,7 +561,7 @@ const Signup = () => {
                     required
                   />
                   <div className="strength-bar">
-                    {[0, 1, 2, 3].map(i => (
+                    {[0, 1, 2, 3].map((i) => (
                       <div
                         key={i}
                         className={`strength-seg ${i < pwStrength ? "active" : ""}`}
@@ -565,25 +578,23 @@ const Signup = () => {
                     onChange={handleChange}
                   />
                   By signing up, you agree to our{" "}
-                  <span onClick={() => navigate("/terms")}>Terms of Service</span>
-                  {" "}and{" "}
-                  <span onClick={() => navigate("/privacy")}>Privacy Policy</span>
+                  <span onClick={() => navigate("/terms")}>
+                    Terms of Service
+                  </span>{" "}
+                  and{" "}
+                  <span onClick={() => navigate("/privacy")}>
+                    Privacy Policy
+                  </span>
                 </div>
 
-                <button className="btn-signup-main" type="submit" disabled={loading}>
+                <button
+                  className="btn-signup-main"
+                  type="submit"
+                  disabled={loading}
+                >
                   {loading ? "Creating Account..." : "Create My Account"}
                 </button>
               </form>
-
-              <div className="divider-row">
-                <hr />
-                <span>or continue with</span>
-                <hr />
-              </div>
-
-              <button className="btn-google" type="button">
-                <span>G</span> Sign up with Google
-              </button>
 
               <p className="login-redirect">
                 Already have an account?{" "}
@@ -591,7 +602,6 @@ const Signup = () => {
               </p>
             </div>
           </div>
-
         </div>
       </div>
     </>

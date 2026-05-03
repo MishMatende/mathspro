@@ -36,19 +36,18 @@ const HomeworkPage = () => {
         className="p-4 lg:p-6"
       >
         {/* Header */}
+        <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs sm:text-sm rounded-lg px-3 py-2 mb-4">
+          <Info size={20} className="mt-0.5" />
+          <p>
+            Use this page to see the list of homeworks and upload any new
+            homework.
+          </p>
+        </div>
         <div className="flex flex-col lg:flex-row lg:justify-between gap-4 mb-6">
           {/* Title */}
           <div className="flex items-center gap-2">
             <FileText size={20} />
             <h1 className="text-lg font-semibold">Homework Bank</h1>
-          </div>
-
-          <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs sm:text-sm rounded-lg px-3 py-2 mb-4">
-            <Info size={20} className="mt-0.5" />
-            <p>
-              Use this page to see the list of homeworks and upload any new
-              homework.
-            </p>
           </div>
 
           {/* Actions */}

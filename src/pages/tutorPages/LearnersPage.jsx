@@ -22,20 +22,19 @@ const LearnersPage = () => {
   return (
     <div className="p-4 lg:p-6">
       {/* HEADER */}
+      <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs sm:text-sm rounded-lg px-3 py-2 mb-4">
+        <Info size={20} className="mt-0.5" />
+        <p>
+          Use this page to see the list of learners assigned to you. Tap on a
+          learner to see more detail about the learner.
+        </p>
+      </div>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
         <div className="flex items-center gap-2">
           <Users className="text-gray-700" size={20} />
           <h1 className="text-lg lg:text-xl font-semibold text-gray-800">
             Learners
           </h1>
-        </div>
-
-        <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs sm:text-sm rounded-lg px-3 py-2 mb-4">
-          <Info size={20} className="mt-0.5" />
-          <p>
-            Use this page to see the list of learners assigned to you. Tap on a
-            learner to see more detail about the learner.
-          </p>
         </div>
 
         {/* SEARCH */}

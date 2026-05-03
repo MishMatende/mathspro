@@ -40,10 +40,10 @@ const Navbar = () => {
       <div className="flex items-center gap-4">
         {/* Tutor Login */}
         <button
-          onClick={() => navigate("/tutor-dashboard")}
+          onClick={() => navigate("/login")}
           className="border py-2 px-4 rounded-full text-sm text-gray-700 cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
         >
-          Tutor Login
+          Login
         </button>
 
         {/* Primary CTA */}

@@ -11,6 +11,10 @@ import TutorSchedulePage from "./pages/tutorPages/TutorSchedulePage";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
+import AdminDashboard from "./pages/adminPages/AdminDashboard";
+import AdminDashboardLayout from "./components/layouts/AdminDashboardLayout";
+import AdminLearnerspage from "./pages/adminPages/AdminLearnerspage";
+import AdminTutorsPage from "./pages/adminPages/AdminTutorsPage";
 
 function App() {
   return (
@@ -20,8 +24,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
-
-      {/* Dashboard layout — navbar + sidenav */}
+      {/* Tutor Dashboard layout — navbar + sidenav */}
       <Route element={<TutorDashboardLayout />}>
         <Route path="/tutor-dashboard" element={<TutorDashboard />} />
         <Route path="/diagnostic" element={<div>Diagnostic Page</div>} />
@@ -30,6 +33,13 @@ function App() {
         <Route path="/homework" element={<HomeworkPage />} />
         <Route path="/tests" element={<TestsPage />} />
         <Route path="/tutor-schedule" element={<TutorSchedulePage />} />
+      </Route>
+
+      {/* Admin Dashboard layout — navbar + sidenav */}
+      <Route element={<AdminDashboardLayout />}>
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/admin-learners" element={<AdminLearnerspage />} />
+        <Route path="/admin-tutors" element={<AdminTutorsPage />} />
       </Route>
     </Routes>
   );
