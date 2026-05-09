@@ -9,12 +9,13 @@ import HomeworkPage from "./pages/tutorPages/HomeworkPage";
 import TestsPage from "./pages/tutorPages/TestsPage";
 import TutorSchedulePage from "./pages/tutorPages/TutorSchedulePage";
 import Login from "./pages/Login";
-import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
 import AdminDashboard from "./pages/adminPages/AdminDashboard";
 import AdminDashboardLayout from "./components/layouts/AdminDashboardLayout";
 import AdminLearnerspage from "./pages/adminPages/AdminLearnerspage";
 import AdminTutorsPage from "./pages/adminPages/AdminTutorsPage";
+import AdminLogin from "./pages/adminPages/AdminLogin";
+import AdminProtectedRoute from "./components/wrappers/AdminProtectedRoute";
 
 function App() {
   return (
@@ -22,8 +23,9 @@ function App() {
       {/* No layout */}
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<SignUp />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/admin-login" element={<AdminLogin />} />
+
       {/* Tutor Dashboard layout — navbar + sidenav */}
       <Route element={<TutorDashboardLayout />}>
         <Route path="/tutor-dashboard" element={<TutorDashboard />} />
@@ -36,10 +38,12 @@ function App() {
       </Route>
 
       {/* Admin Dashboard layout — navbar + sidenav */}
-      <Route element={<AdminDashboardLayout />}>
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/admin-learners" element={<AdminLearnerspage />} />
-        <Route path="/admin-tutors" element={<AdminTutorsPage />} />
+      <Route element={<AdminProtectedRoute />}>
+        <Route element={<AdminDashboardLayout />}>
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/admin-learners" element={<AdminLearnerspage />} />
+          <Route path="/admin-tutors" element={<AdminTutorsPage />} />
+        </Route>
       </Route>
     </Routes>
   );

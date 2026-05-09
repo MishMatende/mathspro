@@ -1,15 +1,29 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
+
+  const { login } = useAuth();
+
   const [step, setStep] = useState("role");
   const [role, setRole] = useState(null);
-  const [formData, setFormData] = useState({ email: "", password: "" });
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   const handleRoleSelect = (selectedRole) => {
@@ -19,22 +33,41 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setLoading(true);
 
     try {
-      console.log("Login Data:", { ...formData, role });
+      const result = await login({
+        email: formData.email,
+        password: formData.password,
+        expectedRole: role,
+      });
 
-      setTimeout(() => {
+      if (!result.success) {
+        toast.error(result.error || "Login failed");
         setLoading(false);
-        if (role === "tutor") {
-          navigate("/tutor-dashboard");
-        } else {
-          navigate("/student-dashboard");
-        }
-      }, 1000);
-    } catch (error) {
+        return;
+      }
+
+      toast.success("Login successful");
+
+      // 🔥 STUDENT
+      if (result.role === "student") {
+        navigate("/student-dashboard");
+      }
+
+      // 🔥 TUTOR + ADMIN
+      else if (result.role === "tutor" || result.role === "admin") {
+        navigate("/tutor-dashboard");
+      }
+
       setLoading(false);
-      alert("Login failed");
+    } catch (error) {
+      console.log(error);
+
+      toast.error("Login failed");
+
+      setLoading(false);
     }
   };
 
@@ -55,7 +88,6 @@ const Login = () => {
           min-height: 100vh;
         }
 
-        /* left side - the form */
         .login-left {
           width: 45%;
           background: #fff;
@@ -85,7 +117,6 @@ const Login = () => {
           max-width: 340px;
         }
 
-        /* step slide-in animation */
         .step-enter {
           animation: stepIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
@@ -101,7 +132,6 @@ const Login = () => {
           }
         }
 
-        /* role selection screen */
         .role-heading {
           font-size: 1.85rem;
           font-weight: 700;
@@ -155,11 +185,6 @@ const Login = () => {
           justify-content: center;
           font-size: 1.6rem;
           flex-shrink: 0;
-          transition: background 0.2s;
-        }
-
-        .role-card:hover .role-icon {
-          background: rgba(255, 100, 0, 0.14);
         }
 
         .role-card-title {
@@ -179,15 +204,8 @@ const Login = () => {
           margin-left: auto;
           color: #ddd;
           font-size: 1.1rem;
-          transition: color 0.2s, transform 0.2s;
         }
 
-        .role-card:hover .role-arrow {
-          color: #FF6400;
-          transform: translateX(3px);
-        }
-
-        /* login form */
         .back-btn {
           display: flex;
           align-items: center;
@@ -201,7 +219,6 @@ const Login = () => {
           border: none;
           font-family: 'Sora', sans-serif;
           padding: 0;
-          transition: color 0.15s;
         }
 
         .back-btn:hover {
@@ -249,17 +266,12 @@ const Login = () => {
           background: #fafafa;
           outline: none;
           margin-bottom: 12px;
-          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
         }
 
         .login-input:focus {
           border-color: #FF6400;
           box-shadow: 0 0 0 3px rgba(255, 100, 0, 0.08);
           background: #fff;
-        }
-
-        .login-input::placeholder {
-          color: #ccc;
         }
 
         .forgot-link {
@@ -282,19 +294,8 @@ const Login = () => {
           font-weight: 600;
           font-family: 'Sora', sans-serif;
           cursor: pointer;
-          letter-spacing: 0.02em;
           box-shadow: 0 6px 24px rgba(255, 100, 0, 0.28);
           margin-bottom: 24px;
-          transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
-        }
-
-        .btn-login:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 10px 30px rgba(255, 100, 0, 0.38);
-        }
-
-        .btn-login:active:not(:disabled) {
-          transform: translateY(0);
         }
 
         .btn-login:disabled {
@@ -302,60 +303,6 @@ const Login = () => {
           cursor: not-allowed;
         }
 
-        .login-divider {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 24px;
-        }
-
-        .login-divider hr {
-          flex: 1;
-          border: none;
-          border-top: 1px solid #f0f0f0;
-        }
-
-        .login-divider span {
-          font-size: 0.72rem;
-          color: #ccc;
-        }
-
-        .btn-google-login {
-          width: 100%;
-          background: #fff;
-          border: 1.5px solid #ececec;
-          border-radius: 50px;
-          padding: 13px;
-          font-size: 0.83rem;
-          font-family: 'Sora', sans-serif;
-          color: #555;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          margin-bottom: 28px;
-          transition: background 0.15s, border-color 0.2s;
-        }
-
-        .btn-google-login:hover {
-          background: #fafafa;
-          border-color: #e0e0e0;
-        }
-
-        .signup-redirect {
-          text-align: center;
-          font-size: 0.78rem;
-          color: #aaa;
-        }
-
-        .signup-redirect span {
-          color: #FF6400;
-          cursor: pointer;
-          font-weight: 600;
-        }
-
-        /* right side */
         .login-right {
           width: 55%;
           background: #f7751e;
@@ -364,16 +311,6 @@ const Login = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-        }
-
-        .login-right::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background-image:
-            radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
-            radial-gradient(circle at 20% 80%, rgba(0, 0, 0, 0.1) 0%, transparent 50%);
-          pointer-events: none;
         }
 
         .grid-bg {
@@ -415,20 +352,17 @@ const Login = () => {
           height: auto;
           display: block;
           margin: 0 auto 28px;
-          filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.15));
         }
 
         .tagline {
           color: rgba(255, 255, 255, 0.95);
           font-size: 1.15rem;
           font-weight: 600;
-          letter-spacing: -0.01em;
           line-height: 1.4;
         }
 
         .tagline strong {
           color: #fff;
-          font-weight: 700;
         }
 
         .tagline-sub {
@@ -438,21 +372,30 @@ const Login = () => {
         }
 
         @media (max-width: 640px) {
-          .login-card { flex-direction: column; }
-          .login-left, .login-right { width: 100%; }
-          .login-right { min-height: 220px; }
+          .login-card {
+            flex-direction: column;
+          }
+
+          .login-left,
+          .login-right {
+            width: 100%;
+          }
+
+          .login-right {
+            min-height: 220px;
+          }
         }
       `}</style>
 
       <div className="login-page">
         <div className="login-card">
-          {/* left side */}
+          {/* LEFT */}
           <div className="login-left">
             <div className="login-form-inner">
-              {/* step 1 - pick a role */}
               {step === "role" && (
                 <div className="step-enter">
                   <p className="role-heading">Welcome Back</p>
+
                   <p className="role-sub">How are you logging in today?</p>
 
                   <div className="role-cards">
@@ -461,12 +404,15 @@ const Login = () => {
                       onClick={() => handleRoleSelect("student")}
                     >
                       <div className="role-icon">🎓</div>
+
                       <div>
                         <div className="role-card-title">I'm a Student</div>
+
                         <div className="role-card-desc">
                           Access lessons, homework and track your progress
                         </div>
                       </div>
+
                       <span className="role-arrow">→</span>
                     </div>
 
@@ -475,19 +421,21 @@ const Login = () => {
                       onClick={() => handleRoleSelect("tutor")}
                     >
                       <div className="role-icon">📐</div>
+
                       <div>
                         <div className="role-card-title">I'm a Tutor</div>
+
                         <div className="role-card-desc">
                           Manage learners, set homework and view reports
                         </div>
                       </div>
+
                       <span className="role-arrow">→</span>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* step 2 - login form */}
               {step === "form" && (
                 <div className="step-enter">
                   <button className="back-btn" onClick={() => setStep("role")}>
@@ -509,6 +457,7 @@ const Login = () => {
                   </div>
 
                   <h1>Login</h1>
+
                   <p className="subtitle">Continue your math journey 🧮</p>
 
                   <form onSubmit={handleSubmit}>
@@ -521,6 +470,7 @@ const Login = () => {
                       onChange={handleChange}
                       required
                     />
+
                     <input
                       className="login-input"
                       type="password"
@@ -551,7 +501,7 @@ const Login = () => {
             </div>
           </div>
 
-          {/* right side - illustration */}
+          {/* RIGHT */}
           <div className="login-right">
             <div className="grid-bg" />
 
@@ -566,11 +516,13 @@ const Login = () => {
 
             <div className="illustration">
               <img src="/Thesis-pana.svg" alt="Student studying" />
+
               <div className="tagline">
                 Master <strong>Math</strong>
                 <br />
                 One Step at a Time
               </div>
+
               <div className="tagline-sub">
                 Smart lessons · Instant feedback · Real progress
               </div>

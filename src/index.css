@@ -8,6 +8,17 @@
   max-width: 100%;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+}
+
 body {
   @apply bg-white text-gray-900;
   font-family: Inter, sans-serif;

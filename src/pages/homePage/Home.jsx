@@ -1,18 +1,17 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Hero from "../../components/Hero";
+import Footer from "../../components/Footer";
 
-const Home = () => {
-  const navigate = useNavigate(); // moved here
-
+export default function Home() {
   return (
-    <div>
+    <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <Hero />
+      <main className="flex-1">
+        <Hero />
+      </main>
+      <Footer />
     </div>
   );
-};
-
-export default Home;
+}

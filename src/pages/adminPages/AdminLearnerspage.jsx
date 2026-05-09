@@ -8,6 +8,8 @@ import EditLearnerModal from "../../components/adminModals/EditLearnerModal";
 import LearnerProfilePanel from "../../components/adminPanels/LearnerprofilePanel";
 import CreateUserModal from "../../components/adminModals/CreateUserModal";
 
+import { getCache, setCache, clearCache } from "../../lib/cache";
+
 const PAGE_SIZE = 6;
 
 export default function AdminLearnersPage() {
@@ -19,18 +21,38 @@ export default function AdminLearnersPage() {
 
   const [page, setPage] = useState(0);
 
-  const fetchLearners = async () => {
+  const fetchLearners = async (forceRefresh = false) => {
+    const cacheKey = `admin_learners_page_${page}`;
+
+    // 🔥 Use cache first
+    if (!forceRefresh) {
+      const cachedLearners = getCache(cacheKey);
+
+      if (cachedLearners) {
+        setLearners(cachedLearners);
+        return;
+      }
+    }
+
     const from = page * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
+    // 🔥 Fetch from DB
     const { data, error } = await supabase
-      .from("profiles")
+      .from("learners")
       .select("*")
-      .eq("role", "student")
       .range(from, to)
       .order("created_at", { ascending: false });
 
-    if (!error) setLearners(data);
+    if (error) {
+      console.log(error);
+      return;
+    }
+
+    setLearners(data);
+
+    // 🔥 Save cache
+    setCache(cacheKey, data);
   };
 
   useEffect(() => {
@@ -38,9 +60,7 @@ export default function AdminLearnersPage() {
   }, [page]);
 
   const filtered = learners.filter((l) =>
-    `${l.first_name} ${l.last_name}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
+    `${l.name}`.toLowerCase().includes(search.toLowerCase()),
   );
 
   // 🔥 DELETE
@@ -54,10 +74,15 @@ export default function AdminLearnersPage() {
 
     toast.dismiss(loading);
 
-    if (error) toast.error("Failed to delete");
-    else {
+    if (error) {
+      toast.error("Failed to delete");
+    } else {
       toast.success("Learner deleted");
-      fetchLearners();
+
+      // 🔥 Clear current page cache
+      clearCache(`admin_learners_page_${page}`);
+
+      fetchLearners(true);
     }
   };
 
@@ -84,6 +109,7 @@ export default function AdminLearnersPage() {
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                 size={16}
               />
+
               <input
                 placeholder="Search..."
                 value={search}
@@ -108,16 +134,12 @@ export default function AdminLearnersPage() {
           {filtered.map((learner) => (
             <motion.div
               key={learner.id}
+              onClick={() => setProfileLearner(learner)}
               whileHover={{ scale: 1.02 }}
               className="bg-white rounded-xl p-4 border shadow-sm"
             >
-              <div
-                onClick={() => setProfileLearner(learner)}
-                className="cursor-pointer"
-              >
-                <p className="font-medium">
-                  {learner.first_name} {learner.last_name}
-                </p>
+              <div className="cursor-pointer">
+                <p className="font-medium">{learner.name}</p>
 
                 <p className="text-xs text-gray-500 mt-1">
                   {learner.curriculum} • {learner.level}
@@ -149,6 +171,7 @@ export default function AdminLearnersPage() {
           <button onClick={() => setPage((p) => Math.max(0, p - 1))}>
             Prev
           </button>
+
           <button onClick={() => setPage((p) => p + 1)}>Next</button>
         </div>
       </motion.div>
@@ -157,12 +180,22 @@ export default function AdminLearnersPage() {
       <EditLearnerModal
         learner={selectedLearner}
         onClose={() => setSelectedLearner(null)}
-        onUpdated={fetchLearners}
+        onUpdated={() => {
+          clearCache(`admin_learners_page_${page}`);
+          fetchLearners(true);
+        }}
       />
 
       <CreateUserModal
         isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
+        onClose={() => {
+          setIsCreateOpen(false);
+
+          clearCache(`admin_learners_page_${page}`);
+
+          fetchLearners(true);
+        }}
+        initialRole="student"
       />
 
       <LearnerProfilePanel

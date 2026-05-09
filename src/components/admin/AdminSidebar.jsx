@@ -1,9 +1,13 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Users, GraduationCap, LogOut } from "lucide-react";
+
+import { useAuth } from "../../context/AuthContext";
 
 export default function AdminSidebar({ open, setOpen }) {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { user, logout } = useAuth();
 
   const menu = [
     {
@@ -22,6 +26,12 @@ export default function AdminSidebar({ open, setOpen }) {
       path: "/admin-tutors",
     },
   ];
+
+  const handleLogout = async () => {
+    await logout();
+
+    navigate("/admin-login");
+  };
 
   return (
     <>
@@ -45,6 +55,7 @@ export default function AdminSidebar({ open, setOpen }) {
           <h1 className="text-2xl font-bold text-(--color-primary)">
             MathsPro
           </h1>
+
           <p className="text-xs text-gray-400 mt-1">Admin Panel</p>
         </div>
 
@@ -91,7 +102,36 @@ export default function AdminSidebar({ open, setOpen }) {
         </nav>
 
         {/* Footer */}
-        <div className="mt-auto pt-6 text-xs text-gray-400">Admin access</div>
+        <div className="mt-auto pt-6 border-t border-gray-100">
+          <div className="flex items-center justify-between gap-3">
+            {/* Admin Info */}
+            <div className="min-w-0">
+              <p className="text-xs text-gray-400">Admin access</p>
+
+              <p className="text-sm font-medium text-gray-800 truncate">
+                {user?.user_metadata?.name || user?.email || "Admin"}
+              </p>
+            </div>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="
+                w-10 h-10
+                rounded-xl
+                border border-gray-200
+                flex items-center justify-center
+                text-gray-500
+                hover:bg-red-50
+                hover:text-red-500
+                hover:border-red-200
+                transition
+              "
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        </div>
       </div>
     </>
   );

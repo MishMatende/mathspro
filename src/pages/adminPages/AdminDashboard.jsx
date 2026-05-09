@@ -3,6 +3,8 @@ import { supabase } from "../../lib/supabase";
 import { Users, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 
+import { getCache, setCache } from "../../lib/cache";
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
     learners: 0,
@@ -11,23 +13,43 @@ export default function AdminDashboard() {
 
   const [loading, setLoading] = useState(true);
 
-  const fetchStats = async () => {
-    const [learnersRes, tutorsRes] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .eq("role", "student"),
+  const fetchStats = async (forceRefresh = false) => {
+    const cacheKey = "admin_dashboard_stats";
 
-      supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .eq("role", "tutor"),
+    // 🔥 Use cache first
+    if (!forceRefresh) {
+      const cachedStats = getCache(cacheKey);
+
+      if (cachedStats) {
+        setStats(cachedStats);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // 🔥 Fetch counts from learners + tutors tables
+    const [learnersRes, tutorsRes] = await Promise.all([
+      supabase.from("learners").select("*", {
+        count: "exact",
+        head: true,
+      }),
+
+      supabase.from("tutors").select("*", {
+        count: "exact",
+        head: true,
+      }),
     ]);
 
-    setStats({
+    const newStats = {
       learners: learnersRes.count || 0,
       tutors: tutorsRes.count || 0,
-    });
+    };
+
+    // 🔥 Update state
+    setStats(newStats);
+
+    // 🔥 Cache stats
+    setCache(cacheKey, newStats);
 
     setLoading(false);
   };
@@ -55,6 +77,7 @@ export default function AdminDashboard() {
 
           <div>
             <p className="text-sm text-gray-500">Total Learners</p>
+
             <h2 className="text-xl font-semibold">
               {loading ? "..." : stats.learners}
             </h2>
@@ -74,6 +97,7 @@ export default function AdminDashboard() {
 
           <div>
             <p className="text-sm text-gray-500">Total Tutors</p>
+
             <h2 className="text-xl font-semibold">
               {loading ? "..." : stats.tutors}
             </h2>

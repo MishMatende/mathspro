@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import CreateUserModal from "../../components/adminModals/CreateUserModal";
 import EditTutorModal from "../../components/adminModals/EditTutormodal";
-import TutorProfilePanel from "../../components/adminModals/TutorProfileModal";
+import { getCache, setCache, clearCache } from "../../lib/cache";
+import TutorProfilePanel from "../../components/adminPanels/TutorProfilePanel";
 
 export default function AdminTutorsPage() {
   const [tutors, setTutors] = useState([]);
@@ -14,15 +15,34 @@ export default function AdminTutorsPage() {
   const [profileTutor, setProfileTutor] = useState(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const fetchTutors = async () => {
+  const fetchTutors = async (forceRefresh = false) => {
+    // 🔥 Use cache unless force refresh
+    if (!forceRefresh) {
+      const cachedTutors = getCache("admin_tutors");
+
+      if (cachedTutors) {
+        setTutors(cachedTutors);
+        return; // ✅ STOP HERE
+      }
+    }
+
+    // 🔥 Fetch from DB
     const { data, error } = await supabase
-      .from("profiles")
+      .from("tutors")
       .select("*")
-      .eq("role", "tutor")
       .order("created_at", { ascending: false });
 
-    if (!error) setTutors(data);
+    if (error) {
+      console.log(error);
+      return;
+    }
+
+    setTutors(data);
+
+    setCache("admin_tutors", data);
   };
+
+  console.log(tutors);
 
   useEffect(() => {
     fetchTutors();
@@ -48,6 +68,9 @@ export default function AdminTutorsPage() {
     if (error) toast.error("Failed to delete");
     else {
       toast.success("Tutor deleted");
+
+      clearCache("admin_tutors");
+
       fetchTutors();
     }
   };
@@ -97,19 +120,15 @@ export default function AdminTutorsPage() {
           {filtered.map((tutor) => (
             <motion.div
               key={tutor.id}
+              onClick={() => setProfileTutor(tutor)}
               whileHover={{ scale: 1.02 }}
               className="bg-white rounded-xl p-4 border shadow-sm"
             >
-              <div
-                onClick={() => setProfileTutor(tutor)}
-                className="cursor-pointer"
-              >
-                <p className="font-medium">
-                  {tutor.first_name} {tutor.last_name}
-                </p>
+              <div className="cursor-pointer">
+                <p className="font-medium">{tutor.name}</p>
 
                 <p className="text-xs text-gray-500 mt-1">
-                  {tutor.phone || "No phone"}
+                  {tutor.teaching_areas}
                 </p>
               </div>
 
@@ -137,6 +156,7 @@ export default function AdminTutorsPage() {
       <CreateUserModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
+        initialRole="tutor"
       />
 
       <EditTutorModal
