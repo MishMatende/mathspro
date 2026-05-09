@@ -17,6 +17,7 @@ import AdminTutorsPage from "./pages/adminPages/AdminTutorsPage";
 import AdminLogin from "./pages/adminPages/AdminLogin";
 import AdminProtectedRoute from "./components/wrappers/AdminProtectedRoute";
 import DiagnosticsPage from "./pages/DiagnosticsPage";
+import TutorProtectedRoute from "./components/wrappers/TutorProtectedRoute";
 
 function App() {
   return (
@@ -27,15 +28,18 @@ function App() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/admin-login" element={<AdminLogin />} />
 
+      <Route path="/diagnostic" element={<DiagnosticsPage />} />
+
       {/* Tutor Dashboard layout — navbar + sidenav */}
-      <Route element={<TutorDashboardLayout />}>
-        <Route path="/tutor-dashboard" element={<TutorDashboard />} />
-        <Route path="/diagnostic" element={<DiagnosticsPage />} />
-        <Route path="/learners/:id" element={<LearnerProfilePage />} />
-        <Route path="/learners" element={<LearnersPage />} />
-        <Route path="/homework" element={<HomeworkPage />} />
-        <Route path="/tests" element={<TestsPage />} />
-        <Route path="/tutor-schedule" element={<TutorSchedulePage />} />
+      <Route element={<TutorProtectedRoute />}>
+        <Route element={<TutorDashboardLayout />}>
+          <Route path="/tutor-dashboard" element={<TutorDashboard />} />
+          <Route path="/learners/:id" element={<LearnerProfilePage />} />
+          <Route path="/learners" element={<LearnersPage />} />
+          <Route path="/homework" element={<HomeworkPage />} />
+          <Route path="/tests" element={<TestsPage />} />
+          <Route path="/tutor-schedule" element={<TutorSchedulePage />} />
+        </Route>
       </Route>
 
       {/* Admin Dashboard layout — navbar + sidenav */}

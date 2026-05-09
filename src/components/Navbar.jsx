@@ -55,12 +55,12 @@ const Navbar = () => {
           </button>
 
           {/* Primary CTA */}
-          <button
+          {/* <button
             onClick={() => navigate("/diagnostic")}
             className="bg-(--color-primary) text-white px-4 py-2 rounded-full text-sm cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
           >
             Start Diagnostic
-          </button>
+          </button> */}
         </div>
       </div>
     </nav>

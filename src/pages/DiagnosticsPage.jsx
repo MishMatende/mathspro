@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
 
 export default function DiagnosticsPage() {
   const navigate = useNavigate();
@@ -372,6 +373,7 @@ export default function DiagnosticsPage() {
       `}</style>
 
       <div className="diag-page">
+        <Navbar />
         {/* left - form */}
         <div className="diag-left">
           <div className="diag-form-inner">
@@ -515,9 +517,7 @@ export default function DiagnosticsPage() {
               </div>
 
               <button className="diag-btn" type="submit" disabled={loading}>
-                {loading
-                  ? "Saving..."
-                  : "Continue to Diagnostic Test &#8594;"}{" "}
+                {loading ? "Saving..." : "Continue to Diagnostic Test"}{" "}
               </button>
             </form>
           </div>
