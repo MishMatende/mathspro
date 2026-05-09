@@ -12,10 +12,8 @@ const Navbar = () => {
 
   return (
     <nav className="w-full px-6 md:px-8 py-4 relative">
-
       {/* main bar */}
       <div className="flex items-center justify-between">
-
         {/* Logo */}
         <div
           onClick={() => handleNav("/")}
@@ -46,23 +44,24 @@ const Navbar = () => {
           </button>
         </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-4">
-        {/* Tutor Login */}
-        <button
-          onClick={() => navigate("/login")}
-          className="border py-2 px-4 rounded-full text-sm text-gray-700 cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
-        >
-          Login
-        </button>
+        {/* Actions */}
+        <div className="flex items-center gap-4">
+          {/* Tutor Login */}
+          <button
+            onClick={() => navigate("/login")}
+            className="border py-2 px-4 rounded-full text-sm text-gray-700 cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Login
+          </button>
 
-        {/* Primary CTA */}
-        <button
-          onClick={() => navigate("/diagnostic")}
-          className="bg-(--color-primary) text-white px-4 py-2 rounded-full text-sm cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
-        >
-          Start Diagnostic
-        </button>
+          {/* Primary CTA */}
+          <button
+            onClick={() => navigate("/diagnostic")}
+            className="bg-(--color-primary) text-white px-4 py-2 rounded-full text-sm cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Start Diagnostic
+          </button>
+        </div>
       </div>
     </nav>
   );
