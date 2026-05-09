@@ -16,6 +16,7 @@ import AdminLearnerspage from "./pages/adminPages/AdminLearnerspage";
 import AdminTutorsPage from "./pages/adminPages/AdminTutorsPage";
 import AdminLogin from "./pages/adminPages/AdminLogin";
 import AdminProtectedRoute from "./components/wrappers/AdminProtectedRoute";
+import DiagnosticsPage from "./pages/DiagnosticsPage";
 
 function App() {
   return (
@@ -29,7 +30,7 @@ function App() {
       {/* Tutor Dashboard layout — navbar + sidenav */}
       <Route element={<TutorDashboardLayout />}>
         <Route path="/tutor-dashboard" element={<TutorDashboard />} />
-        <Route path="/diagnostic" element={<div>Diagnostic Page</div>} />
+        <Route path="/diagnostic" element={<DiagnosticsPage />} />
         <Route path="/learners/:id" element={<LearnerProfilePage />} />
         <Route path="/learners" element={<LearnersPage />} />
         <Route path="/homework" element={<HomeworkPage />} />

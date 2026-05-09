@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const DiagnosticForm = () => {
+export default function DiagnosticsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -47,10 +47,25 @@ const DiagnosticForm = () => {
   ];
 
   const grades = [
-    "Grade 1", "Grade 2", "Grade 3", "Grade 4",
-    "Grade 5", "Grade 6", "Grade 7", "Grade 8",
-    "Grade 9", "Form 1", "Form 2", "Form 3", "Form 4",
-    "Year 7", "Year 8", "Year 9", "Year 10", "Year 11", "Year 12",
+    "Grade 1",
+    "Grade 2",
+    "Grade 3",
+    "Grade 4",
+    "Grade 5",
+    "Grade 6",
+    "Grade 7",
+    "Grade 8",
+    "Grade 9",
+    "Form 1",
+    "Form 2",
+    "Form 3",
+    "Form 4",
+    "Year 7",
+    "Year 8",
+    "Year 9",
+    "Year 10",
+    "Year 11",
+    "Year 12",
     "Other",
   ];
 
@@ -357,11 +372,9 @@ const DiagnosticForm = () => {
       `}</style>
 
       <div className="diag-page">
-
         {/* left - form */}
         <div className="diag-left">
           <div className="diag-form-inner">
-
             <div className="diag-badge">📋 Step 1 of 2</div>
 
             <h1 className="diag-heading">Student Details</h1>
@@ -371,7 +384,6 @@ const DiagnosticForm = () => {
             </p>
 
             <form onSubmit={handleSubmit}>
-
               {/* name row */}
               <div className="row-2">
                 <div className="input-wrap">
@@ -432,7 +444,9 @@ const DiagnosticForm = () => {
 
               {/* guardian phone */}
               <div className="input-wrap">
-                <label className="input-label">Parent / Guardian Phone Number</label>
+                <label className="input-label">
+                  Parent / Guardian Phone Number
+                </label>
                 <input
                   className="diag-input"
                   type="tel"
@@ -469,9 +483,13 @@ const DiagnosticForm = () => {
                     onChange={handleChange}
                     required
                   >
-                    <option value="" disabled>Select grade</option>
-                    {grades.map(g => (
-                      <option key={g} value={g}>{g}</option>
+                    <option value="" disabled>
+                      Select grade
+                    </option>
+                    {grades.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -484,19 +502,24 @@ const DiagnosticForm = () => {
                     onChange={handleChange}
                     required
                   >
-                    <option value="" disabled>Select curriculum</option>
-                    {kenyanCurriculums.map(c => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
+                    <option value="" disabled>
+                      Select curriculum
+                    </option>
+                    {kenyanCurriculums.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
 
               <button className="diag-btn" type="submit" disabled={loading}>
-{loading ? "Saving..." : "Continue to Diagnostic Test &#8594;"}              </button>
-
+                {loading
+                  ? "Saving..."
+                  : "Continue to Diagnostic Test &#8594;"}{" "}
+              </button>
             </form>
-
           </div>
         </div>
 
@@ -517,11 +540,15 @@ const DiagnosticForm = () => {
             <div className="diag-right-icon">📝</div>
 
             <div className="diag-right-heading">
-              What happens<br />after this?
+              What happens
+              <br />
+              after this?
             </div>
             <div className="diag-right-sub">
-              Your details help us match you with<br />
-              the right tutor and build a learning<br />
+              Your details help us match you with
+              <br />
+              the right tutor and build a learning
+              <br />
               plan just for you.
             </div>
 
@@ -545,10 +572,7 @@ const DiagnosticForm = () => {
             </div>
           </div>
         </div>
-
       </div>
     </>
   );
-};
-
-export default DiagnosticForm;
+}
