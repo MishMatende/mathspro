@@ -1,40 +1,50 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleNav = (path) => {
+    navigate(path);
+    setMenuOpen(false);
+  };
 
   return (
-    <nav className="w-full flex items-center justify-between px-8 py-4">
-      {/* Logo */}
-      <div
-        onClick={() => navigate("/")}
-        className="text-xl font-bold text-(--color-primary) cursor-pointer"
-      >
-        MathsPro
-      </div>
+    <nav className="w-full px-6 md:px-8 py-4 relative">
 
-      {/* Links */}
-      <div className="hidden md:flex gap-6 text-sm text-gray-700">
-        <button
-          onClick={() => navigate("/")}
-          className="hover:text-black cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
+      {/* main bar */}
+      <div className="flex items-center justify-between">
+
+        {/* Logo */}
+        <div
+          onClick={() => handleNav("/")}
+          className="text-xl font-bold text-(--color-primary) cursor-pointer"
         >
-          Home
-        </button>
-        <button
-          onClick={() => navigate("/diagnostic")}
-          className="hover:text-black cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
-        >
-          Diagnostic Test
-        </button>
-        <button className="hover:text-black cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]">
-          How It Works
-        </button>
-        <button className="hover:text-black cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]">
-          Contact
-        </button>
-      </div>
+          MathsPro
+        </div>
+
+        {/* Desktop links */}
+        <div className="hidden md:flex gap-6 text-sm text-gray-700">
+          <button
+            onClick={() => handleNav("/")}
+            className="hover:text-black cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Home
+          </button>
+          <button
+            onClick={() => handleNav("/diagnostic")}
+            className="hover:text-black cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Diagnostic Test
+          </button>
+          <button className="hover:text-black cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]">
+            How It Works
+          </button>
+          <button className="hover:text-black cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]">
+            Contact
+          </button>
+        </div>
 
       {/* Actions */}
       <div className="flex items-center gap-4">
