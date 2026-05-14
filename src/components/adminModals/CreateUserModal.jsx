@@ -3,7 +3,11 @@ import toast from "react-hot-toast";
 import BottomSheetModal from "../tutorModals/BottomSheetModal";
 import { supabase } from "../../lib/supabase";
 
-const CreateUserModal = ({ isOpen, onClose, initialRole = "student" }) => {
+export default function CreateUserModal({
+  isOpen,
+  onClose,
+  initialRole = "student",
+}) {
   const [role, setRole] = useState(initialRole);
 
   const [formData, setFormData] = useState({
@@ -260,6 +264,4 @@ const CreateUserModal = ({ isOpen, onClose, initialRole = "student" }) => {
       </button>
     </BottomSheetModal>
   );
-};
-
-export default CreateUserModal;
+}

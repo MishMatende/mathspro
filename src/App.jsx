@@ -18,6 +18,13 @@ import AdminLogin from "./pages/adminPages/AdminLogin";
 import AdminProtectedRoute from "./components/wrappers/AdminProtectedRoute";
 import DiagnosticsPage from "./pages/DiagnosticsPage";
 import TutorProtectedRoute from "./components/wrappers/TutorProtectedRoute";
+import AdminLessonsPage from "./pages/adminPages/AdminLessonsPage";
+import TutorSchedule from "./pages/tutorPages/TutorSchedule";
+import LearnerSchedule from "./pages/studentPages/LearnerSchedule";
+import StudentDashboardLayout from "./components/layouts/StudentDashboardLayout";
+import UpdatePassword from "./pages/UpdatePassword";
+import StudentDashboard from "./pages/studentPages/StudentDashboard";
+import StudentHomeworkPage from "./pages/studentPages/StudentHomeworkPage";
 
 function App() {
   return (
@@ -26,6 +33,7 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/update-password" element={<UpdatePassword />} />
       <Route path="/admin-login" element={<AdminLogin />} />
 
       <Route path="/diagnostic" element={<DiagnosticsPage />} />
@@ -38,8 +46,15 @@ function App() {
           <Route path="/learners" element={<LearnersPage />} />
           <Route path="/homework" element={<HomeworkPage />} />
           <Route path="/tests" element={<TestsPage />} />
-          <Route path="/tutor-schedule" element={<TutorSchedulePage />} />
+          {/* <Route path="/tutor-schedule" element={<TutorSchedulePage />} /> */}
+          <Route path="/tutor-schedule" element={<TutorSchedule />} />
         </Route>
+      </Route>
+
+      <Route element={<StudentDashboardLayout />}>
+        <Route path="/student-dashboard" element={<StudentDashboard />} />
+        <Route path="/student-schedule" element={<LearnerSchedule />} />
+        <Route path="/student-homework" element={<StudentHomeworkPage />} />
       </Route>
 
       {/* Admin Dashboard layout — navbar + sidenav */}
@@ -48,6 +63,7 @@ function App() {
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/admin-learners" element={<AdminLearnerspage />} />
           <Route path="/admin-tutors" element={<AdminTutorsPage />} />
+          <Route path="/admin-lessons" element={<AdminLessonsPage />} />
         </Route>
       </Route>
     </Routes>

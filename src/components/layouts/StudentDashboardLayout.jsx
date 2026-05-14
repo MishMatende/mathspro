@@ -1,0 +1,23 @@
+import { useState } from "react";
+import Header from "../tutor/tutorDashboard/Header";
+import { Outlet } from "react-router-dom";
+import StudentSidebar from "../student/StudentSidebar";
+
+export default function StudentDashboardLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <StudentSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header open={sidebarOpen} setOpen={setSidebarOpen} />
+
+        {/* THIS is where pages render */}
+        <div className="flex-1 overflow-y-auto">
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  );
+}

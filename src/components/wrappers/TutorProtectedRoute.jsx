@@ -19,9 +19,9 @@ export default function TutorProtectedRoute() {
   }
 
   // 🔥 Not admin
-  if (role !== "tutor") {
-    return <Navigate to="/" replace />;
-  }
+  // if (role !== "tutor" || role !== "admin") {
+  //   return <Navigate to="/" replace />;
+  // }
 
   // 🔥 Allowed
   return <Outlet />;

@@ -142,11 +142,11 @@ export const AuthProvider = ({ children }) => {
 
     setUser(user);
 
-    setRole(profile.role);
+    setRole(finalRole);
 
     return {
       success: true,
-      role: profile.role,
+      role: finalRole,
     };
   };
 
@@ -154,6 +154,24 @@ export const AuthProvider = ({ children }) => {
   const updatePassword = async (password) => {
     const { error } = await supabase.auth.updateUser({
       password,
+    });
+
+    if (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+
+    return {
+      success: true,
+    };
+  };
+
+  // 🔑 Send password reset email
+  const resetPassword = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/update-password`,
     });
 
     if (error) {
@@ -226,6 +244,7 @@ export const AuthProvider = ({ children }) => {
         signup,
         logout,
         updatePassword,
+        resetPassword,
         isAuthenticated: !!user,
       }}
     >

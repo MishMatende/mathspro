@@ -5,11 +5,12 @@ import {
   GraduationCap,
   LogOut,
   CalendarDays,
+  Calendar,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
 
-export default function AdminSidebar({ open, setOpen }) {
+export default function StudentSidebar({ open, setOpen }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -19,29 +20,19 @@ export default function AdminSidebar({ open, setOpen }) {
     {
       label: "Dashboard",
       icon: LayoutDashboard,
-      path: "/admin-dashboard",
+      path: "/student-dashboard",
     },
     {
-      label: "Learners",
-      icon: GraduationCap,
-      path: "/admin-learners",
-    },
-    {
-      label: "Tutors",
-      icon: Users,
-      path: "/admin-tutors",
-    },
-    {
-      label: "Lessons",
-      icon: CalendarDays,
-      path: "/admin-lessons",
+      label: "Schedule",
+      icon: Calendar,
+      path: "/student-schedule",
     },
   ];
 
   const handleLogout = async () => {
     await logout();
 
-    navigate("/admin-login");
+    navigate("/login");
   };
 
   return (
@@ -67,7 +58,7 @@ export default function AdminSidebar({ open, setOpen }) {
             MathsPro
           </h1>
 
-          <p className="text-xs text-gray-400 mt-1">Admin Panel</p>
+          <p className="text-xs text-gray-400 mt-1">Student Panel</p>
         </div>
 
         {/* Navigation */}
@@ -117,10 +108,10 @@ export default function AdminSidebar({ open, setOpen }) {
           <div className="flex items-center justify-between gap-3">
             {/* Admin Info */}
             <div className="min-w-0">
-              <p className="text-xs text-gray-400">Admin access</p>
+              <p className="text-xs text-gray-400">Student access</p>
 
               <p className="text-sm font-medium text-gray-800 truncate">
-                {user?.user_metadata?.name || user?.email || "Admin"}
+                {user?.user_metadata?.name || user?.email || "Student"}
               </p>
             </div>
 
