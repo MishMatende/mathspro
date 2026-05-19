@@ -1,298 +1,180 @@
-import { useState, useEffect, useRef } from "react";
-import LessonBlock from "../../components/tutor/LessonBlock";
-import LessonReviewModal from "../../components/tutorModals/LessonReviewModal";
-import {
-  generateTimeSlots,
-  getWeekDays,
-  getSingleDay,
-} from "../../components/tutor/scheduleUtils";
-import { schedule } from "../../components/data/mockData";
-import { ChevronLeft, ChevronRight, Info } from "lucide-react";
+// src/pages/tutor/TutorSchedulePage.jsx
+
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { CalendarDays } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import TutorLessonCalendar from "../../components/tutor/TutorLessonCalendar";
+import LessonReviewModal from "../../components/tutorModals/LessonReviewModal";
+import toast from "react-hot-toast";
 
-const TutorSchedulePage = () => {
-  const [weekOffset, setWeekOffset] = useState(0);
+export default function TutorSchedulePage() {
   const [selectedLesson, setSelectedLesson] = useState(null);
-  const [view, setView] = useState("day");
-  const [dayOffset, setDayOffset] = useState(0);
-  const [direction, setDirection] = useState(null);
+  const [lessons, setLessons] = useState([]);
+  const CACHE_KEY = "tutor_lessons_cache";
+  const [loading, setLoading] = useState(true);
 
-  // Current time (updates every minute)
-  const [currentTime, setCurrentTime] = useState(new Date());
-
+  // 🔥 Load cached lessons immediately
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
 
-    return () => clearInterval(interval);
+      if (cached) {
+        setLessons(JSON.parse(cached));
+      }
+    } catch (err) {
+      console.log("Cache read error:", err);
+    }
   }, []);
 
-  const timeSlots = generateTimeSlots();
-  const days = getWeekDays(weekOffset);
-  const selectedDay = getSingleDay(dayOffset);
+  // 🔥 Fetch tutor lessons
+  const fetchLessons = async () => {
+    setLoading(true);
 
-  // Convert time → vertical position
-  const getCurrentTimePosition = () => {
-    const hours = currentTime.getHours();
-    const minutes = currentTime.getMinutes();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    const totalMinutes = hours * 60 + minutes;
+    if (!user) {
+      setLoading(false);
 
-    const startHour = 8;
-    const minutesFromStart = totalMinutes - startHour * 60;
+      return;
+    }
 
-    const pxPerMinute = 80 / 60; // 1 hour ≈ 80px
+    // 🔥 Find tutor record
+    const { data: tutorData, error: tutorError } = await supabase
+      .from("tutors")
+      .select("*")
+      .eq("email", user.email)
+      .single();
 
-    return Math.max(
-      0,
-      Math.min(minutesFromStart * pxPerMinute, timeSlots.length * 80),
-    );
+    if (tutorError || !tutorData) {
+      console.log(tutorError);
+
+      toast.error("Tutor profile not found");
+
+      setLoading(false);
+
+      return;
+    }
+
+    // 🔥 Fetch tutor lessons
+    const { data, error } = await supabase
+      .from("lessons")
+      .select(
+        `
+        *,
+        learners (
+          id,
+          name
+        )
+      `,
+      )
+      .eq("tutor_id", tutorData.id)
+      .order("lesson_date", {
+        ascending: true,
+      });
+
+    setLoading(false);
+
+    if (error) {
+      console.log(error);
+
+      toast.error("Failed to fetch lessons");
+
+      return;
+    }
+
+    setLessons(data || []);
+
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data || []));
+    } catch (err) {
+      console.log("Cache write error:", err);
+    }
   };
-
-  // Check if day is today
-  const isToday = (date) => {
-    const today = new Date();
-    return new Date(date).toDateString() === today.toDateString();
-  };
-
-  const containerRef = useRef(null);
 
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = getCurrentTimePosition() - 200;
+    const cached = localStorage.getItem(CACHE_KEY);
+
+    if (cached) {
+      setLessons(JSON.parse(cached));
+
+      setLoading(false);
+
+      return;
     }
-  }, [view, dayOffset, weekOffset]);
+
+    fetchLessons();
+  }, []);
 
   return (
     <>
       <motion.div
         animate={{
-          scale: selectedLesson ? 0.96 : 1,
+          scale: selectedLesson ? 0.985 : 1,
           filter: selectedLesson ? "blur(6px)" : "blur(0px)",
-          opacity: selectedLesson ? 0.85 : 1,
+          opacity: selectedLesson ? 0.8 : 1,
         }}
         transition={{
           type: "spring",
           stiffness: 220,
-          damping: 25,
+          damping: 24,
         }}
         style={{
           pointerEvents: selectedLesson ? "none" : "auto",
         }}
-        className="p-3 sm:p-4 lg:p-6"
+        className="relative min-h-screen p-3 sm:p-4 lg:p-6"
       >
         {/* HEADER */}
-        <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs sm:text-sm rounded-lg px-3 py-2 mb-4">
-          <Info size={16} className="mt-0.5" />
-          <p>Access your schedule on this page.</p>
-        </div>
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-            📅 Schedule
-          </h1>
+        <div className="mb-5 flex items-center gap-3">
+          <div
+            className="
+              flex h-11 w-11 items-center justify-center
+              rounded-2xl
+              bg-linear-to-br
+              from-indigo-500
+              to-violet-500
+              text-white
+              shadow-lg
+            "
+          >
+            <CalendarDays size={22} />
+          </div>
 
-          {/* NAV */}
-          <div className="flex gap-2">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              whileHover={{ scale: 1.05 }}
-              onClick={() => {
-                setDirection(-1);
-                view === "day"
-                  ? setDayOffset((p) => p - 1)
-                  : setWeekOffset((p) => p - 1);
-              }}
-              className="p-2 rounded-lg border bg-white shadow-sm hover:bg-gray-50"
-            >
-              <ChevronLeft size={18} />
-            </motion.button>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">
+              Schedule
+            </h1>
 
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              whileHover={{ scale: 1.05 }}
-              onClick={() => {
-                setDirection(1);
-                view === "day"
-                  ? setDayOffset((p) => p + 1)
-                  : setWeekOffset((p) => p + 1);
-              }}
-              className="p-2 rounded-lg border bg-white shadow-sm hover:bg-gray-50"
-            >
-              <ChevronRight size={18} />
-            </motion.button>
+            <p className="text-sm text-slate-500">View your upcoming lessons</p>
           </div>
         </div>
 
-        {/* TABS */}
-        <div className="flex gap-2 mb-4 bg-gray-100 p-1 rounded-lg w-fit">
-          {["day", "week"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setView(tab)}
-              className={`px-4 py-2 text-sm rounded-md capitalize transition
-              ${
-                view === tab
-                  ? "bg-white shadow-sm text-gray-800"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        {/* LOADING */}
+        {loading && (
+          <div className="text-sm text-slate-400">Loading lessons...</div>
+        )}
 
         {/* CALENDAR */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${view}-${view === "day" ? dayOffset : weekOffset}`}
-            initial={{ x: direction * 40, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: direction * -40, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            {/* SCROLL CONTAINER */}
-            <div
-              ref={containerRef}
-              className="max-h-[70vh] overflow-y-auto scroll-smooth"
+        {!loading && (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="calendar"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                duration: 0.3,
+              }}
             >
-              <div className={`${view === "week" ? "overflow-x-auto" : ""}`}>
-                <div
-                  className={`${
-                    view === "week" ? "min-w-175" : "w-full"
-                  } bg-white/80 backdrop-blur-md rounded-3xl shadow-lg border border-gray-200/60 overflow-hidden`}
-                >
-                  {/* HEADER */}
-                  <div
-                    className={`grid ${
-                      view === "day"
-                        ? "grid-cols-[60px_1fr]"
-                        : "grid-cols-[60px_repeat(5,1fr)]"
-                    } border-b border-gray-100 bg-gray-50`}
-                  >
-                    <div />
-
-                    {view === "day" ? (
-                      <div className="p-2 text-center text-sm font-medium text-gray-600">
-                        {selectedDay.label}
-                      </div>
-                    ) : (
-                      days.map((day, i) => (
-                        <div key={i} className="p-2 text-center text-sm">
-                          {day.label}
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* BODY */}
-                  <div
-                    className={`grid ${
-                      view === "day"
-                        ? "grid-cols-[60px_1fr]"
-                        : "grid-cols-[60px_repeat(5,1fr)]"
-                    }`}
-                  >
-                    {/* TIME */}
-                    <div className="border-r">
-                      {timeSlots.map((time, i) => (
-                        <div
-                          key={i}
-                          className="h-20 text-[11px] text-gray-400 px-2 pt-2 font-medium"
-                        >
-                          {time}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* DAY VIEW */}
-                    {view === "day" && (
-                      <div className="relative">
-                        {timeSlots.map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-20 border-b border-gray-100"
-                          />
-                        ))}
-
-                        {/* TIME LINE */}
-                        <div
-                          className="absolute left-0 right-0 flex items-center pointer-events-none z-20"
-                          style={{
-                            top: getCurrentTimePosition(),
-                            transition: "top 0.3s linear",
-                          }}
-                        >
-                          {/* Dot */}
-                          <div className="w-3 h-3 bg-red-500 rounded-full -ml-1.5 shadow-lg" />
-
-                          {/* Line */}
-                          <div className="flex-1 h-0.5 bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]" />
-                        </div>
-
-                        {schedule
-                          .filter((l) => l.date === selectedDay.date)
-                          .map((lesson) => (
-                            <LessonBlock
-                              key={lesson.id}
-                              lesson={lesson}
-                              onClick={() => setSelectedLesson(lesson)}
-                            />
-                          ))}
-                      </div>
-                    )}
-
-                    {/* WEEK VIEW */}
-                    {view === "week" &&
-                      days.map((day, i) => {
-                        const showLine = isToday(day.date);
-
-                        return (
-                          <div
-                            key={i}
-                            className={`relative border-r border-gray-100 hover:bg-gray-50/50 transition ${
-                              isToday(day.date) ? "bg-blue-50/40" : "bg-white"
-                            }`}
-                          >
-                            {timeSlots.map((_, j) => (
-                              <div
-                                key={j}
-                                className="h-20 border-b border-gray-100"
-                              />
-                            ))}
-
-                            {/* TODAY LINE */}
-                            {showLine && (
-                              <div
-                                className="absolute left-0 right-0 flex items-center pointer-events-none"
-                                style={{
-                                  top: getCurrentTimePosition(),
-                                  transition: "top 0.3s linear",
-                                }}
-                              >
-                                <div className="w-2 h-2 bg-red-500 rounded-full -ml-1 shadow" />
-                                <div className="flex-1 h-0.5 bg-red-500 shadow" />
-                              </div>
-                            )}
-
-                            {schedule
-                              .filter((l) => l.date === day.date)
-                              .map((lesson) => (
-                                <LessonBlock
-                                  key={lesson.id}
-                                  lesson={lesson}
-                                  onClick={() => setSelectedLesson(lesson)}
-                                />
-                              ))}
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+              <TutorLessonCalendar
+                schedule={lessons}
+                setSelectedLesson={setSelectedLesson}
+              />
+            </motion.div>
+          </AnimatePresence>
+        )}
       </motion.div>
 
       {/* MODAL */}
@@ -303,6 +185,4 @@ const TutorSchedulePage = () => {
       />
     </>
   );
-};
-
-export default TutorSchedulePage;
+}

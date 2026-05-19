@@ -19,7 +19,6 @@ import AdminProtectedRoute from "./components/wrappers/AdminProtectedRoute";
 import DiagnosticsPage from "./pages/DiagnosticsPage";
 import TutorProtectedRoute from "./components/wrappers/TutorProtectedRoute";
 import AdminLessonsPage from "./pages/adminPages/AdminLessonsPage";
-import TutorSchedule from "./pages/tutorPages/TutorSchedule";
 import LearnerSchedule from "./pages/studentPages/LearnerSchedule";
 import StudentDashboardLayout from "./components/layouts/StudentDashboardLayout";
 import UpdatePassword from "./pages/UpdatePassword";
@@ -46,8 +45,7 @@ function App() {
           <Route path="/learners" element={<LearnersPage />} />
           <Route path="/homework" element={<HomeworkPage />} />
           <Route path="/tests" element={<TestsPage />} />
-          {/* <Route path="/tutor-schedule" element={<TutorSchedulePage />} /> */}
-          <Route path="/tutor-schedule" element={<TutorSchedule />} />
+          <Route path="/tutor-schedule" element={<TutorSchedulePage />} />
         </Route>
       </Route>
 

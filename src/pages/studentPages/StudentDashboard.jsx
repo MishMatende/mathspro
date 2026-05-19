@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-
 import { supabase } from "../../lib/supabase";
-
 import { useAuth } from "../../context/AuthContext";
-
 import toast from "react-hot-toast";
-
 import {
   CalendarDays,
   BookOpen,
@@ -13,22 +9,20 @@ import {
   CheckCircle2,
   AlertCircle,
   User,
+  ClipboardList,
+  FileQuestion,
 } from "lucide-react";
-
 import { motion } from "framer-motion";
 
 export default function StudentDashboard() {
   const { user } = useAuth();
-
   const [loading, setLoading] = useState(true);
-
   const [student, setStudent] = useState(null);
-
   const [nextLesson, setNextLesson] = useState(null);
-
   const [upcomingLessons, setUpcomingLessons] = useState([]);
-
   const [completedLessons, setCompletedLessons] = useState([]);
+  const [pendingHomework, setPendingHomework] = useState(0);
+  const [pendingTests, setPendingTests] = useState(0);
 
   // 🔥 Fetch dashboard data
   const fetchDashboard = async () => {
@@ -85,11 +79,28 @@ export default function StudentDashboard() {
         })
         .limit(5);
 
-      const [studentRes, upcomingRes, completedRes] = await Promise.all([
-        studentPromise,
-        upcomingPromise,
-        completedPromise,
-      ]);
+      // Pending homework
+      const homeworkPromise = supabase
+        .from("homework")
+        .select("*", { count: "exact", head: true })
+        .eq("learner_id", user.id)
+        .eq("status", "pending");
+
+      // Pending tests
+      const testsPromise = supabase
+        .from("tests")
+        .select("*", { count: "exact", head: true })
+        .eq("learner_id", user.id)
+        .eq("status", "pending");
+
+      const [studentRes, upcomingRes, completedRes, homeworkRes, testsRes] =
+        await Promise.all([
+          studentPromise,
+          upcomingPromise,
+          completedPromise,
+          homeworkPromise,
+          testsPromise,
+        ]);
 
       if (studentRes.error) throw studentRes.error;
 
@@ -104,6 +115,10 @@ export default function StudentDashboard() {
       setCompletedLessons(completedRes.data || []);
 
       setNextLesson(upcomingRes.data?.[0] || null);
+
+      setPendingHomework(homeworkRes.count || 0);
+
+      setPendingTests(testsRes.count || 0);
     } catch (err) {
       console.log(err);
 
@@ -148,116 +163,125 @@ export default function StudentDashboard() {
       {!loading && (
         <>
           {/* NEXT LESSON */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="
-              bg-linear-to-br
-              from-orange-500
-              to-orange-600
-              rounded-3xl
-              p-6
-              text-white
-              shadow-lg
-            "
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 text-orange-100 text-sm mb-3">
-                  <CalendarDays size={16} />
-                  Next Lesson
-                </div>
-
-                {nextLesson ? (
-                  <>
-                    <h2 className="text-2xl font-semibold leading-tight">
-                      {nextLesson.title}
-                    </h2>
-
-                    <p className="text-orange-100 mt-2 text-sm">
-                      {nextLesson.lesson_date} •{" "}
-                      {nextLesson.start_time?.slice(0, 5)}
-                    </p>
-
-                    <div className="mt-4 flex items-center gap-2 text-sm">
-                      <User size={15} />
-                      {nextLesson.tutors?.name}
-                    </div>
-                  </>
-                ) : (
-                  <div>
-                    <h2 className="text-xl font-semibold">
-                      No upcoming lessons
-                    </h2>
-
-                    <p className="text-orange-100 text-sm mt-2">
-                      Your next lesson will appear here.
-                    </p>
+          {/* TOP CARDS */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* NEXT LESSON */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="
+      bg-linear-to-br
+      from-orange-500
+      to-orange-600
+      rounded-3xl
+      p-5
+      text-white
+      shadow-lg
+    "
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-orange-100 text-sm mb-4">
+                    <CalendarDays size={16} />
+                    Next Lesson
                   </div>
-                )}
-              </div>
 
-              <div
-                className="
-                w-14 h-14
-                rounded-2xl
-                bg-white/15
-                flex items-center justify-center
-              "
-              >
-                <BookOpen size={28} />
-              </div>
-            </div>
-          </motion.div>
+                  {nextLesson ? (
+                    <>
+                      <h2 className="text-xl font-semibold">
+                        {nextLesson.title || "Lesson"}
+                      </h2>
 
-          {/* STATS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Upcoming */}
+                      <div className="mt-4 space-y-2 text-sm text-orange-50">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays size={14} />
+                          {nextLesson.lesson_date}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Clock3 size={14} />
+                          {nextLesson.start_time?.slice(0, 5)} -{" "}
+                          {nextLesson.end_time?.slice(0, 5)}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <User size={14} />
+                          {nextLesson.tutors?.name}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h2 className="text-lg font-semibold">
+                        No upcoming lessons
+                      </h2>
+
+                      <p className="text-sm text-orange-100 mt-2">
+                        Your next lesson will appear here.
+                      </p>
+                    </>
+                  )}
+                </div>
+
+                <div
+                  className="
+          w-12 h-12
+          rounded-2xl
+          bg-white/15
+          flex items-center justify-center
+        "
+                >
+                  <BookOpen size={24} />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* PENDING HOMEWORK */}
             <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Upcoming Lessons</p>
+                  <p className="text-sm text-gray-400">Pending Homework</p>
 
                   <h3 className="text-3xl font-semibold mt-2">
-                    {stats.upcoming}
+                    {pendingHomework}
                   </h3>
                 </div>
 
                 <div
                   className="
-                  w-12 h-12
-                  rounded-2xl
-                  bg-orange-100
-                  text-orange-600
-                  flex items-center justify-center
-                "
+          w-12 h-12
+          rounded-2xl
+          bg-orange-100
+          text-orange-600
+          flex items-center justify-center
+        "
                 >
-                  <Clock3 size={22} />
+                  <ClipboardList size={22} />
                 </div>
               </div>
             </div>
 
-            {/* Completed */}
+            {/* PENDING TESTS */}
             <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Completed Lessons</p>
+                  <p className="text-sm text-gray-400">Pending Tests</p>
 
                   <h3 className="text-3xl font-semibold mt-2">
-                    {stats.completed}
+                    {pendingTests}
                   </h3>
                 </div>
 
                 <div
                   className="
-                  w-12 h-12
-                  rounded-2xl
-                  bg-green-100
-                  text-green-600
-                  flex items-center justify-center
-                "
+          w-12 h-12
+          rounded-2xl
+          bg-blue-100
+          text-blue-600
+          flex items-center justify-center
+        "
                 >
-                  <CheckCircle2 size={22} />
+                  <FileQuestion size={22} />
                 </div>
               </div>
             </div>
@@ -293,52 +317,53 @@ export default function StudentDashboard() {
                   key={lesson.id}
                   whileHover={{ scale: 1.01 }}
                   className="
-                    border border-gray-100
-                    rounded-2xl
-                    p-4
-                    bg-gray-50
-                  "
+    border border-gray-100
+    rounded-2xl
+    p-4
+    bg-gray-50
+  "
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h4 className="font-medium text-gray-900">
-                        {lesson.title}
-                      </h4>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900">Lesson</h4>
 
-                      <p className="text-sm text-gray-500 mt-1">
-                        {lesson.objective || "No objective"}
-                      </p>
+                      <div className="mt-3 space-y-2 text-sm text-gray-500">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays size={14} />
+                          {lesson.lesson_date}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Clock3 size={14} />
+                          {lesson.start_time?.slice(0, 5)} -{" "}
+                          {lesson.end_time?.slice(0, 5)}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <User size={14} />
+                          {lesson.tutors?.name}
+                        </div>
+
+                        {lesson.objective && (
+                          <div className="pt-1 text-gray-600">
+                            {lesson.objective}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <span
                       className="
-                      text-xs
-                      px-2 py-1
-                      rounded-full
-                      bg-orange-100
-                      text-orange-700
-                    "
+        text-xs
+        px-2 py-1
+        rounded-full
+        bg-orange-100
+        text-orange-700
+        whitespace-nowrap
+      "
                     >
                       {lesson.status}
                     </span>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <CalendarDays size={14} />
-                      {lesson.lesson_date}
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <Clock3 size={14} />
-                      {lesson.start_time?.slice(0, 5)} -{" "}
-                      {lesson.end_time?.slice(0, 5)}
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <User size={14} />
-                      {lesson.tutors?.name}
-                    </div>
                   </div>
                 </motion.div>
               ))}

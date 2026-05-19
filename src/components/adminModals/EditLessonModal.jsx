@@ -13,10 +13,6 @@ export default function EditLessonModal({ lesson, onClose, onUpdated }) {
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-    title: "",
-    objective: "",
-    notes: "",
-
     learner_id: "",
     tutor_id: "",
 
@@ -34,10 +30,6 @@ export default function EditLessonModal({ lesson, onClose, onUpdated }) {
   useEffect(() => {
     if (lesson) {
       setForm({
-        title: lesson.title || "",
-        objective: lesson.objective || "",
-        notes: lesson.notes || "",
-
         learner_id: lesson.learner_id || "",
         tutor_id: lesson.tutor_id || "",
 
@@ -93,10 +85,6 @@ export default function EditLessonModal({ lesson, onClose, onUpdated }) {
     const { error } = await supabase
       .from("lessons")
       .update({
-        title: form.title,
-        objective: form.objective,
-        notes: form.notes,
-
         learner_id: form.learner_id,
         tutor_id: form.tutor_id,
 
@@ -164,64 +152,6 @@ export default function EditLessonModal({ lesson, onClose, onUpdated }) {
 
         {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* TITLE */}
-          <div>
-            <label className="text-sm font-medium">Lesson Title</label>
-
-            <input
-              type="text"
-              name="title"
-              value={form.title}
-              onChange={handleChange}
-              required
-              className="
-                mt-2 w-full
-                border border-gray-200
-                rounded-2xl
-                px-4 py-3
-                text-sm
-              "
-            />
-          </div>
-
-          {/* OBJECTIVE */}
-          <div>
-            <label className="text-sm font-medium">Objective</label>
-
-            <textarea
-              name="objective"
-              value={form.objective}
-              onChange={handleChange}
-              rows={3}
-              className="
-                mt-2 w-full
-                border border-gray-200
-                rounded-2xl
-                px-4 py-3
-                text-sm
-              "
-            />
-          </div>
-
-          {/* NOTES */}
-          <div>
-            <label className="text-sm font-medium">Notes</label>
-
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              rows={3}
-              className="
-                mt-2 w-full
-                border border-gray-200
-                rounded-2xl
-                px-4 py-3
-                text-sm
-              "
-            />
-          </div>
-
           {/* GRID */}
           <div className="grid sm:grid-cols-2 gap-4">
             {/* LEARNER */}
@@ -337,51 +267,6 @@ export default function EditLessonModal({ lesson, onClose, onUpdated }) {
                 "
               />
             </div>
-          </div>
-
-          {/* STATUS */}
-          <div>
-            <label className="text-sm font-medium">Status</label>
-
-            <select
-              name="status"
-              value={form.status}
-              onChange={handleChange}
-              className="
-                mt-2 w-full
-                border border-gray-200
-                rounded-2xl
-                px-4 py-3
-                text-sm
-              "
-            >
-              <option value="scheduled">Scheduled</option>
-
-              <option value="completed">Completed</option>
-
-              <option value="cancelled">Cancelled</option>
-
-              <option value="needs_attention">Needs Attention</option>
-            </select>
-          </div>
-
-          {/* STRUGGLES */}
-          <div>
-            <label className="text-sm font-medium">Struggles</label>
-
-            <textarea
-              name="struggles"
-              value={form.struggles}
-              onChange={handleChange}
-              rows={3}
-              className="
-                mt-2 w-full
-                border border-gray-200
-                rounded-2xl
-                px-4 py-3
-                text-sm
-              "
-            />
           </div>
 
           {/* ACTIONS */}

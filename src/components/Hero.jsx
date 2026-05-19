@@ -27,20 +27,20 @@ const Hero = () => {
         </p>
 
         {/* Buttons */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4 mb-12 md:mb-16">
-          {/* <button
+        {/* <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4 mb-12 md:mb-16">
+          <button
             onClick={() => navigate("/diagnostic")}
             className="w-full sm:w-auto bg-(--color-primary) text-white px-7 py-3.5 rounded-full font-medium cursor-pointer transition hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-orange-200"
           >
             Take Diagnostic Test
-          </button> */}
+          </button>
           <button
             onClick={() => navigate("/login")}
             className="w-full sm:w-auto border border-black-200 text-gray-700 px-7 py-3.5 rounded-full font-medium cursor-pointer transition hover:border-orange-300 hover:text-orange-500 active:scale-[0.98]"
           >
             Login
           </button>
-        </div>
+        </div> */}
 
         {/* Stats */}
         <div className="flex flex-row justify-center items-center gap-6 sm:gap-10 text-center">

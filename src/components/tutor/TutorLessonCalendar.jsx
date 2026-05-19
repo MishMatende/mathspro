@@ -1,6 +1,6 @@
-// src/components/admin/AdminLessonsCalendar.jsx
+// src/components/tutor/TutorLessonCalendar.jsx
 
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 import FullCalendar from "@fullcalendar/react";
 
@@ -8,24 +8,8 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
-import { supabase } from "../../lib/supabase";
-
-import toast from "react-hot-toast";
-
-import { checkLessonCollision } from "../../lib/checkLessonCollision";
-
-export default function AdminLessonsCalendar({
-  lessons,
-  onUpdated,
-  onLessonClick,
-}) {
+export default function TutorLessonCalendar({ schedule, setSelectedLesson }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  // ✅ Cached lessons state
-  const [cachedLessons, setCachedLessons] = useState([]);
-
-  // ✅ Cache key
-  const CACHE_KEY = "admin_lessons_calendar_cache";
 
   // 🔥 Mobile listener
   useEffect(() => {
@@ -38,207 +22,56 @@ export default function AdminLessonsCalendar({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ✅ Load cache immediately
-  useEffect(() => {
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-
-      if (cached) {
-        const parsed = JSON.parse(cached);
-
-        setCachedLessons(parsed);
-      }
-    } catch (err) {
-      console.log("Cache read error:", err);
-    }
-  }, []);
-
-  // ✅ Sync incoming lessons -> cache
-  useEffect(() => {
-    if (!lessons?.length) return;
-
-    setCachedLessons(lessons);
-
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(lessons));
-    } catch (err) {
-      console.log("Cache write error:", err);
-    }
-  }, [lessons]);
-
-  // 🔥 Realtime updates
-  useEffect(() => {
-    const channel = supabase
-      .channel("admin-lessons-calendar")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "lessons",
-        },
-        async () => {
-          onUpdated?.();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [onUpdated]);
-
-  // 🔥 Convert lessons to events
+  // 🔥 Convert schedule -> events
   const events = useMemo(() => {
-    return cachedLessons.map((lesson) => {
-      const displayTitle = lesson.title || lesson.subject || "Lesson";
+    return schedule
+      .map((lesson) => {
+        if (!lesson.lesson_date) return null;
 
-      return {
-        id: lesson.id,
+        const normalizeTime = (time) => {
+          if (!time) return null;
 
-        title: isMobile
-          ? `${lesson.learners?.name || displayTitle}`
-          : `${displayTitle} • ${lesson.learners?.name || ""}`,
+          // Removes seconds if present
+          return String(time).slice(0, 5);
+        };
 
-        display: "block",
+        const startTime = normalizeTime(lesson.start_time || lesson.start);
 
-        start: `${lesson.lesson_date}T${lesson.start_time}`,
+        const endTime = normalizeTime(lesson.end_time || lesson.end);
 
-        end: `${lesson.lesson_date}T${lesson.end_time}`,
+        if (!startTime || !endTime) return null;
 
-        backgroundColor: "#f97316",
+        return {
+          id: lesson.id,
 
-        borderColor: "#f97316",
+          title:
+            lesson.title || lesson.subject || lesson.learners?.name || "Lesson",
 
-        textColor: "#ffffff",
+          start: `${lesson.lesson_date}T${startTime}`,
 
-        classNames: ["modern-calendar-event"],
+          end: `${lesson.lesson_date}T${endTime}`,
 
-        extendedProps: {
-          lesson,
-        },
-      };
-    });
-  }, [cachedLessons, isMobile]);
+          backgroundColor: "#6366f1",
 
-  // 🔥 Optimistic update helper
-  const updateLocalLesson = useCallback(
-    ({ lessonId, lesson_date, start_time, end_time }) => {
-      const updated = cachedLessons.map((lesson) =>
-        String(lesson.id) === String(lessonId)
-          ? {
-              ...lesson,
-              lesson_date,
-              start_time,
-              end_time,
-            }
-          : lesson,
-      );
+          borderColor: "#6366f1",
 
-      setCachedLessons(updated);
+          textColor: "#ffffff",
 
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
-      } catch (err) {
-        console.log(err);
-      }
-    },
-    [cachedLessons],
-  );
-
-  // 🔥 Drag lesson
-  const handleEventDrop = async (info) => {
-    const lessonId = info.event.id;
-
-    const start = info.event.start;
-
-    const end = info.event.end;
-
-    if (!start || !end) return;
-
-    const lesson_date = start.toISOString().split("T")[0];
-
-    const start_time = start.toTimeString().slice(0, 5);
-
-    const end_time = end.toTimeString().slice(0, 5);
-
-    const loadingToast = toast.loading("Updating lesson...");
-
-    const lesson = info.event.extendedProps.lesson;
-
-    // ✅ Collision check
-    const collision = await checkLessonCollision({
-      lessonId: lesson.id,
-
-      learner_id: lesson.learner_id,
-
-      tutor_id: lesson.tutor_id,
-
-      lesson_date,
-
-      start_time,
-
-      end_time,
-    });
-
-    if (collision.collision) {
-      toast.dismiss(loadingToast);
-
-      toast.error("Schedule conflict detected");
-
-      info.revert();
-
-      return;
-    }
-
-    // ✅ Optimistic update
-    updateLocalLesson({
-      lessonId,
-      lesson_date,
-      start_time,
-      end_time,
-    });
-
-    const { error } = await supabase
-      .from("lessons")
-      .update({
-        lesson_date,
-        start_time,
-        end_time,
+          extendedProps: {
+            lesson,
+          },
+        };
       })
-      .eq("id", lessonId);
-
-    toast.dismiss(loadingToast);
-
-    if (error) {
-      console.log(error);
-
-      toast.error("Failed to update lesson");
-
-      info.revert();
-
-      onUpdated?.();
-
-      return;
-    }
-
-    toast.success("Lesson updated");
-
-    onUpdated?.();
-  };
-
-  // 🔥 Resize lesson
-  const handleEventResize = async (info) => {
-    await handleEventDrop(info);
-  };
+      .filter(Boolean);
+  }, [schedule]);
 
   return (
     <div className="calendar-wrapper">
       <FullCalendar
         key={isMobile ? "mobile" : "desktop"}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView={isMobile ? "timeGridDay" : "timeGridWeek"}
-        editable
+        initialView={isMobile ? "timeGridWeek" : "timeGridWeek"}
+        editable={false}
         selectable
         nowIndicator
         allDaySlot={false}
@@ -287,16 +120,12 @@ export default function AdminLessonsCalendar({
           "cursor-pointer",
         ]}
         eventClick={(info) => {
-          const lesson = cachedLessons.find(
-            (l) => String(l.id) === String(info.event.id),
-          );
+          const lesson = info.event.extendedProps.lesson;
 
           if (lesson) {
-            onLessonClick?.(lesson);
+            setSelectedLesson(lesson);
           }
         }}
-        eventDrop={handleEventDrop}
-        eventResize={handleEventResize}
         eventContent={(eventInfo) => (
           <div
             className="

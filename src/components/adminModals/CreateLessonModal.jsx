@@ -13,9 +13,6 @@ export default function CreateLessonModal({ open, onClose, onCreated }) {
   const [formData, setFormData] = useState({
     learner_id: "",
     tutor_id: "",
-    title: "",
-    objective: "",
-    notes: "",
     lesson_date: "",
     start_time: "",
     end_time: "",
@@ -120,12 +117,6 @@ export default function CreateLessonModal({ open, onClose, onCreated }) {
 
           tutor_id: formData.tutor_id,
 
-          title: formData.title,
-
-          objective: formData.objective,
-
-          notes: formData.notes,
-
           lesson_date: formData.lesson_date,
 
           start_time: formData.start_time,
@@ -181,12 +172,6 @@ export default function CreateLessonModal({ open, onClose, onCreated }) {
 
             tutor_id: formData.tutor_id,
 
-            title: formData.title,
-
-            objective: formData.objective,
-
-            notes: formData.notes,
-
             lesson_date: currentDate,
 
             start_time: formData.start_time,
@@ -233,12 +218,6 @@ export default function CreateLessonModal({ open, onClose, onCreated }) {
         learner_id: "",
 
         tutor_id: "",
-
-        title: "",
-
-        objective: "",
-
-        notes: "",
 
         lesson_date: "",
 
@@ -351,47 +330,6 @@ export default function CreateLessonModal({ open, onClose, onCreated }) {
                 rounded-2xl
                 px-4 py-3
                 bg-gray-50
-              "
-            />
-          </div>
-
-          {/* TITLE */}
-          <div>
-            <label className="text-sm font-medium mb-1 block">
-              Lesson Title
-            </label>
-
-            <input
-              type="text"
-              name="title"
-              placeholder="Algebra Revision"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              className="
-                w-full
-                border border-gray-200
-                rounded-2xl
-                px-4 py-3
-              "
-            />
-          </div>
-
-          {/* OBJECTIVE */}
-          <div>
-            <label className="text-sm font-medium mb-1 block">Objective</label>
-
-            <textarea
-              name="objective"
-              placeholder="Understand quadratic equations..."
-              value={formData.objective}
-              onChange={handleChange}
-              rows={3}
-              className="
-                w-full
-                border border-gray-200
-                rounded-2xl
-                px-4 py-3
               "
             />
           </div>
@@ -524,25 +462,6 @@ export default function CreateLessonModal({ open, onClose, onCreated }) {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* NOTES */}
-          <div>
-            <label className="text-sm font-medium mb-1 block">Notes</label>
-
-            <textarea
-              name="notes"
-              placeholder="Bring worksheets..."
-              value={formData.notes}
-              onChange={handleChange}
-              rows={3}
-              className="
-                w-full
-                border border-gray-200
-                rounded-2xl
-                px-4 py-3
-              "
-            />
           </div>
 
           {/* ACTIONS */}

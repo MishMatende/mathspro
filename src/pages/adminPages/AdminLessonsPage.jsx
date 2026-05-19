@@ -1,26 +1,27 @@
 import { useEffect, useState } from "react";
-
 import { supabase } from "../../lib/supabase";
-
-import { CalendarDays, Plus, Clock3, User, Pencil } from "lucide-react";
-
+import {
+  CalendarDays,
+  Plus,
+  Clock3,
+  UserRound,
+  GraduationCap,
+  Pencil,
+  Filter,
+} from "lucide-react";
 import { motion } from "framer-motion";
-
 import toast from "react-hot-toast";
-
 import CreateLessonModal from "../../components/adminModals/CreateLessonModal";
-
 import EditLessonModal from "../../components/adminModals/EditLessonModal";
 import AdminLessonsCalendar from "../../components/admin/AdminLessonsCalendar";
 
 export default function AdminLessonsPage() {
   const [lessons, setLessons] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const [dateFilter, setDateFilter] = useState("weekly");
+  const [tutorFilter, setTutorFilter] = useState("all");
 
   // 🔥 Fetch lessons
   const fetchLessons = async () => {
@@ -84,6 +85,37 @@ export default function AdminLessonsPage() {
 
     fetchLessons();
   };
+
+  const today = new Date();
+
+  const filteredLessons = lessons.filter((lesson) => {
+    // ✅ Tutor filter
+    const tutorMatch =
+      tutorFilter === "all" || String(lesson.tutor_id) === String(tutorFilter);
+
+    // ✅ Date filter
+    const lessonDate = new Date(lesson.lesson_date);
+
+    let dateMatch = true;
+
+    if (dateFilter === "weekly") {
+      const nextWeek = new Date();
+
+      nextWeek.setDate(today.getDate() + 7);
+
+      dateMatch = lessonDate >= today && lessonDate <= nextWeek;
+    }
+
+    if (dateFilter === "monthly") {
+      const nextMonth = new Date();
+
+      nextMonth.setMonth(today.getMonth() + 1);
+
+      dateMatch = lessonDate >= today && lessonDate <= nextMonth;
+    }
+
+    return tutorMatch && dateMatch;
+  });
 
   return (
     <>
@@ -152,9 +184,77 @@ export default function AdminLessonsPage() {
           }}
         />
 
+        {/* FILTERS */}
+        <div
+          className="
+    mt-8 mb-5
+    flex flex-col lg:flex-row
+    lg:items-center lg:justify-between
+    gap-4
+  "
+        >
+          {/* LEFT */}
+          <div className="flex items-center gap-2">
+            <Filter size={18} className="text-slate-500" />
+
+            <h2 className="font-semibold text-slate-800">Upcoming Lessons</h2>
+          </div>
+
+          {/* FILTER CONTROLS */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* WEEKLY / MONTHLY */}
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="
+        px-4 py-3
+        rounded-2xl
+        border border-slate-200
+        bg-white
+        text-sm
+        font-medium
+        shadow-sm
+      "
+            >
+              <option value="weekly">This Week</option>
+
+              <option value="monthly">This Month</option>
+            </select>
+
+            {/* TUTOR FILTER */}
+            <select
+              value={tutorFilter}
+              onChange={(e) => setTutorFilter(e.target.value)}
+              className="
+        px-4 py-3
+        rounded-2xl
+        border border-slate-200
+        bg-white
+        text-sm
+        font-medium
+        shadow-sm
+      "
+            >
+              <option value="all">All Tutors</option>
+
+              {[
+                ...new Map(
+                  lessons.map((lesson) => [lesson.tutors?.id, lesson.tutors]),
+                ).values(),
+              ]
+                .filter(Boolean)
+                .map((tutor) => (
+                  <option key={tutor.id} value={tutor.id}>
+                    {tutor.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        </div>
+
         {/* GRID */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 mt-2">
-          {lessons.map((lesson) => (
+          {filteredLessons.map((lesson) => (
             <motion.div
               key={lesson.id}
               whileHover={{ scale: 1.01 }}
@@ -170,12 +270,8 @@ export default function AdminLessonsPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="font-semibold text-gray-900">
-                    {lesson.title}
+                    {lesson.title || "Lesson"}
                   </h3>
-
-                  <p className="text-sm text-gray-500 mt-1">
-                    {lesson.objective || "No objective"}
-                  </p>
                 </div>
 
                 <span
@@ -196,14 +292,14 @@ export default function AdminLessonsPage() {
               <div className="mt-5 space-y-3">
                 {/* Learner */}
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <User size={15} />
+                  <GraduationCap size={15} className="text-indigo-500" />
 
                   <span>{lesson.learners?.name}</span>
                 </div>
 
                 {/* Tutor */}
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <User size={15} />
+                  <UserRound size={15} className="text-orange-500" />
 
                   <span>{lesson.tutors?.name}</span>
                 </div>

@@ -1,34 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-
 import FullCalendar from "@fullcalendar/react";
-
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-
 import { supabase } from "../../lib/supabase";
-
 import { useAuth } from "../../context/AuthContext";
-
 import { getCache, setCache } from "../../lib/cache";
-
 import toast from "react-hot-toast";
+import StudentLessonCalendar from "../../components/student/StudentLessonCalendar";
 
 export default function LearnerSchedule() {
   const { user } = useAuth();
-
   const [learner, setLearner] = useState(null);
-
   const [lessons, setLessons] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [selectedLesson, setSelectedLesson] = useState(null);
-
-  // 🔥 Calendar URL
-  const calendarUrl = learner
-    ? `https://boeiswmtpvzmcjzctkid.supabase.co/functions/v1/calendar-feed?token=${learner.calendar_token}&type=learner`
-    : "#";
 
   // 🔥 Fetch learner profile
   const fetchLearner = async () => {
@@ -151,83 +137,12 @@ export default function LearnerSchedule() {
 
   return (
     <>
-      <div className="p-3 sm:p-4 lg:p-6">
-        {/* HEADER */}
-        <div className="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-semibold">My Schedule</h1>
-
-            <p className="text-sm text-gray-400 mt-1">
-              View your upcoming lessons
-            </p>
-          </div>
-
-          {/* 🔥 CALENDAR SUBSCRIBE */}
-          <a
-            href={calendarUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="
-              inline-flex items-center justify-center
-              px-4 py-2
-              rounded-2xl
-              bg-orange-500
-              text-white
-              text-sm
-              font-medium
-              shadow-sm
-              hover:bg-orange-600
-              transition
-              whitespace-nowrap
-            "
-          >
-            Subscribe Calendar
-          </a>
-        </div>
-
-        {/* CALENDAR */}
-        <div
-          className="
-            bg-white
-            rounded-3xl
-            border border-gray-100
-            shadow-sm
-            overflow-hidden
-          "
-        >
-          {loading ? (
-            <div className="p-8 text-sm text-gray-400">Loading lessons...</div>
-          ) : (
-            <div className="p-2 sm:p-4">
-              <FullCalendar
-                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                initialView="timeGridWeek"
-                height="auto"
-                events={events}
-                nowIndicator={true}
-                editable={false}
-                selectable={false}
-                headerToolbar={{
-                  left: "prev,next today",
-                  center: "title",
-                  right: "dayGridMonth,timeGridWeek,timeGridDay",
-                }}
-                eventClick={(info) => {
-                  setSelectedLesson({
-                    ...info.event.extendedProps,
-
-                    title: info.event.title,
-
-                    start: info.event.start?.toLocaleString(),
-
-                    end: info.event.end?.toLocaleString(),
-                  });
-                }}
-              />
-            </div>
-          )}
-        </div>
-      </div>
+      <StudentLessonCalendar
+        lessons={lessons}
+        onLessonClick={(lesson) => {
+          setSelectedLesson(lesson);
+        }}
+      />
 
       {/* 🔥 LESSON MODAL */}
       {selectedLesson && (

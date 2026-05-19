@@ -30,7 +30,7 @@ const Navbar = () => {
           >
             Home
           </button>
-          <button
+          {/* <button
             onClick={() => handleNav("/diagnostic")}
             className="hover:text-black cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
           >
@@ -38,7 +38,7 @@ const Navbar = () => {
           </button>
           <button className="hover:text-black cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]">
             How It Works
-          </button>
+          </button> */}
           <button className="hover:text-black cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]">
             Contact
           </button>
@@ -49,7 +49,7 @@ const Navbar = () => {
           {/* Tutor Login */}
           <button
             onClick={() => navigate("/login")}
-            className="border py-2 px-4 rounded-full text-sm text-gray-700 cursor-pointer transition hover:scale-[1.02] active:scale-[0.98]"
+            className="border py-2 px-4 rounded-full text-sm text-gray-700 cursor-pointer transition hover:border-orange-300 hover:text-orange-500 hover:scale-[1.02] active:scale-[0.98]"
           >
             Login
           </button>

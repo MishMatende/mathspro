@@ -1,6 +1,6 @@
-// src/components/admin/AdminLessonsCalendar.jsx
+// src/components/student/StudentLessonCalendar.jsx
 
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useEffect, useState } from "react";
 
 import FullCalendar from "@fullcalendar/react";
 
@@ -8,26 +8,12 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
-import { supabase } from "../../lib/supabase";
+import { CalendarDays, Clock3, User, BookOpen } from "lucide-react";
 
-import toast from "react-hot-toast";
-
-import { checkLessonCollision } from "../../lib/checkLessonCollision";
-
-export default function AdminLessonsCalendar({
-  lessons,
-  onUpdated,
-  onLessonClick,
-}) {
+export default function StudentLessonCalendar({ lessons = [], onLessonClick }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // ✅ Cached lessons state
-  const [cachedLessons, setCachedLessons] = useState([]);
-
-  // ✅ Cache key
-  const CACHE_KEY = "admin_lessons_calendar_cache";
-
-  // 🔥 Mobile listener
+  // 🔥 Responsive listener
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -38,208 +24,76 @@ export default function AdminLessonsCalendar({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ✅ Load cache immediately
-  useEffect(() => {
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-
-      if (cached) {
-        const parsed = JSON.parse(cached);
-
-        setCachedLessons(parsed);
-      }
-    } catch (err) {
-      console.log("Cache read error:", err);
-    }
-  }, []);
-
-  // ✅ Sync incoming lessons -> cache
-  useEffect(() => {
-    if (!lessons?.length) return;
-
-    setCachedLessons(lessons);
-
-    try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(lessons));
-    } catch (err) {
-      console.log("Cache write error:", err);
-    }
-  }, [lessons]);
-
-  // 🔥 Realtime updates
-  useEffect(() => {
-    const channel = supabase
-      .channel("admin-lessons-calendar")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "lessons",
-        },
-        async () => {
-          onUpdated?.();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [onUpdated]);
-
-  // 🔥 Convert lessons to events
+  // 🔥 Convert lessons -> calendar events
   const events = useMemo(() => {
-    return cachedLessons.map((lesson) => {
-      const displayTitle = lesson.title || lesson.subject || "Lesson";
+    return lessons.map((lesson) => {
+      const title = lesson.title || lesson.subject || "Lesson";
 
       return {
         id: lesson.id,
 
         title: isMobile
-          ? `${lesson.learners?.name || displayTitle}`
-          : `${displayTitle} • ${lesson.learners?.name || ""}`,
-
-        display: "block",
+          ? `${lesson.tutors?.name || title}`
+          : `${title} • ${lesson.tutors?.name || ""}`,
 
         start: `${lesson.lesson_date}T${lesson.start_time}`,
 
         end: `${lesson.lesson_date}T${lesson.end_time}`,
 
-        backgroundColor: "#f97316",
+        display: "block",
 
-        borderColor: "#f97316",
+        backgroundColor: "#8b5cf6",
+
+        borderColor: "#8b5cf6",
 
         textColor: "#ffffff",
 
-        classNames: ["modern-calendar-event"],
-
         extendedProps: {
-          lesson,
+          tutor: lesson.tutors?.name,
+
+          subject: lesson.subject,
+
+          objective: lesson.objective,
+
+          notes: lesson.notes,
+
+          status: lesson.status,
+
+          rawLesson: lesson,
         },
       };
     });
-  }, [cachedLessons, isMobile]);
-
-  // 🔥 Optimistic update helper
-  const updateLocalLesson = useCallback(
-    ({ lessonId, lesson_date, start_time, end_time }) => {
-      const updated = cachedLessons.map((lesson) =>
-        String(lesson.id) === String(lessonId)
-          ? {
-              ...lesson,
-              lesson_date,
-              start_time,
-              end_time,
-            }
-          : lesson,
-      );
-
-      setCachedLessons(updated);
-
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(updated));
-      } catch (err) {
-        console.log(err);
-      }
-    },
-    [cachedLessons],
-  );
-
-  // 🔥 Drag lesson
-  const handleEventDrop = async (info) => {
-    const lessonId = info.event.id;
-
-    const start = info.event.start;
-
-    const end = info.event.end;
-
-    if (!start || !end) return;
-
-    const lesson_date = start.toISOString().split("T")[0];
-
-    const start_time = start.toTimeString().slice(0, 5);
-
-    const end_time = end.toTimeString().slice(0, 5);
-
-    const loadingToast = toast.loading("Updating lesson...");
-
-    const lesson = info.event.extendedProps.lesson;
-
-    // ✅ Collision check
-    const collision = await checkLessonCollision({
-      lessonId: lesson.id,
-
-      learner_id: lesson.learner_id,
-
-      tutor_id: lesson.tutor_id,
-
-      lesson_date,
-
-      start_time,
-
-      end_time,
-    });
-
-    if (collision.collision) {
-      toast.dismiss(loadingToast);
-
-      toast.error("Schedule conflict detected");
-
-      info.revert();
-
-      return;
-    }
-
-    // ✅ Optimistic update
-    updateLocalLesson({
-      lessonId,
-      lesson_date,
-      start_time,
-      end_time,
-    });
-
-    const { error } = await supabase
-      .from("lessons")
-      .update({
-        lesson_date,
-        start_time,
-        end_time,
-      })
-      .eq("id", lessonId);
-
-    toast.dismiss(loadingToast);
-
-    if (error) {
-      console.log(error);
-
-      toast.error("Failed to update lesson");
-
-      info.revert();
-
-      onUpdated?.();
-
-      return;
-    }
-
-    toast.success("Lesson updated");
-
-    onUpdated?.();
-  };
-
-  // 🔥 Resize lesson
-  const handleEventResize = async (info) => {
-    await handleEventDrop(info);
-  };
+  }, [lessons, isMobile]);
 
   return (
     <div className="calendar-wrapper">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-5">
+        <div
+          className="
+            flex h-12 w-12 items-center justify-center
+            rounded-2xl
+            bg-indigo-100
+            text-indigo-600
+          "
+        >
+          <CalendarDays size={22} />
+        </div>
+
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">My Schedule</h2>
+
+          <p className="text-sm text-slate-500">View your upcoming lessons</p>
+        </div>
+      </div>
+
+      {/* Calendar */}
       <FullCalendar
         key={isMobile ? "mobile" : "desktop"}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView={isMobile ? "timeGridDay" : "timeGridWeek"}
-        editable
-        selectable
+        editable={false}
+        selectable={false}
         nowIndicator
         allDaySlot={false}
         height="calc(100vh - 220px)"
@@ -287,16 +141,18 @@ export default function AdminLessonsCalendar({
           "cursor-pointer",
         ]}
         eventClick={(info) => {
-          const lesson = cachedLessons.find(
-            (l) => String(l.id) === String(info.event.id),
-          );
+          const lesson = info.event.extendedProps.rawLesson;
 
-          if (lesson) {
-            onLessonClick?.(lesson);
-          }
+          onLessonClick?.({
+            ...lesson,
+
+            tutor: lesson.tutors?.name || "-",
+
+            start: info.event.start?.toLocaleString(),
+
+            end: info.event.end?.toLocaleString(),
+          });
         }}
-        eventDrop={handleEventDrop}
-        eventResize={handleEventResize}
         eventContent={(eventInfo) => (
           <div
             className="
@@ -319,11 +175,19 @@ export default function AdminLessonsCalendar({
             <div className="text-[13px] font-bold leading-tight line-clamp-2">
               {eventInfo.event.title}
             </div>
+
+            {!isMobile && (
+              <div className="mt-2 flex items-center gap-1 text-[11px] opacity-90">
+                <User size={11} />
+
+                <span>{eventInfo.event.extendedProps?.tutor}</span>
+              </div>
+            )}
           </div>
         )}
       />
 
-      {/* 🔥 FullCalendar Styling */}
+      {/* Styles */}
       <style>
         {`
 /* ===== WRAPPER ===== */
@@ -472,39 +336,22 @@ export default function AdminLessonsCalendar({
   overflow: hidden;
 }
 
-/* ===== SCROLLBAR ===== */
-
-.fc-scroller::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.fc-scroller::-webkit-scrollbar-thumb {
-  background: #dbeafe;
-  border-radius: 999px;
-}
-
-/* ===== MOBILE FIXES ===== */
+/* ===== MOBILE ===== */
 
 @media (max-width: 768px) {
   .calendar-wrapper {
-    width: 100%;
     border-radius: 24px;
-    overflow: hidden;
   }
 
   .fc .fc-toolbar {
     padding: 14px !important;
-    display: flex;
     flex-direction: column;
-    gap: 12px;
     align-items: stretch !important;
   }
 
   .fc-toolbar-chunk {
     display: flex;
     justify-content: center;
-    flex-wrap: wrap;
     gap: 8px;
     width: 100%;
   }
@@ -516,54 +363,18 @@ export default function AdminLessonsCalendar({
 
   .fc .fc-button {
     flex: 1;
-    min-width: 0;
     height: 38px;
     font-size: 0.78rem !important;
     padding: 0 10px !important;
-    border-radius: 12px !important;
-  }
-
-  .fc-view-harness {
-    min-height: 75vh !important;
-  }
-
-  .fc-scrollgrid {
-    min-width: 100% !important;
-  }
-
-  .fc-timegrid-body {
-    width: 100% !important;
-  }
-
-  .fc-timegrid-cols table {
-    width: 100% !important;
   }
 
   .fc-timegrid-slot {
     height: 72px !important;
   }
 
-  .fc .fc-timegrid-slot-label {
-    font-size: 0.7rem;
-    padding-right: 6px;
-  }
-
   .fc-timegrid-event {
     inset-inline: 2px !important;
     border-radius: 16px !important;
-  }
-
-  .modern-event {
-    padding: 8px 6px !important;
-  }
-
-  .modern-event-title {
-    font-size: 0.72rem !important;
-    line-height: 1.1;
-  }
-
-  .modern-event-time {
-    font-size: 0.62rem !important;
   }
 }
 `}

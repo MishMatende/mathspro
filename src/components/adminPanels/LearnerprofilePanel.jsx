@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
-
 import { getCache, setCache } from "../../lib/cache";
+import { useAuth } from "../../context/AuthContext";
+import { Mail, Loader2 } from "lucide-react";
 
 export default function LearnerProfilePanel({ learner, onClose }) {
   const [tutors, setTutors] = useState([]);
   const [selectedTutorId, setSelectedTutorId] = useState("");
   const [assigning, setAssigning] = useState(false);
+  const { resetPassword } = useAuth();
+  const [sendingReset, setSendingReset] = useState(false);
 
   // 🔥 Sync assigned tutor from learner
   useEffect(() => {
@@ -90,43 +93,73 @@ export default function LearnerProfilePanel({ learner, onClose }) {
     toast.success("Tutor assigned");
   };
 
+  const handleSendReset = async () => {
+    if (!learner.email) {
+      toast.error("No email found");
+      return;
+    }
+
+    setSendingReset(true);
+
+    const result = await resetPassword(learner.email);
+
+    setSendingReset(false);
+
+    if (!result.success) {
+      toast.error(result.error || "Failed to send email");
+      return;
+    }
+
+    toast.success("Password reset email sent");
+  };
+
   if (!learner) return null;
 
   return (
     <div
       className="
-    fixed right-0 top-0 h-full
-    w-full sm:w-96
-    bg-white z-50
-    shadow-2xl
-    overflow-y-auto
-    flex flex-col
+    fixed inset-0 z-50
+    bg-black/20 backdrop-blur-[2px]
+    flex justify-end
   "
+      onClick={onClose}
     >
-      {/* HEADER */}
-      <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Learner Profile</h2>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="
+      h-full w-full sm:w-96
+      bg-white
+      shadow-2xl
+      overflow-y-auto
+      flex flex-col
+    "
+      >
+        {/* HEADER */}
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Learner Profile
+          </h2>
 
-        <button
-          onClick={onClose}
-          className="
+          <button
+            onClick={onClose}
+            className="
         text-sm font-medium
         text-gray-500
         hover:text-black
         transition
       "
-        >
-          Close
-        </button>
-      </div>
+          >
+            Close
+          </button>
+        </div>
 
-      {/* CONTENT */}
-      <div className="flex-1 px-5 py-5">
-        {/* PROFILE */}
-        <div className="flex items-start gap-4">
-          {/* Avatar */}
-          <div
-            className="
+        {/* CONTENT */}
+        <div className="flex-1 overflow-y-auto px-5 py-5">
+          {/* PROFILE */}
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div
+              className="
           w-14 h-14 rounded-2xl
           bg-orange-100
           flex items-center justify-center
@@ -134,79 +167,79 @@ export default function LearnerProfilePanel({ learner, onClose }) {
           font-bold text-lg
           shrink-0
         "
-          >
-            {learner.name?.charAt(0)}
+            >
+              {learner.name?.charAt(0)}
+            </div>
+
+            <div className="min-w-0">
+              <h3 className="text-2xl font-bold text-gray-900 leading-tight">
+                {learner.name}
+              </h3>
+
+              <p className="text-sm text-gray-500 mt-1">
+                {learner.curriculum} • {learner.level}
+              </p>
+            </div>
           </div>
 
-          <div className="min-w-0">
-            <h3 className="text-2xl font-bold text-gray-900 leading-tight">
-              {learner.name}
-            </h3>
+          {/* INFO CARDS */}
+          <div className="mt-7 space-y-3">
+            {/* Student Email */}
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-1">
+                Student Email
+              </p>
 
-            <p className="text-sm text-gray-500 mt-1">
-              {learner.curriculum} • {learner.level}
-            </p>
+              <p className="text-sm font-medium text-gray-900 wrap-break-word">
+                {learner.email || "-"}
+              </p>
+            </div>
+
+            {/* Student Phone */}
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-1">
+                Student Phone
+              </p>
+
+              <p className="text-sm font-medium text-gray-900">
+                {learner.phone || "-"}
+              </p>
+            </div>
+
+            {/* Parent Email 1 */}
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-1">
+                Parent Email 1
+              </p>
+
+              <p className="text-sm font-medium text-gray-900 wrap-break-word">
+                {learner.parent_email_1 || "-"}
+              </p>
+            </div>
+
+            {/* Parent Email 2 */}
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-1">
+                Parent Email 2
+              </p>
+
+              <p className="text-sm font-medium text-gray-900 wrap-break-word">
+                {learner.parent_email_2 || "-"}
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* INFO CARDS */}
-        <div className="mt-7 space-y-3">
-          {/* Student Email */}
-          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-1">
-              Student Email
-            </p>
+          {/* ASSIGN TUTOR */}
+          <div className="mt-8">
+            <label className="block text-sm font-semibold text-gray-800 mb-3">
+              Assign Tutor
+            </label>
 
-            <p className="text-sm font-medium text-gray-900 wrap-break-word">
-              {learner.email || "-"}
-            </p>
-          </div>
-
-          {/* Student Phone */}
-          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-1">
-              Student Phone
-            </p>
-
-            <p className="text-sm font-medium text-gray-900">
-              {learner.phone || "-"}
-            </p>
-          </div>
-
-          {/* Parent Email 1 */}
-          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-1">
-              Parent Email 1
-            </p>
-
-            <p className="text-sm font-medium text-gray-900 wrap-break-word">
-              {learner.parent_email_1 || "-"}
-            </p>
-          </div>
-
-          {/* Parent Email 2 */}
-          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400 mb-1">
-              Parent Email 2
-            </p>
-
-            <p className="text-sm font-medium text-gray-900 wrap-break-word">
-              {learner.parent_email_2 || "-"}
-            </p>
-          </div>
-        </div>
-
-        {/* ASSIGN TUTOR */}
-        <div className="mt-8">
-          <label className="block text-sm font-semibold text-gray-800 mb-3">
-            Assign Tutor
-          </label>
-
-          <select
-            disabled={assigning}
-            value={selectedTutorId}
-            onChange={(e) => assignTutor(e.target.value)}
-            className="
+            <select
+              disabled={assigning}
+              value={selectedTutorId}
+              onChange={(e) => assignTutor(e.target.value)}
+              className="
           w-full h-13
           bg-gray-50
           border border-gray-200
@@ -219,15 +252,61 @@ export default function LearnerProfilePanel({ learner, onClose }) {
           focus:border-orange-400
           transition
         "
-          >
-            <option value="">Select Tutor</option>
+            >
+              <option value="">Select Tutor</option>
 
-            {tutors.map((tutor) => (
-              <option key={tutor.id} value={tutor.id}>
-                {tutor.name}
-              </option>
-            ))}
-          </select>
+              {tutors.map((tutor) => (
+                <option key={tutor.id} value={tutor.id}>
+                  {tutor.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {/* FOOTER ACTIONS */}
+        <div
+          className="
+    sticky bottom-0
+    bg-white/95
+    backdrop-blur
+    border-t border-gray-100
+    p-5
+  "
+        >
+          <button
+            onClick={handleSendReset}
+            disabled={sendingReset}
+            className="
+      w-full
+      flex items-center justify-center gap-2
+      h-12
+      rounded-2xl
+      border border-orange-200
+      bg-orange-50
+      hover:bg-orange-100
+      text-orange-700
+      font-medium text-sm
+      transition-all
+      disabled:opacity-50
+      disabled:cursor-not-allowed
+    "
+          >
+            {sendingReset ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Sending Email...
+              </>
+            ) : (
+              <>
+                <Mail size={16} />
+                Send Password Reset Email
+              </>
+            )}
+          </button>
+
+          <p className="text-xs text-gray-400 text-center mt-3 leading-relaxed">
+            Sends a secure password reset link to the user's email.
+          </p>
         </div>
       </div>
     </div>
