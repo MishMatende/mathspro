@@ -32,7 +32,7 @@ export default function HowItWorksPage() {
 
     {
       icon: <Brain size={24} />,
-      title: "We Master Concepts Deeply",
+      title: "We Develop Strong Conceptual Understanding",
       text: "Beyond exam prep, we focus on understanding foundational concepts and building long-term confidence.",
     },
 
@@ -52,9 +52,7 @@ export default function HowItWorksPage() {
 
     "Real problem-solving skills",
 
-    "Interactive maths activities",
-
-    "Supportive maths community",
+    // "Interactive maths activities",
   ];
 
   return (
@@ -503,7 +501,7 @@ export default function HowItWorksPage() {
                   leading-tight
                 "
               >
-                We Explore The World Through Mathematical Eyes
+                Exploring The World Through Mathematical Eyes
               </h2>
 
               <p className="mt-6 sm:mt-8 text-orange-50 text-base sm:text-lg leading-7 sm:leading-8">
