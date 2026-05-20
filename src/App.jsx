@@ -24,12 +24,16 @@ import StudentDashboardLayout from "./components/layouts/StudentDashboardLayout"
 import UpdatePassword from "./pages/UpdatePassword";
 import StudentDashboard from "./pages/studentPages/StudentDashboard";
 import StudentHomeworkPage from "./pages/studentPages/StudentHomeworkPage";
+import ReachOutPage from "./pages/ReachOutPage";
+import HowItWorksPage from "./pages/HowItWorksPage";
 
 function App() {
   return (
     <Routes>
       {/* No layout */}
       <Route path="/" element={<Home />} />
+      <Route path="/reach-out" element={<ReachOutPage />} />
+      <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/update-password" element={<UpdatePassword />} />

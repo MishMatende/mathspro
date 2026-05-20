@@ -15,8 +15,9 @@ const Hero = () => {
 
         {/* Headline */}
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6 max-w-3xl mx-auto">
-          Personalized Math Learning <br className="hidden sm:block" /> That
-          Actually Works
+          Personalized math learning built around
+          <br className="hidden sm:block" />
+          every learner’s pace, strengths, and growth areas.
         </h1>
 
         {/* Description */}

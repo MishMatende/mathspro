@@ -62,7 +62,12 @@ export default function CreateUserModal({
     }
 
     if (role === "student") {
-      if (!formData.curriculum || !formData.level || !formData.phone) {
+      if (
+        !formData.curriculum ||
+        !formData.level ||
+        !formData.phone ||
+        !formData.parentEmail1
+      ) {
         toast.error("Please fill all student fields");
         return false;
       }
@@ -188,14 +193,15 @@ export default function CreateUserModal({
             <input
               name="phone"
               required
-              placeholder="Student Phone*"
+              placeholder="Student Phone* E.g 254712345678"
               onChange={handleChange}
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 transition"
             />
 
             <input
               name="parentEmail1"
-              placeholder="Parent Email 1"
+              required
+              placeholder="Parent Email 1*"
               onChange={handleChange}
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 transition"
             />
@@ -223,14 +229,14 @@ export default function CreateUserModal({
               <input
                 name="phone1"
                 required
-                placeholder="Phone 1*"
+                placeholder="Phone 1* E.g 254712345678"
                 onChange={handleChange}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 transition"
               />
 
               <input
                 name="phone2"
-                placeholder="Phone 2"
+                placeholder="Phone 2 E.g 254712345678"
                 onChange={handleChange}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 transition"
               />
