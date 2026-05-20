@@ -117,7 +117,7 @@ export default function Footer() {
                   to="/reach-out"
                   className="hover:text-orange-400 transition-colors"
                 >
-                  Contact
+                  Reach Out
                 </Link>
               </div>
             </div>
