@@ -63,6 +63,27 @@ export default function AdminLearnersPage() {
     `${l.name}`.toLowerCase().includes(search.toLowerCase()),
   );
 
+  const handleLearnerUpdated = (updatedLearner) => {
+    const mergedLearner = {
+      ...(profileLearner || {}),
+      ...updatedLearner,
+    };
+
+    setLearners((currentLearners) =>
+      currentLearners.map((learner) =>
+        learner.id === mergedLearner.id
+          ? {
+              ...learner,
+              ...mergedLearner,
+            }
+          : learner,
+      ),
+    );
+
+    setProfileLearner(mergedLearner);
+    clearCache(`admin_learners_page_${page}`);
+  };
+
   // 🔥 DELETE
   const deleteLearner = async (id) => {
     const confirmDelete = confirm("Delete this learner?");
@@ -149,14 +170,20 @@ export default function AdminLearnersPage() {
               {/* ACTIONS */}
               <div className="flex justify-between mt-4">
                 <button
-                  onClick={() => setSelectedLearner(learner)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedLearner(learner);
+                  }}
                   className="text-sm text-blue-600"
                 >
                   Edit
                 </button>
 
                 <button
-                  onClick={() => deleteLearner(learner.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteLearner(learner.id);
+                  }}
                   className="text-red-500"
                 >
                   <Trash2 size={16} />
@@ -201,6 +228,7 @@ export default function AdminLearnersPage() {
       <LearnerProfilePanel
         learner={profileLearner}
         onClose={() => setProfileLearner(null)}
+        onUpdated={handleLearnerUpdated}
       />
     </>
   );

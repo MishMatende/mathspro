@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
-import { getCache, setCache } from "../../lib/cache";
+import { clearCache, getCache, setCache } from "../../lib/cache";
 import { useAuth } from "../../context/AuthContext";
 import { Mail, Loader2 } from "lucide-react";
 
-export default function LearnerProfilePanel({ learner, onClose }) {
+export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
   const [tutors, setTutors] = useState([]);
   const [selectedTutorId, setSelectedTutorId] = useState("");
   const [assigning, setAssigning] = useState(false);
@@ -55,24 +55,56 @@ export default function LearnerProfilePanel({ learner, onClose }) {
 
   // 🔥 Assign tutor
   const assignTutor = async (tutorId) => {
+    if (!learner?.id) return;
+
+    const previousTutorId = learner.tutor_id || "";
+    const nextTutorId = tutorId || null;
+
     setAssigning(true);
 
     setSelectedTutorId(tutorId);
 
-    const { error } = await supabase
-      .from("learners")
+    let updatedLearner = null;
+
+    const profileResult = await supabase
+      .from("profiles")
       .update({
-        tutor_id: tutorId || null,
+        id: nextTutorId,
       })
-      .eq("id", learner.id);
+      .eq("id", learner.id)
+      .select("*")
+      .maybeSingle();
+
+    if (!profileResult.error && profileResult.data) {
+      updatedLearner = profileResult.data;
+    } else {
+      const learnerResult = await supabase
+        .from("learners")
+        .update({
+          tutor_id: nextTutorId,
+        })
+        .eq("id", learner.id)
+        .select("*")
+        .maybeSingle();
+
+      if (learnerResult.error || !learnerResult.data) {
+        console.log(profileResult.error || learnerResult.error);
+
+        setAssigning(false);
+
+        toast.error("Failed to assign tutor");
+
+        setSelectedTutorId(previousTutorId);
+
+        return;
+      }
+
+      updatedLearner = learnerResult.data;
+    }
 
     setAssigning(false);
 
-    if (error) {
-      toast.error("Failed to assign tutor");
-      setSelectedTutorId(learner.tutor_id || "");
-      return;
-    }
+    setSelectedTutorId(updatedLearner.tutor_id || "");
 
     // 🔥 update learners cache
     const cachedLearners = getCache("admin_learners");
@@ -82,13 +114,20 @@ export default function LearnerProfilePanel({ learner, onClose }) {
         l.id === learner.id
           ? {
               ...l,
-              tutor_id: tutorId,
+              tutor_id: updatedLearner.tutor_id,
             }
           : l,
       );
 
       setCache("admin_learners", updated);
     }
+
+    clearCache(`tutor_learners_${previousTutorId}`);
+    clearCache(`tutor_learners_${updatedLearner.tutor_id}`);
+    clearCache(`tutor_students_${previousTutorId}`);
+    clearCache(`tutor_students_${updatedLearner.tutor_id}`);
+
+    onUpdated?.(updatedLearner);
 
     toast.success("Tutor assigned");
   };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { supabase } from "../../lib/supabase";
 
@@ -8,7 +8,22 @@ import toast from "react-hot-toast";
 
 import { X, UploadCloud } from "lucide-react";
 
-export default function UploadHomeworkModal({ isOpen, onClose, onUploaded }) {
+const defaultForm = {
+  learner_id: "",
+  tutor_id: "",
+  title: "",
+  category: "",
+  instructions: "",
+  due_date: "",
+  status: "active",
+};
+
+export default function UploadHomeworkModal({
+  isOpen,
+  onClose,
+  onUploaded,
+  homework = null,
+}) {
   const { user } = useAuth();
 
   const [learners, setLearners] = useState([]);
@@ -17,25 +32,15 @@ export default function UploadHomeworkModal({ isOpen, onClose, onUploaded }) {
 
   const [file, setFile] = useState(null);
 
-  const [formData, setFormData] = useState({
-    learner_id: "",
+  const [formData, setFormData] = useState(defaultForm);
 
-    tutor_id: "",
-
-    title: "",
-
-    category: "",
-
-    instructions: "",
-
-    due_date: "",
-  });
+  const isEditing = useMemo(() => Boolean(homework?.id), [homework?.id]);
 
   // 🔥 Fetch tutor learners
   const fetchLearners = async () => {
     const { data, error } = await supabase
       .from("learners")
-      .select("*")
+      .select("id, name")
       .eq("tutor_id", user.id)
       .order("name");
 
@@ -48,12 +53,20 @@ export default function UploadHomeworkModal({ isOpen, onClose, onUploaded }) {
     if (isOpen && user) {
       fetchLearners();
 
-      setFormData((prev) => ({
-        ...prev,
+      setFormData({
+        ...defaultForm,
+        learner_id: homework?.learner_id || "",
         tutor_id: user.id,
-      }));
+        title: homework?.title || "",
+        category: homework?.category || "",
+        instructions: homework?.instructions || "",
+        due_date: homework?.due_date || "",
+        status: homework?.status || "active",
+      });
+
+      setFile(null);
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, homework]);
 
   // 🔥 Input handler
   const handleChange = (e) => {
@@ -67,7 +80,7 @@ export default function UploadHomeworkModal({ isOpen, onClose, onUploaded }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!file) {
+    if (!isEditing && !file) {
       toast.error("Please upload a file");
 
       return;
@@ -76,64 +89,92 @@ export default function UploadHomeworkModal({ isOpen, onClose, onUploaded }) {
     try {
       setLoading(true);
 
-      // 🔥 Upload file
-      const fileExt = file.name.split(".").pop();
+      let file_url = homework?.file_url || null;
+      let uploadedPath = null;
 
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      if (file) {
+        // 🔥 Upload file
+        const fileExt = file.name.split(".").pop();
 
-      const filePath = `${user.id}/${fileName}`;
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("homework-files")
-        .upload(filePath, file);
+        const filePath = `${user.id}/${fileName}`;
 
-      if (uploadError) {
-        console.log(uploadError);
+        const { error: uploadError } = await supabase.storage
+          .from("homework-files")
+          .upload(filePath, file);
 
-        toast.error("Failed to upload file");
+        if (uploadError) {
+          console.log(uploadError);
 
-        setLoading(false);
+          toast.error(uploadError.message || "Failed to upload file");
 
-        return;
+          setLoading(false);
+
+          return;
+        }
+
+        uploadedPath = filePath;
+        file_url = filePath;
       }
 
-      // 🔥 Get path
-      const file_url = filePath;
+      const payload = {
+        learner_id: formData.learner_id,
 
-      // 🔥 Insert homework
-      const { error } = await supabase.from("homework").insert([
-        {
-          learner_id: formData.learner_id,
+        tutor_id: user.id,
 
-          tutor_id: formData.tutor_id,
+        title: formData.title.trim(),
 
-          created_by: user.id,
+        category: formData.category.trim() || null,
 
-          title: formData.title,
+        instructions: formData.instructions.trim() || null,
 
-          category: formData.category,
+        due_date: formData.due_date || null,
 
-          instructions: formData.instructions,
+        file_url,
 
-          due_date: formData.due_date,
+        status: formData.status || "active",
+      };
 
-          file_url,
+      const query = isEditing
+        ? supabase
+            .from("homework")
+            .update(payload)
+            .eq("id", homework.id)
+            .eq("tutor_id", user.id)
+        : supabase.from("homework").insert([
+            {
+              ...payload,
+              created_by: user.id,
+            },
+          ]);
 
-          status: "active",
-        },
-      ]);
+      const { error } = await query;
 
       setLoading(false);
 
       if (error) {
         console.log(error);
 
-        toast.error("Failed to create homework");
+        if (uploadedPath) {
+          await supabase.storage.from("homework-files").remove([uploadedPath]);
+        }
+
+        toast.error(
+          error.message ||
+            (isEditing
+              ? "Failed to update homework"
+              : "Failed to create homework"),
+        );
 
         return;
       }
 
-      toast.success("Homework uploaded");
+      if (isEditing && uploadedPath && homework?.file_url) {
+        await supabase.storage.from("homework-files").remove([homework.file_url]);
+      }
+
+      toast.success(isEditing ? "Homework updated" : "Homework uploaded");
 
       onUploaded?.();
 
@@ -171,10 +212,14 @@ export default function UploadHomeworkModal({ isOpen, onClose, onUploaded }) {
         {/* HEADER */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold">Upload Homework</h2>
+            <h2 className="text-xl font-semibold">
+              {isEditing ? "Edit Homework" : "Upload Homework"}
+            </h2>
 
             <p className="text-sm text-gray-400 mt-1">
-              Create homework for a learner
+              {isEditing
+                ? "Update the assignment details"
+                : "Create homework for a learner"}
             </p>
           </div>
 
@@ -296,9 +341,32 @@ export default function UploadHomeworkModal({ isOpen, onClose, onUploaded }) {
             />
           </div>
 
+          {/* STATUS */}
+          <div>
+            <label className="text-sm font-medium">Status</label>
+
+            <select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              className="
+                mt-2 w-full
+                border border-gray-200
+                rounded-2xl
+                px-4 py-3
+              "
+            >
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+
           {/* FILE */}
           <div>
-            <label className="text-sm font-medium">Upload Worksheet</label>
+            <label className="text-sm font-medium">
+              {isEditing ? "Replace Worksheet" : "Upload Worksheet"}
+            </label>
 
             <label
               className="
@@ -317,7 +385,11 @@ export default function UploadHomeworkModal({ isOpen, onClose, onUploaded }) {
               <UploadCloud size={30} className="text-gray-400" />
 
               <p className="text-sm text-gray-500 mt-2">
-                {file ? file.name : "Click to upload file"}
+                {file
+                  ? file.name
+                  : isEditing
+                    ? "Click to replace file"
+                    : "Click to upload file"}
               </p>
 
               <input
@@ -353,7 +425,13 @@ export default function UploadHomeworkModal({ isOpen, onClose, onUploaded }) {
                 text-white
               "
             >
-              {loading ? "Uploading..." : "Upload Homework"}
+              {loading
+                ? isEditing
+                  ? "Saving..."
+                  : "Uploading..."
+                : isEditing
+                  ? "Save Changes"
+                  : "Upload Homework"}
             </button>
           </div>
         </form>

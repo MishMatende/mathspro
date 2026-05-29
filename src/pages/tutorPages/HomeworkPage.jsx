@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 
 import { motion } from "framer-motion";
 
-import { FileText, Download, Search, Plus, Info } from "lucide-react";
+import {
+  FileText,
+  Download,
+  Search,
+  Plus,
+  Info,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 
 import { supabase } from "../../lib/supabase";
 
@@ -12,7 +20,9 @@ import toast from "react-hot-toast";
 
 import UploadHomeworkModal from "../../components/tutorModals/UploadHomeworkModal";
 
-const categories = ["All", "Algebra", "Geometry", "Fractions"];
+import { clearCache, getCache, setCache } from "../../lib/cache";
+
+const defaultCategories = ["All", "Algebra", "Geometry", "Fractions"];
 
 const HomeworkPage = () => {
   const { user } = useAuth();
@@ -23,13 +33,29 @@ const HomeworkPage = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [selectedHomework, setSelectedHomework] = useState(null);
+
+  const [homeworkToDelete, setHomeworkToDelete] = useState(null);
+
   const [homework, setHomework] = useState([]);
 
   const [loading, setLoading] = useState(true);
 
+  const cacheKey = user?.id ? `tutor_homework_${user.id}` : null;
+
   // 🔥 Fetch homework
-  const fetchHomework = async () => {
+  const fetchHomework = async (forceRefresh = false) => {
     if (!user) return;
+
+    if (!forceRefresh && cacheKey) {
+      const cachedHomework = getCache(cacheKey);
+
+      if (cachedHomework) {
+        setHomework(cachedHomework);
+        setLoading(false);
+        return;
+      }
+    }
 
     setLoading(true);
 
@@ -37,14 +63,25 @@ const HomeworkPage = () => {
       .from("homework")
       .select(
         `
-        *,
+        id,
+        tutor_id,
+        learner_id,
+        title,
+        category,
+        instructions,
+        file_url,
+        due_date,
+        status,
+        created_at,
         learners (
           id,
           name
         ),
         homework_submissions (
           id,
-          status
+          status,
+          submitted_at,
+          reviewed_at
         )
       `,
       )
@@ -63,19 +100,41 @@ const HomeworkPage = () => {
       return;
     }
 
-    setHomework(data || []);
+    const nextHomework = data || [];
+
+    setHomework(nextHomework);
+
+    if (cacheKey) {
+      setCache(cacheKey, nextHomework);
+    }
   };
 
   useEffect(() => {
     fetchHomework();
-  }, [user]);
+  }, [user?.id]);
+
+  const categories = useMemo(() => {
+    const dynamicCategories = homework
+      .map((hw) => hw.category)
+      .filter(Boolean)
+      .filter((category, index, list) => list.indexOf(category) === index);
+
+    return [
+      ...defaultCategories,
+      ...dynamicCategories.filter(
+        (category) => !defaultCategories.includes(category),
+      ),
+    ];
+  }, [homework]);
 
   // 🔥 Filter homework
   const filteredHomework = useMemo(() => {
     return homework.filter((hw) => {
-      const matchesSearch = hw.title
+      const searchValue = search.toLowerCase();
+
+      const matchesSearch = `${hw.title || ""} ${hw.learners?.name || ""}`
         .toLowerCase()
-        .includes(search.toLowerCase());
+        .includes(searchValue);
 
       const matchesCategory =
         activeCategory === "All" || hw.category === activeCategory;
@@ -86,6 +145,11 @@ const HomeworkPage = () => {
 
   // 🔥 Download file
   const handleDownload = async (filePath) => {
+    if (!filePath) {
+      toast.error("No worksheet file found");
+      return;
+    }
+
     try {
       const { data, error } = await supabase.storage
         .from("homework-files")
@@ -106,6 +170,84 @@ const HomeworkPage = () => {
       console.log(err);
 
       toast.error("Failed to download file");
+    }
+  };
+
+  const handleSaved = () => {
+    if (cacheKey) {
+      clearCache(cacheKey);
+    }
+
+    fetchHomework(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedHomework(null);
+  };
+
+  const handleEdit = (hw) => {
+    setSelectedHomework(hw);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!homeworkToDelete) return;
+    const hw = homeworkToDelete;
+    const loadingToast = toast.loading("Deleting homework...");
+
+    try {
+      const { error: submissionError } = await supabase
+        .from("homework_submissions")
+        .delete()
+        .eq("homework_id", hw.id);
+
+      if (submissionError) {
+        console.log(submissionError);
+      }
+
+      const { data, error } = await supabase
+        .from("homework")
+        .delete()
+        .eq("id", hw.id)
+        .eq("tutor_id", user.id)
+        .select("file_url")
+        .single();
+
+      if (error) {
+        console.log(error);
+        toast.error("Failed to delete homework");
+        return;
+      }
+
+      const filePath = data?.file_url || hw.file_url;
+
+      if (filePath) {
+        const { error: storageError } = await supabase.storage
+          .from("homework-files")
+          .remove([filePath]);
+
+        if (storageError) {
+          console.log(storageError);
+        }
+      }
+
+      const nextHomework = homework.filter((item) => item.id !== hw.id);
+
+      setHomework(nextHomework);
+
+      if (cacheKey) {
+        setCache(cacheKey, nextHomework);
+      }
+
+      toast.success("Homework deleted");
+      setHomeworkToDelete(null);
+    } catch (err) {
+      console.log(err);
+
+      toast.error("Failed to delete homework");
+    } finally {
+      toast.dismiss(loadingToast);
     }
   };
 
@@ -204,7 +346,10 @@ const HomeworkPage = () => {
 
             {/* UPLOAD BUTTON */}
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setSelectedHomework(null);
+                setIsModalOpen(true);
+              }}
               className="
                 flex items-center justify-center gap-2
                 bg-orange-500
@@ -338,7 +483,7 @@ const HomeworkPage = () => {
                       text-orange-700
                     "
                   >
-                    {hw.category}
+                    {hw.category || "General"}
                   </span>
                 </div>
 
@@ -362,7 +507,9 @@ const HomeworkPage = () => {
                       text-gray-400
                     "
                   >
-                    <span>Due {hw.due_date}</span>
+                    <span>
+                      {hw.due_date ? `Due ${hw.due_date}` : "No due date"}
+                    </span>
 
                     <span>{submitted}/1 submitted</span>
                   </div>
@@ -373,9 +520,38 @@ const HomeworkPage = () => {
                   className="
                     mt-5
                     flex items-center
-                    justify-end
+                    justify-between
+                    gap-3
                   "
                 >
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleEdit(hw)}
+                      className="
+                        flex items-center gap-2
+                        text-sm
+                        text-gray-600
+                        hover:text-gray-900
+                      "
+                    >
+                      <Pencil size={15} />
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => setHomeworkToDelete(hw)}
+                      className="
+                        flex items-center gap-2
+                        text-sm
+                        text-red-600
+                        hover:text-red-700
+                      "
+                    >
+                      <Trash2 size={15} />
+                      Delete
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => handleDownload(hw.file_url)}
                     className="
@@ -398,9 +574,91 @@ const HomeworkPage = () => {
       {/* MODAL */}
       <UploadHomeworkModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onUploaded={fetchHomework}
+        onClose={handleCloseModal}
+        onUploaded={handleSaved}
+        homework={selectedHomework}
       />
+
+      {homeworkToDelete && (
+        <div
+          className="
+            fixed inset-0 z-50
+            bg-black/40
+            backdrop-blur-sm
+            flex items-center justify-center
+            px-4
+          "
+        >
+          <div
+            className="
+              max-w-md
+              bg-white
+              rounded-3xl
+              p-6
+              shadow-xl
+              border border-gray-100
+            "
+          >
+            <div className="flex items-start gap-4">
+              <div
+                className="
+                  w-11 h-11
+                  rounded-2xl
+                  bg-red-50
+                  text-red-600
+                  flex items-center justify-center
+                  shrink-0
+                "
+              >
+                <Trash2 size={20} />
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Delete homework?
+                </h2>
+
+                <p className="text-sm text-gray-500 mt-1">
+                  This will permanently remove "{homeworkToDelete.title}" and
+                  its worksheet file.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setHomeworkToDelete(null)}
+                className="
+                  px-5 py-3
+                  rounded-2xl
+                  border border-gray-200
+                  text-sm font-medium
+                  text-gray-700
+                  hover:bg-gray-50
+                "
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="
+                  px-5 py-3
+                  rounded-2xl
+                  bg-red-600
+                  text-sm font-medium
+                  text-white
+                  hover:bg-red-700
+                "
+              >
+                Delete Homework
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
