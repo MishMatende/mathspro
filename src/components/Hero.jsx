@@ -7,7 +7,7 @@ export default function Hero() {
 
   return (
     <>
-      <section className="text-center px-6 py-16 md:py-28">
+      <section className="text-center px-6 py-16 md:pt-28 md:pb-20">
         {/* Top label */}
         <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-500 text-xs md:text-sm font-medium px-4 py-1.5 rounded-full mb-6">
           <span className="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block"></span>
