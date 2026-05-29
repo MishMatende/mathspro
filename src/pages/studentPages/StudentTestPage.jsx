@@ -222,7 +222,6 @@ export default function StudentTestPage() {
           className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border hover:bg-gray-50"
         >
           <RefreshCw size={15} />
-          Refresh
         </button>
       </div>
 

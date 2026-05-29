@@ -39,11 +39,22 @@ export default function ReachOutPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    // 🔥 Replace with real API later
-    setTimeout(() => {
-      setLoading(false);
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
 
       toast.success("Message sent successfully ✨");
 
@@ -53,7 +64,11 @@ export default function ReachOutPage() {
         whatsapp: "",
         message: "",
       });
-    }, 1200);
+    } catch (error) {
+      toast.error(error.message || "Failed to send message");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
