@@ -10,7 +10,6 @@ import {
   AlertCircle,
   User,
   ClipboardList,
-  FileQuestion,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -84,12 +83,15 @@ export default function StudentDashboard() {
         .from("homework")
         .select("*", { count: "exact", head: true })
         .eq("learner_id", user.id)
-        .eq("status", "pending");
+        .eq("status", "active");
 
-      // Pending tests
+      //Pending Tests
       const testsPromise = supabase
         .from("tests")
-        .select("*", { count: "exact", head: true })
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
         .eq("learner_id", user.id)
         .eq("status", "pending");
 
@@ -103,21 +105,15 @@ export default function StudentDashboard() {
         ]);
 
       if (studentRes.error) throw studentRes.error;
-
       if (upcomingRes.error) throw upcomingRes.error;
-
       if (completedRes.error) throw completedRes.error;
+      if (testsRes.error) throw testsRes.error;
 
       setStudent(studentRes.data);
-
       setUpcomingLessons(upcomingRes.data || []);
-
       setCompletedLessons(completedRes.data || []);
-
       setNextLesson(upcomingRes.data?.[0] || null);
-
       setPendingHomework(homeworkRes.count || 0);
-
       setPendingTests(testsRes.count || 0);
     } catch (err) {
       console.log(err);
@@ -236,52 +232,55 @@ export default function StudentDashboard() {
               </div>
             </motion.div>
 
-            {/* PENDING HOMEWORK */}
-            <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-400">Pending Homework</p>
+            {/* PENDING HOMEWORK AND TESTS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* PENDING HOMEWORK */}
+              <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400">Pending Homework</p>
 
-                  <h3 className="text-3xl font-semibold mt-2">
-                    {pendingHomework}
-                  </h3>
-                </div>
+                    <h3 className="text-3xl font-semibold mt-2">
+                      {pendingHomework}
+                    </h3>
+                  </div>
 
-                <div
-                  className="
-          w-12 h-12
-          rounded-2xl
-          bg-orange-100
-          text-orange-600
-          flex items-center justify-center
-        "
-                >
-                  <ClipboardList size={22} />
+                  <div
+                    className="
+        w-12 h-12
+        rounded-2xl
+        bg-orange-100
+        text-orange-600
+        flex items-center justify-center
+      "
+                  >
+                    <ClipboardList size={22} />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* PENDING TESTS */}
-            <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-400">Pending Tests</p>
+              {/* PENDING TESTS */}
+              <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400">Pending Tests</p>
 
-                  <h3 className="text-3xl font-semibold mt-2">
-                    {pendingTests}
-                  </h3>
-                </div>
+                    <h3 className="text-3xl font-semibold mt-2">
+                      {pendingTests}
+                    </h3>
+                  </div>
 
-                <div
-                  className="
-          w-12 h-12
-          rounded-2xl
-          bg-blue-100
-          text-blue-600
-          flex items-center justify-center
-        "
-                >
-                  <FileQuestion size={22} />
+                  <div
+                    className="
+        w-12 h-12
+        rounded-2xl
+        bg-blue-100
+        text-blue-600
+        flex items-center justify-center
+      "
+                  >
+                    <CheckCircle2 size={22} />
+                  </div>
                 </div>
               </div>
             </div>

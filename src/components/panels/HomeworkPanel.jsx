@@ -1,29 +1,167 @@
-import { useState } from "react";
-import { homework as initialHomework } from "../data/mockData";
-import FileUploadModal from "../tutorModals/FileUploadModal";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Download, Upload, FileText, Plus } from "lucide-react";
+import toast from "react-hot-toast";
+
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
+import UploadHomeworkModal from "../tutorModals/UploadHomeworkModal";
+
+const getDownloadName = (title, filePath, suffix = "") => {
+  const extension = filePath?.split(".").pop();
+  const safeTitle = `${title || "homework"} ${suffix}`
+    .trim()
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+
+  return extension ? `${safeTitle}.${extension}` : safeTitle;
+};
 
 const HomeworkPanel = ({ studentId }) => {
-  const homeworkList = initialHomework.filter((hw) =>
-    hw.submissions.some((sub) => sub.studentId === studentId),
-  );
+  const { user } = useAuth();
 
+  const [homework, setHomework] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isHomeworkModalOpen, setIsHomeworkModalOpen] = useState(false);
-  const [isMarkedModalOpen, setIsMarkedModalOpen] = useState(false);
+  const [savingSubmissionId, setSavingSubmissionId] = useState(null);
+  const [feedback, setFeedback] = useState({});
 
-  const isAnyModalOpen = isHomeworkModalOpen || isMarkedModalOpen;
+  const fetchHomework = async () => {
+    if (!studentId || !user?.id) return;
+
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("homework")
+      .select(
+        `
+        id,
+        title,
+        category,
+        instructions,
+        file_url,
+        due_date,
+        status,
+        homework_submissions (
+          id,
+          homework_id,
+          learner_id,
+          submission_file_url,
+          marked_file_url,
+          remarks,
+          score,
+          status,
+          submitted_at,
+          reviewed_at
+        )
+      `,
+      )
+      .eq("learner_id", studentId)
+      .eq("tutor_id", user.id)
+      .order("created_at", { ascending: false });
+
+    setLoading(false);
+
+    if (error) {
+      console.log(error);
+      toast.error("Failed to load homework");
+      return;
+    }
+
+    setHomework(data || []);
+  };
+
+  useEffect(() => {
+    fetchHomework();
+  }, [studentId, user?.id]);
+
+  const downloadFile = async (filePath, title, suffix = "") => {
+    if (!filePath) {
+      toast.error("No file found");
+      return;
+    }
+
+    const { data, error } = await supabase.storage
+      .from("homework-files")
+      .createSignedUrl(filePath, 60, {
+        download: getDownloadName(title, filePath, suffix),
+      });
+
+    if (error) {
+      toast.error(error.message || "Failed to download file");
+      return;
+    }
+
+    window.open(data.signedUrl, "_blank");
+  };
+
+  const handleFeedbackChange = (submissionId, field, value) => {
+    setFeedback((current) => ({
+      ...current,
+      [submissionId]: {
+        ...current[submissionId],
+        [field]: value,
+      },
+    }));
+  };
+
+  const saveFeedback = async (submission, markedFile = null) => {
+    const values = feedback[submission.id] || {};
+    let markedFilePath = submission.marked_file_url || null;
+
+    setSavingSubmissionId(submission.id);
+
+    if (markedFile) {
+      const fileName = `${crypto.randomUUID()}.pdf`;
+      markedFilePath = `${user.id}/marked/${submission.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("homework-files")
+        .upload(markedFilePath, markedFile);
+
+      if (uploadError) {
+        setSavingSubmissionId(null);
+        toast.error(uploadError.message || "Failed to upload marked work");
+        return;
+      }
+    }
+
+    const { error } = await supabase
+      .from("homework_submissions")
+      .update({
+        marked_file_url: markedFilePath,
+        remarks: values.remarks ?? submission.remarks ?? null,
+        score: values.score === "" ? null : (values.score ?? submission.score),
+        status: "reviewed",
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", submission.id);
+
+    setSavingSubmissionId(null);
+
+    if (error) {
+      if (markedFilePath && markedFilePath !== submission.marked_file_url) {
+        await supabase.storage.from("homework-files").remove([markedFilePath]);
+      }
+
+      toast.error(error.message || "Failed to save feedback");
+      return;
+    }
+
+    toast.success("Feedback saved");
+    fetchHomework();
+  };
 
   return (
     <>
-      {/* 👇 Animated Background */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{
           opacity: 1,
           y: 0,
-          scale: isAnyModalOpen ? 0.96 : 1,
-          filter: isAnyModalOpen ? "blur(6px)" : "blur(0px)",
+          scale: isHomeworkModalOpen ? 0.96 : 1,
+          filter: isHomeworkModalOpen ? "blur(6px)" : "blur(0px)",
         }}
         transition={{
           duration: 0.3,
@@ -32,10 +170,9 @@ const HomeworkPanel = ({ studentId }) => {
           damping: 25,
         }}
         style={{
-          pointerEvents: isAnyModalOpen ? "none" : "auto",
+          pointerEvents: isHomeworkModalOpen ? "none" : "auto",
         }}
       >
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
           <h3 className="font-semibold text-gray-800 text-sm sm:text-base">
             Homework
@@ -43,120 +180,206 @@ const HomeworkPanel = ({ studentId }) => {
 
           <button
             onClick={() => setIsHomeworkModalOpen(true)}
-            className="flex items-center justify-center gap-2 bg-(--color-primary) text-white px-4 py-2.5 rounded-xl text-sm cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 bg-(--color-primary) text-white px-4 py-2.5 rounded-xl text-sm cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition sm:w-auto"
           >
             <Plus size={16} />
             Upload Homework
           </button>
         </div>
 
-        {/* Homework List */}
-        <div className="space-y-5">
-          {homeworkList.map((hw) => {
-            const studentSubmissions = hw.submissions.filter(
-              (sub) => sub.studentId === studentId,
-            );
+        {loading && (
+          <div className="text-sm text-gray-400">Loading homework...</div>
+        )}
+
+        {!loading && homework.length === 0 && (
+          <div className="bg-white rounded-2xl p-8 text-center text-sm text-gray-400 border border-gray-100">
+            No homework assigned yet
+          </div>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {homework.map((hw) => {
+            const submission = hw.homework_submissions?.[0];
+            const feedbackValues = feedback[submission?.id] || {};
 
             return (
               <div
                 key={hw.id}
-                className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100"
+                className="
+                  bg-white
+                  rounded-xl
+                  p-4
+                  shadow-sm
+                  border border-gray-100
+                  min-w-0
+                  flex flex-col
+                "
               >
-                {/* Assignment Header */}
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-gray-100">
-                      <FileText size={16} className="text-gray-500" />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                      <FileText size={15} className="text-gray-500" />
                     </div>
 
-                    <div>
-                      <p className="font-semibold text-gray-800 text-sm sm:text-base">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-800 text-sm truncate">
                         {hw.title}
                       </p>
-                      <p className="text-xs text-gray-400">Assignment</p>
+                      <p className="text-xs text-gray-400 truncate">
+                        {hw.category || "Assignment"}
+                      </p>
                     </div>
                   </div>
 
-                  <button className="text-xs sm:text-sm text-blue-600 hover:underline">
-                    Download PDF
+                  <button
+                    onClick={() => downloadFile(hw.file_url, hw.title)}
+                    className="text-xs text-blue-600 hover:underline whitespace-nowrap"
+                  >
+                    Worksheet
                   </button>
                 </div>
 
-                {/* Submissions */}
-                <div className="space-y-4">
-                  {studentSubmissions.map((sub, index) => {
-                    const isMarked = sub.markedFile;
+                <div className="mt-3 flex items-center justify-between gap-3 text-xs text-gray-400">
+                  <span>
+                    {hw.due_date ? `Due ${hw.due_date}` : "No due date"}
+                  </span>
 
-                    return (
-                      <div
-                        key={index}
-                        className="bg-gray-50 rounded-xl p-4 border border-gray-100"
+                  <span
+                    className={`px-2 py-1 rounded-full ${
+                      submission?.status === "reviewed"
+                        ? "bg-green-100 text-green-600"
+                        : submission
+                          ? "bg-yellow-100 text-yellow-600"
+                          : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {submission?.status === "reviewed"
+                      ? "Reviewed"
+                      : submission
+                        ? "Submitted"
+                        : "Pending"}
+                  </span>
+                </div>
+
+                {!submission && (
+                  <div className="mt-4 border-t border-gray-100 pt-4 text-sm text-gray-400">
+                    No submission yet
+                  </div>
+                )}
+
+                {submission && (
+                  <div className="mt-4 border-t border-gray-100 pt-4">
+                    <div className="flex flex-wrap gap-3 text-xs mb-3">
+                      <button
+                        onClick={() =>
+                          downloadFile(
+                            submission.submission_file_url,
+                            hw.title,
+                            "submission",
+                          )
+                        }
+                        className="flex items-center gap-1.5 text-blue-600 hover:underline"
                       >
-                        {/* Top */}
-                        <div className="flex justify-between items-center mb-3">
-                          <p className="text-sm font-medium text-gray-800">
-                            {sub.studentName}
-                          </p>
+                        <Download size={14} />
+                        Submission
+                      </button>
 
-                          <span
-                            className={`text-xs px-2.5 py-1 rounded-full
-                  ${
-                    isMarked
-                      ? "bg-green-100 text-green-600"
-                      : "bg-yellow-100 text-yellow-600"
-                  }`}
-                          >
-                            {isMarked ? "Marked" : "Pending"}
-                          </span>
-                        </div>
+                      {submission.marked_file_url && (
+                        <button
+                          onClick={() =>
+                            downloadFile(
+                              submission.marked_file_url,
+                              hw.title,
+                              "marked",
+                            )
+                          }
+                          className="flex items-center gap-1.5 text-green-600 hover:underline"
+                        >
+                          <Download size={14} />
+                          Marked Work
+                        </button>
+                      )}
 
-                        {/* Actions */}
-                        <div className="flex flex-wrap gap-4 text-sm mb-3">
-                          <button className="flex items-center gap-2 text-blue-600 hover:underline">
-                            <Download size={14} />
-                            Download Submission
-                          </button>
-
-                          <button
-                            onClick={() => setIsMarkedModalOpen(true)}
-                            className="flex items-center gap-2 text-green-600 hover:underline"
-                          >
-                            <Upload size={14} />
-                            Upload Marked
-                          </button>
-                        </div>
-
-                        {/* Feedback */}
-                        <textarea
-                          placeholder="Write feedback for the student..."
-                          className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--color-primary)/30 resize-none"
+                      <label className="flex items-center gap-1.5 text-green-600 hover:underline cursor-pointer">
+                        <Upload size={14} />
+                        Upload Marked
+                        <input
+                          type="file"
+                          hidden
+                          accept="application/pdf,.pdf"
+                          onChange={(e) => {
+                            saveFeedback(submission, e.target.files[0]);
+                            e.target.value = "";
+                          }}
                         />
+                      </label>
+                    </div>
 
-                        <button className="mt-3 w-full sm:w-fit flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-(--color-primary) text-white hover:shadow-md hover:scale-[1.01] active:scale-[0.98] transition-all">
-                          <Upload size={14} />
-                          Save Feedback
+                    <div className="space-y-3">
+                      <textarea
+                        rows={3}
+                        placeholder="Feedback"
+                        value={
+                          feedbackValues.remarks ?? submission.remarks ?? ""
+                        }
+                        onChange={(e) =>
+                          handleFeedbackChange(
+                            submission.id,
+                            "remarks",
+                            e.target.value,
+                          )
+                        }
+                        className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-(--color-primary)/30 resize-none"
+                      />
+
+                      <div className="flex items-end gap-3">
+                        <label className="flex-1">
+                          <span className="block text-xs font-medium text-gray-500 mb-1">
+                            Score
+                          </span>
+
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0"
+                            value={
+                              feedbackValues.score ?? submission.score ?? ""
+                            }
+                            onChange={(e) =>
+                              handleFeedbackChange(
+                                submission.id,
+                                "score",
+                                e.target.value,
+                              )
+                            }
+                            className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-(--color-primary)/30"
+                          />
+                        </label>
+
+                        <button
+                          onClick={() => saveFeedback(submission)}
+                          disabled={savingSubmissionId === submission.id}
+                          className="h-9 px-3 rounded-lg text-xs font-medium bg-(--color-primary) text-white hover:shadow-md active:scale-[0.98] transition-all disabled:opacity-60 whitespace-nowrap"
+                        >
+                          {savingSubmissionId === submission.id
+                            ? "Saving..."
+                            : "Save"}
                         </button>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       </motion.div>
 
-      {/* 👇 Modals OUTSIDE */}
-      <FileUploadModal
+      <UploadHomeworkModal
         isOpen={isHomeworkModalOpen}
         onClose={() => setIsHomeworkModalOpen(false)}
-        title="Upload Homework"
-      />
-
-      <FileUploadModal
-        isOpen={isMarkedModalOpen}
-        onClose={() => setIsMarkedModalOpen(false)}
-        title="Upload Marked Work"
+        onUploaded={fetchHomework}
+        learnerId={studentId}
       />
     </>
   );

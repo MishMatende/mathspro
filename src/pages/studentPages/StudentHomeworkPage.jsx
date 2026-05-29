@@ -10,6 +10,19 @@ import { useAuth } from "../../context/AuthContext";
 
 import toast from "react-hot-toast";
 
+import { clearCache, getCache, setCache } from "../../lib/cache";
+
+const getDownloadName = (title, filePath, suffix = "") => {
+  const extension = filePath?.split(".").pop();
+  const safeTitle = `${title || "homework"} ${suffix}`
+    .trim()
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+
+  return extension ? `${safeTitle}.${extension}` : safeTitle;
+};
+
 export default function StudentHomeworkPage() {
   const { user } = useAuth();
 
@@ -19,9 +32,21 @@ export default function StudentHomeworkPage() {
 
   const [search, setSearch] = useState("");
 
+  const cacheKey = user?.id ? `student_homework_${user.id}` : null;
+
   // 🔥 Fetch homework
-  const fetchHomework = async () => {
+  const fetchHomework = async (forceRefresh = false) => {
     if (!user) return;
+
+    if (!forceRefresh && cacheKey) {
+      const cachedHomework = getCache(cacheKey);
+
+      if (cachedHomework) {
+        setHomework(cachedHomework);
+        setLoading(false);
+        return;
+      }
+    }
 
     setLoading(true);
 
@@ -29,14 +54,26 @@ export default function StudentHomeworkPage() {
       .from("homework")
       .select(
         `
-        *,
+        id,
+        learner_id,
+        title,
+        category,
+        instructions,
+        file_url,
+        due_date,
+        status,
+        created_at,
         homework_submissions (
           id,
+          homework_id,
+          learner_id,
           status,
           remarks,
           score,
           submission_file_url,
-          marked_file_url
+          marked_file_url,
+          submitted_at,
+          reviewed_at
         )
       `,
       )
@@ -55,28 +92,45 @@ export default function StudentHomeworkPage() {
       return;
     }
 
-    setHomework(data || []);
+    const nextHomework = data || [];
+
+    setHomework(nextHomework);
+
+    if (cacheKey) {
+      setCache(cacheKey, nextHomework);
+    }
   };
 
   useEffect(() => {
     fetchHomework();
-  }, [user]);
+  }, [user?.id]);
 
   // 🔥 Filter
   const filteredHomework = useMemo(() => {
+    const searchValue = search.toLowerCase();
+
     return homework.filter((hw) =>
-      hw.title.toLowerCase().includes(search.toLowerCase()),
+      `${hw.title || ""} ${hw.category || ""}`
+        .toLowerCase()
+        .includes(searchValue),
     );
   }, [homework, search]);
 
   // 🔥 Download worksheet
-  const downloadWorksheet = async (filePath) => {
+  const downloadFile = async (filePath, title, suffix = "") => {
+    if (!filePath) {
+      toast.error("No file found");
+      return;
+    }
+
     const { data, error } = await supabase.storage
       .from("homework-files")
-      .createSignedUrl(filePath, 60);
+      .createSignedUrl(filePath, 60, {
+        download: getDownloadName(title, filePath, suffix),
+      });
 
     if (error) {
-      toast.error("Failed to download");
+      toast.error(error.message || "Failed to download");
 
       return;
     }
@@ -86,24 +140,29 @@ export default function StudentHomeworkPage() {
 
   // 🔥 Upload submission
   const uploadSubmission = async (hw, file) => {
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      toast.error("Please upload a PDF file");
+      return;
+    }
+
     try {
       const loadingToast = toast.loading("Uploading...");
 
       // 🔥 Upload file
-      const ext = file.name.split(".").pop();
+      const fileName = `${crypto.randomUUID()}.pdf`;
 
-      const fileName = `${crypto.randomUUID()}.${ext}`;
-
-      const filePath = `${user.id}/${fileName}`;
+      const filePath = `${user.id}/submissions/${hw.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("submission-files")
+        .from("homework-files")
         .upload(filePath, file);
 
       if (uploadError) {
         toast.dismiss(loadingToast);
 
-        toast.error("Failed to upload file");
+        toast.error(uploadError.message || "Failed to upload file");
 
         return;
       }
@@ -122,14 +181,24 @@ export default function StudentHomeworkPage() {
 
             submitted_at: new Date().toISOString(),
           })
-          .eq("id", existing.id);
+          .eq("id", existing.id)
+          .eq("homework_id", hw.id)
+          .eq("learner_id", user.id);
 
         if (error) {
+          await supabase.storage.from("homework-files").remove([filePath]);
+
           toast.dismiss(loadingToast);
 
-          toast.error("Failed to submit homework");
+          toast.error(error.message || "Failed to submit homework");
 
           return;
+        }
+
+        if (existing.submission_file_url) {
+          await supabase.storage
+            .from("homework-files")
+            .remove([existing.submission_file_url]);
         }
       }
 
@@ -150,9 +219,11 @@ export default function StudentHomeworkPage() {
         ]);
 
         if (error) {
+          await supabase.storage.from("homework-files").remove([filePath]);
+
           toast.dismiss(loadingToast);
 
-          toast.error("Failed to submit homework");
+          toast.error(error.message || "Failed to submit homework");
 
           return;
         }
@@ -162,7 +233,11 @@ export default function StudentHomeworkPage() {
 
       toast.success("Homework submitted");
 
-      fetchHomework();
+      if (cacheKey) {
+        clearCache(cacheKey);
+      }
+
+      fetchHomework(true);
     } catch (err) {
       console.log(err);
 
@@ -266,7 +341,9 @@ export default function StudentHomeworkPage() {
                 <div>
                   <h3 className="font-semibold text-gray-900">{hw.title}</h3>
 
-                  <p className="text-sm text-gray-500 mt-1">{hw.category}</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {hw.category || "General"}
+                  </p>
                 </div>
 
                 <span
@@ -295,7 +372,7 @@ export default function StudentHomeworkPage() {
 
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                   <Clock3 size={14} />
-                  Due {hw.due_date}
+                  {hw.due_date ? `Due ${hw.due_date}` : "No due date"}
                 </div>
 
                 {/* SCORE */}
@@ -325,13 +402,20 @@ export default function StudentHomeworkPage() {
                     {submission.remarks}
                   </div>
                 )}
+
+                {submission?.submitted_at && (
+                  <p className="text-xs text-gray-400">
+                    Submitted{" "}
+                    {new Date(submission.submitted_at).toLocaleDateString()}
+                  </p>
+                )}
               </div>
 
               {/* ACTIONS */}
               <div className="mt-5 flex flex-wrap gap-3">
                 {/* DOWNLOAD */}
                 <button
-                  onClick={() => downloadWorksheet(hw.file_url)}
+                  onClick={() => downloadFile(hw.file_url, hw.title)}
                   className="
                     flex items-center gap-2
                     text-sm
@@ -342,6 +426,27 @@ export default function StudentHomeworkPage() {
                   <Download size={16} />
                   Worksheet
                 </button>
+
+                {submission?.submission_file_url && (
+                  <button
+                    onClick={() =>
+                      downloadFile(
+                        submission.submission_file_url,
+                        hw.title,
+                        "submission",
+                      )
+                    }
+                    className="
+                      flex items-center gap-2
+                      text-sm
+                      text-gray-600
+                      hover:underline
+                    "
+                  >
+                    <Download size={16} />
+                    Submission
+                  </button>
+                )}
 
                 {/* SUBMIT */}
                 <label
@@ -360,8 +465,11 @@ export default function StudentHomeworkPage() {
                   <input
                     type="file"
                     hidden
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => uploadSubmission(hw, e.target.files[0])}
+                    accept="application/pdf,.pdf"
+                    onChange={(e) => {
+                      uploadSubmission(hw, e.target.files[0]);
+                      e.target.value = "";
+                    }}
                   />
                 </label>
               </div>

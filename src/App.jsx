@@ -26,6 +26,8 @@ import StudentDashboard from "./pages/studentPages/StudentDashboard";
 import StudentHomeworkPage from "./pages/studentPages/StudentHomeworkPage";
 import ReachOutPage from "./pages/ReachOutPage";
 import HowItWorksPage from "./pages/HowItWorksPage";
+import StudentTestPage from "./pages/studentPages/StudentTestPage";
+import AdminTestsPage from "./pages/adminPages/AdminTestsPage";
 
 function App() {
   return (
@@ -57,6 +59,7 @@ function App() {
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/student-schedule" element={<LearnerSchedule />} />
         <Route path="/student-homework" element={<StudentHomeworkPage />} />
+        <Route path="/student-test" element={<StudentTestPage />} />
       </Route>
 
       {/* Admin Dashboard layout — navbar + sidenav */}
@@ -66,6 +69,7 @@ function App() {
           <Route path="/admin-learners" element={<AdminLearnerspage />} />
           <Route path="/admin-tutors" element={<AdminTutorsPage />} />
           <Route path="/admin-lessons" element={<AdminLessonsPage />} />
+          <Route path="/admin-tests" element={<AdminTestsPage />} />
         </Route>
       </Route>
     </Routes>

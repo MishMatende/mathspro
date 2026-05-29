@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { Search, GraduationCap, Plus, Trash2 } from "lucide-react";
+import {
+  Search,
+  GraduationCap,
+  Plus,
+  Trash2,
+  RefreshCw,
+  User,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 
@@ -125,7 +132,7 @@ export default function AdminLearnersPage() {
 
           <div className="flex gap-3 flex-wrap">
             {/* Search */}
-            <div className="relative w-full sm:w-64">
+            <div className="relative sm:w-64">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                 size={16}
@@ -138,6 +145,15 @@ export default function AdminLearnersPage() {
                 className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
               />
             </div>
+            <button
+              onClick={() => {
+                clearCache(`admin_learners_page_${page}`);
+                fetchLearners(true);
+              }}
+              className="flex items-center justify-center h-10 w-10 border border-slate-200 rounded-xl hover:bg-slate-50 transition"
+            >
+              <RefreshCw size={16} />
+            </button>
 
             {/* Create */}
             <button
@@ -145,7 +161,6 @@ export default function AdminLearnersPage() {
               className="flex items-center gap-2 bg-(--color-primary) text-white px-4 py-2 rounded-lg text-sm"
             >
               <Plus size={16} />
-              Add Learner
             </button>
           </div>
         </div>
@@ -156,37 +171,60 @@ export default function AdminLearnersPage() {
             <motion.div
               key={learner.id}
               onClick={() => setProfileLearner(learner)}
-              whileHover={{ scale: 1.02 }}
-              className="bg-white rounded-xl p-4 border shadow-sm"
+              whileHover={{
+                y: -3,
+              }}
+              className="group cursor-pointer bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-lg transition-all overflow-hidden"
             >
-              <div className="cursor-pointer">
-                <p className="font-medium">{learner.name}</p>
+              {/* TOP */}
+              <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-white px-4 py-4 border-b border-orange-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-3 items-center">
+                    <div className="h-11 w-11 rounded-2xl bg-orange-100 flex items-center justify-center">
+                      <User size={20} className="text-orange-600" />
+                    </div>
 
-                <p className="text-xs text-gray-500 mt-1">
-                  {learner.curriculum} • {learner.level}
-                </p>
+                    <div>
+                      <h3 className="font-semibold text-slate-900">
+                        {learner.name}
+                      </h3>
+
+                      <p className="text-xs text-slate-500">Learner Profile</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteLearner(learner.id);
+                    }}
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-red-500 hover:bg-red-50 transition"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
 
-              {/* ACTIONS */}
-              <div className="flex justify-between mt-4">
+              {/* BODY */}
+              <div className="p-4">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-medium">
+                    {learner.curriculum}
+                  </span>
+
+                  <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+                    {learner.level}
+                  </span>
+                </div>
+
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedLearner(learner);
                   }}
-                  className="text-sm text-blue-600"
+                  className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition text-sm font-medium"
                 >
-                  Edit
-                </button>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteLearner(learner.id);
-                  }}
-                  className="text-red-500"
-                >
-                  <Trash2 size={16} />
+                  Edit Learner
                 </button>
               </div>
             </motion.div>
@@ -194,12 +232,23 @@ export default function AdminLearnersPage() {
         </div>
 
         {/* PAGINATION */}
-        <div className="flex justify-center gap-3 mt-6">
-          <button onClick={() => setPage((p) => Math.max(0, p - 1))}>
+        <div className="flex justify-center items-center gap-3 mt-8">
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+            disabled={page === 0}
+          >
             Prev
           </button>
 
-          <button onClick={() => setPage((p) => p + 1)}>Next</button>
+          <span className="text-sm text-slate-500">Page {page + 1}</span>
+
+          <button
+            onClick={() => setPage((p) => p + 1)}
+            className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50"
+          >
+            Next
+          </button>
         </div>
       </motion.div>
 

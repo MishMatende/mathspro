@@ -25,7 +25,6 @@ export default function BottomSheetModal({
             className="
               fixed inset-0 z-50
               flex items-end sm:items-center justify-center
-              px-2 sm:px-6 py-2 sm:py-8
               pointer-events-none
             "
           >
@@ -33,6 +32,8 @@ export default function BottomSheetModal({
               className={`
                 pointer-events-auto
                 relative
+                md:w-[30vw]
+                w-[96vw]
                 ${maxWidth}
                 rounded-t-4xl sm:rounded-4xl
                 border border-white/60

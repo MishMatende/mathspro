@@ -1,11 +1,10 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
-  Users,
-  GraduationCap,
   LogOut,
-  CalendarDays,
   Calendar,
+  FileText,
+  ClipboardList,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -26,6 +25,16 @@ export default function StudentSidebar({ open, setOpen }) {
       label: "Schedule",
       icon: Calendar,
       path: "/student-schedule",
+    },
+    {
+      label: "Homework",
+      icon: FileText,
+      path: "/student-homework",
+    },
+    {
+      label: "Tests",
+      icon: ClipboardList,
+      path: "/student-test",
     },
   ];
 

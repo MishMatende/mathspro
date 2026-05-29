@@ -23,6 +23,7 @@ export default function UploadHomeworkModal({
   onClose,
   onUploaded,
   homework = null,
+  learnerId = "",
 }) {
   const { user } = useAuth();
 
@@ -55,7 +56,7 @@ export default function UploadHomeworkModal({
 
       setFormData({
         ...defaultForm,
-        learner_id: homework?.learner_id || "",
+        learner_id: homework?.learner_id || learnerId || "",
         tutor_id: user.id,
         title: homework?.title || "",
         category: homework?.category || "",
@@ -66,7 +67,7 @@ export default function UploadHomeworkModal({
 
       setFile(null);
     }
-  }, [isOpen, user, homework]);
+  }, [isOpen, user, homework, learnerId]);
 
   // 🔥 Input handler
   const handleChange = (e) => {
@@ -246,6 +247,7 @@ export default function UploadHomeworkModal({
               name="learner_id"
               value={formData.learner_id}
               onChange={handleChange}
+              disabled={Boolean(learnerId)}
               required
               className="
                 mt-2 w-full

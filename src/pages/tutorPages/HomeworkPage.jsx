@@ -24,6 +24,17 @@ import { clearCache, getCache, setCache } from "../../lib/cache";
 
 const defaultCategories = ["All", "Algebra", "Geometry", "Fractions"];
 
+const getDownloadName = (title, filePath) => {
+  const extension = filePath?.split(".").pop();
+  const safeTitle = (title || "homework")
+    .trim()
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+
+  return extension ? `${safeTitle}.${extension}` : safeTitle;
+};
+
 const HomeworkPage = () => {
   const { user } = useAuth();
 
@@ -144,7 +155,7 @@ const HomeworkPage = () => {
   }, [homework, search, activeCategory]);
 
   // 🔥 Download file
-  const handleDownload = async (filePath) => {
+  const handleDownload = async (filePath, title) => {
     if (!filePath) {
       toast.error("No worksheet file found");
       return;
@@ -153,7 +164,9 @@ const HomeworkPage = () => {
     try {
       const { data, error } = await supabase.storage
         .from("homework-files")
-        .createSignedUrl(filePath, 60);
+        .createSignedUrl(filePath, 60, {
+          download: getDownloadName(title, filePath),
+        });
 
       if (error) {
         console.log(error);
@@ -553,7 +566,7 @@ const HomeworkPage = () => {
                   </div>
 
                   <button
-                    onClick={() => handleDownload(hw.file_url)}
+                    onClick={() => handleDownload(hw.file_url, hw.title)}
                     className="
                       flex items-center gap-2
                       text-sm

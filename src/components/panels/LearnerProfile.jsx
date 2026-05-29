@@ -143,7 +143,7 @@ const LearnerProfile = ({ learner }) => {
           </motion.div>
         )}
 
-        {activeTab === "lessons" && <LessonTimeline />}
+        {activeTab === "lessons" && <LessonTimeline learnerId={learner.id} />}
         {activeTab === "homework" && <HomeworkPanel studentId={learner.id} />}
 
         {activeTab === "tests" && (

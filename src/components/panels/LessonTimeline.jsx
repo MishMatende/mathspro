@@ -1,13 +1,24 @@
-import { useState } from "react";
-import { lessons } from "../data/mockData";
+import { useEffect, useState } from "react";
 import LessonReviewModal from "../tutorModals/LessonReviewModal";
 import { motion } from "framer-motion";
 import { CheckCircle, AlertCircle, Info } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
+import toast from "react-hot-toast";
 
-const LessonTimeline = () => {
+const LessonTimeline = ({ learnerId }) => {
+  const { user } = useAuth();
+
+  const [lessons, setLessons] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState(null);
 
   const statusConfig = {
+    scheduled: {
+      label: "Scheduled",
+      color: "bg-blue-100 text-blue-700",
+      dot: "bg-blue-100 text-blue-600",
+    },
     pending: {
       label: "Pending",
       color: "bg-yellow-100 text-yellow-700",
@@ -24,6 +35,34 @@ const LessonTimeline = () => {
       dot: "bg-red-100 text-red-600",
     },
   };
+
+  const fetchLessons = async () => {
+    if (!learnerId || !user?.id) return;
+
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("lessons")
+      .select("*")
+      .eq("learner_id", learnerId)
+      .eq("tutor_id", user.id)
+      .order("lesson_date", { ascending: false })
+      .order("start_time", { ascending: false });
+
+    setLoading(false);
+
+    if (error) {
+      console.log(error);
+      toast.error("Failed to load lessons");
+      return;
+    }
+
+    setLessons(data || []);
+  };
+
+  useEffect(() => {
+    fetchLessons();
+  }, [learnerId, user?.id]);
 
   return (
     <>
@@ -60,13 +99,25 @@ const LessonTimeline = () => {
 
         {/* Timeline */}
         <div className="relative">
+          {loading && (
+            <div className="text-sm text-gray-400">Loading lessons...</div>
+          )}
+
+          {!loading && lessons.length === 0 && (
+            <div className="bg-white rounded-xl p-8 text-center text-sm text-gray-400 border border-gray-100">
+              No lessons found for this learner
+            </div>
+          )}
+
           {/* Vertical line */}
-          <div className="absolute left-4 sm:left-5 top-0 bottom-0 w-0.5 bg-gray-200" />
+          {lessons.length > 0 && (
+            <div className="absolute left-4 sm:left-5 top-0 bottom-0 w-0.5 bg-gray-200" />
+          )}
 
           <div className="space-y-4 sm:space-y-6">
             {lessons.map((lesson) => {
               const status = lesson.status || "pending";
-              const config = statusConfig[status];
+              const config = statusConfig[status] || statusConfig.pending;
 
               return (
                 <div key={lesson.id} className="relative pl-8 sm:pl-10">
@@ -92,7 +143,8 @@ const LessonTimeline = () => {
                         </p>
 
                         <p className="text-xs text-gray-400 mt-1">
-                          {lesson.date}
+                          {lesson.lesson_date} •{" "}
+                          {lesson.start_time?.slice(0, 5)}
                         </p>
                       </div>
 
@@ -120,7 +172,7 @@ const LessonTimeline = () => {
                           Next Step:
                         </span>
                         <p className="text-gray-700">
-                          {lesson.struggles || "Not recorded"}
+                          {lesson.next_action || "Not recorded"}
                         </p>
                       </div>
                     </div>
@@ -137,6 +189,7 @@ const LessonTimeline = () => {
         isOpen={!!selectedLesson}
         onClose={() => setSelectedLesson(null)}
         lesson={selectedLesson}
+        onSaved={fetchLessons}
       />
     </>
   );

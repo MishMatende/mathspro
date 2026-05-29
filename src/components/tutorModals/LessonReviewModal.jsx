@@ -12,8 +12,10 @@ import {
   ClipboardCheck,
   X,
 } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import toast from "react-hot-toast";
 
-export default function LessonReviewModal({ isOpen, onClose, lesson }) {
+export default function LessonReviewModal({ isOpen, onClose, lesson, onSaved }) {
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -62,16 +64,26 @@ export default function LessonReviewModal({ isOpen, onClose, lesson }) {
       status = "needs_attention";
     }
 
-    console.log({
-      ...formData,
-      status,
-    });
+    const { error } = await supabase
+      .from("lessons")
+      .update({
+        status,
+        struggles: formData.struggles.trim() || null,
+        next_action: formData.nextAction.trim() || null,
+      })
+      .eq("id", lesson.id);
 
-    setTimeout(() => {
-      setLoading(false);
+    setLoading(false);
 
-      onClose();
-    }, 600);
+    if (error) {
+      console.log(error);
+      toast.error("Failed to save review");
+      return;
+    }
+
+    toast.success("Lesson review saved");
+    onSaved?.();
+    onClose();
   };
 
   const isAchieved = formData.achieved === "yes";

@@ -70,7 +70,7 @@ export default function TutorLessonCalendar({ schedule, setSelectedLesson }) {
       <FullCalendar
         key={isMobile ? "mobile" : "desktop"}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView={isMobile ? "timeGridWeek" : "timeGridWeek"}
+        initialView={isMobile ? "timeGridDay" : "timeGridWeek"}
         editable={false}
         selectable
         nowIndicator

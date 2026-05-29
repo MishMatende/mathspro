@@ -5,6 +5,7 @@ import {
   GraduationCap,
   LogOut,
   CalendarDays,
+  ClipboardList,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -22,6 +23,11 @@ export default function AdminSidebar({ open, setOpen }) {
       path: "/admin-dashboard",
     },
     {
+      label: "Lessons",
+      icon: CalendarDays,
+      path: "/admin-lessons",
+    },
+    {
       label: "Learners",
       icon: GraduationCap,
       path: "/admin-learners",
@@ -32,9 +38,9 @@ export default function AdminSidebar({ open, setOpen }) {
       path: "/admin-tutors",
     },
     {
-      label: "Lessons",
-      icon: CalendarDays,
-      path: "/admin-lessons",
+      label: "Tests",
+      icon: ClipboardList,
+      path: "/admin-tests",
     },
   ];
 
