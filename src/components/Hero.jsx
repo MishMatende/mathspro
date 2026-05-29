@@ -69,7 +69,7 @@ export default function Hero() {
               className="w-11 h-11 rounded-full border-3 border-white object-cover shadow-sm"
             />
 
-            <div className="w-11 h-11 rounded-full border-3 border-white bg-gradient-to-br from-orange-500 to-orange-600 text-white flex items-center justify-center text-xs font-semibold shadow-sm">
+            <div className="w-11 h-11 rounded-full border-3 border-white bg-linear-to-br from-orange-500 to-orange-600 text-white flex items-center justify-center text-xs font-semibold shadow-sm">
               +10
             </div>
           </div>
