@@ -1,10 +1,15 @@
-// src/pages/tutor/TutorTestsPage.jsx
-
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
 
-import { FileText, Upload, Calendar, User, RefreshCw } from "lucide-react";
+import {
+  FileText,
+  Download,
+  MessageSquare,
+  Award,
+  RefreshCw,
+  Loader2,
+} from "lucide-react";
 
 const CACHE_DURATION = 5 * 60 * 1000;
 
@@ -12,6 +17,7 @@ export default function TestsPage() {
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState(null);
+  const [feedbackData, setFeedbackData] = useState({});
 
   useEffect(() => {
     loadTests();
@@ -68,7 +74,7 @@ export default function TestsPage() {
         `,
         )
         .eq("tutor_id", user.id)
-        .eq("status", "submitted")
+        .in("status", ["submitted", "marked"])
         .order("due_date", { ascending: true });
 
       if (error) throw error;
@@ -108,10 +114,15 @@ export default function TestsPage() {
 
       if (uploadError) throw uploadError;
 
-      await supabase.from("tests").update({
-        marked_file_url: filePath,
-        status: "marked",
-      });
+      await supabase
+        .from("tests")
+        .update({
+          marked_file_url: filePath,
+          status: "marked",
+          score: feedbackData[testId]?.score || null,
+          feedback: feedbackData[testId]?.feedback || null,
+        })
+        .eq("id", testId);
 
       await clearCache();
 
@@ -141,6 +152,21 @@ export default function TestsPage() {
     }
   };
 
+  const downloadMarkedTest = async (path) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("tests")
+        .createSignedUrl(path, 60);
+
+      if (error) throw error;
+
+      window.open(data.signedUrl, "_blank");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to download marked test");
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -159,14 +185,13 @@ export default function TestsPage() {
           className="flex items-center gap-2 px-3 py-2 border rounded-lg hover:bg-gray-50"
         >
           <RefreshCw size={16} />
-          Refresh
         </button>
       </div>
 
       {tests.length === 0 ? (
         <div className="bg-white rounded-3xl border border-orange-100 p-10 text-center shadow-sm">
           <div className="h-16 w-16 mx-auto rounded-2xl bg-orange-100 flex items-center justify-center mb-4">
-            <FileText size={28} className="text-orange-600" />
+            <FileText size={28} className="text-orange-500" />
           </div>
 
           <h3 className="font-semibold text-slate-800">No submitted tests</h3>
@@ -176,101 +201,237 @@ export default function TestsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {tests.map((test) => (
-            <div
-              key={test.id}
-              className="group bg-white rounded-3xl border border-orange-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
-            >
-              {/* HEADER */}
-              <div className="bg-linear-to-r from-orange-50 via-amber-50 to-white px-5 py-4 border-b border-orange-100">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {tests.map((test) => {
+            const score = feedbackData[test.id]?.score ?? test.score ?? "";
+
+            const feedback =
+              feedbackData[test.id]?.feedback ?? test.feedback ?? "";
+
+            const canUpload = score.trim() !== "" && feedback.trim() !== "";
+
+            return (
+              <div
+                key={test.id}
+                className="
+    bg-white
+    rounded-3xl
+    border border-slate-200
+    p-4
+    shadow-sm
+    hover:shadow-lg hover:-translate-y-0.5
+    transition
+  "
+              >
+                {/* TOP */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex gap-3 min-w-0">
-                    <div className="h-12 w-12 rounded-2xl bg-orange-100 flex items-center justify-center shrink-0">
-                      <FileText size={22} className="text-orange-600" />
+                  <div className="min-w-0 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+                      <FileText size={18} className="text-orange-500" />
                     </div>
 
                     <div className="min-w-0">
-                      <h2 className="font-semibold text-slate-900 text-lg truncate">
+                      <h3 className="font-semibold text-slate-900 truncate">
                         {test.title}
-                      </h2>
+                      </h3>
 
-                      <p className="text-sm text-slate-500 mt-1 line-clamp-2">
-                        {test.instructions}
+                      <p className="text-sm text-slate-500 truncate">
+                        {test.learners?.name}
                       </p>
                     </div>
                   </div>
 
-                  <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold">
-                    Needs Review
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      test.status === "marked"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-orange-100 text-orange-700"
+                    }`}
+                  >
+                    {test.status === "marked" ? "Marked" : "Submitted"}
                   </span>
                 </div>
-              </div>
 
-              {/* BODY */}
-              <div className="p-5">
-                {/* STUDENT */}
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center">
-                    <User size={16} className="text-slate-600" />
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-slate-400">Learner</p>
-
-                    <p className="font-medium text-slate-800">
-                      {test.learners?.name || "Unknown Learner"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* DUE DATE */}
-                <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-100 text-slate-600 text-sm mb-5">
-                  <Calendar size={14} />
+                {/* META */}
+                <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                  <span className="h-2 w-2 rounded-full bg-orange-400"></span>
                   Due{" "}
                   {test.due_date
                     ? new Date(test.due_date).toLocaleDateString()
                     : "No due date"}
                 </div>
 
+                {/* REVIEW SECTION */}
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-1">
+                      <Award size={13} className="text-orange-500" />
+                      Score
+                    </label>
+
+                    <input
+                      type="text"
+                      placeholder="e.g. 8/10"
+                      value={score}
+                      onChange={(e) =>
+                        setFeedbackData((prev) => ({
+                          ...prev,
+                          [test.id]: {
+                            ...prev[test.id],
+                            score: e.target.value,
+                          },
+                        }))
+                      }
+                      className="
+        w-full
+        rounded-xl
+        border border-slate-200
+        px-3 py-2
+        text-sm
+        focus:outline-none
+        focus:ring-2
+        focus:ring-orange-200
+      "
+                    />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-1">
+                      <MessageSquare size={13} className="text-orange-500" />
+                      Feedback
+                    </label>
+
+                    <textarea
+                      rows={3}
+                      placeholder="Add feedback for the learner..."
+                      value={feedback}
+                      onChange={(e) =>
+                        setFeedbackData((prev) => ({
+                          ...prev,
+                          [test.id]: {
+                            ...prev[test.id],
+                            feedback: e.target.value,
+                          },
+                        }))
+                      }
+                      className="
+        w-full
+        rounded-xl
+        border border-slate-200
+        px-3 py-2
+        text-sm
+        resize-none
+        focus:outline-none
+        focus:ring-2
+        focus:ring-orange-200
+      "
+                    />
+                  </div>
+                </div>
+
                 {/* ACTIONS */}
-                <div className="flex flex-col gap-3">
+                <div className="mt-4 grid grid-cols-2 gap-2">
                   {test.submission_file_url && (
                     <button
                       onClick={() =>
                         downloadSubmission(test.submission_file_url)
                       }
-                      className="w-full flex items-center justify-center gap-2 py-3 border border-slate-200 rounded-2xl text-slate-700 hover:bg-slate-50 transition"
+                      className="
+    flex-1
+    flex items-center justify-center gap-2
+    border border-slate-200
+    rounded-xl
+    py-2
+    text-sm
+    hover:bg-slate-50
+  "
                     >
-                      <FileText size={18} />
-                      Download Submission
+                      <Download size={15} />
+                      Submission
                     </button>
                   )}
 
-                  <label className="w-full flex items-center justify-center gap-2 py-3 bg-orange-500 text-white rounded-2xl cursor-pointer hover:bg-orange-600 transition shadow-sm">
-                    <Upload size={18} />
+                  {test.status === "marked" && test.marked_file_url ? (
+                    <button
+                      onClick={() => downloadMarkedTest(test.marked_file_url)}
+                      className="
+      flex-1
+      flex items-center justify-center gap-2
+      bg-orange-500
+      text-white
+      rounded-xl
+      py-2
+      text-sm
+      hover:bg-orange-600
+    "
+                    >
+                      <Download size={15} />
+                      Marked Test
+                    </button>
+                  ) : canUpload ? (
+                    <label
+                      className={`
+      flex-1
+      rounded-xl
+      py-2
+      text-sm
+      text-center
+      text-white
+      transition
+      ${
+        uploadingId === test.id
+          ? "bg-orange-300 cursor-not-allowed pointer-events-none opacity-70"
+          : "bg-orange-500 hover:bg-orange-600 cursor-pointer"
+      }
+    `}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        {uploadingId === test.id ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          "Upload Marked Test"
+                        )}
+                      </div>
 
-                    {uploadingId === test.id
-                      ? "Uploading..."
-                      : "Upload Marked Test"}
+                      <input
+                        type="file"
+                        hidden
+                        disabled={uploadingId === test.id}
+                        accept="application/pdf,.pdf"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
 
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="application/pdf,.pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
+                          if (file) {
+                            uploadMarkedTest(test.id, file);
+                          }
 
-                        if (file) {
-                          uploadMarkedTest(test.id, file);
-                        }
-                      }}
-                    />
-                  </label>
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <button
+                      disabled
+                      className="
+      flex-1
+      rounded-xl
+      py-2
+      text-sm
+      bg-slate-100
+      text-slate-400
+      cursor-not-allowed
+    "
+                    >
+                      Add score & feedback
+                    </button>
+                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

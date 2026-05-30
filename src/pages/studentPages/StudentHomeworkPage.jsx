@@ -39,6 +39,16 @@ export default function StudentHomeworkPage() {
 
   const cacheKey = user?.id ? `student_homework_${user.id}` : null;
 
+  const formatDate = (date) => {
+    if (!date) return "No due date";
+
+    return new Date(date).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
   // 🔥 Fetch homework
   const fetchHomework = async (forceRefresh = false) => {
     if (!user) return;
@@ -282,30 +292,6 @@ export default function StudentHomeworkPage() {
 
         {/* SEARCH */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* Refresh */}
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="
-      h-11 w-11 shrink-0
-      flex items-center justify-center
-      rounded-xl
-      border border-gray-200
-      bg-white
-      transition-all
-      hover:bg-gray-50
-      disabled:opacity-50
-    "
-            title="Refresh homework"
-          >
-            <RefreshCw
-              size={18}
-              className={
-                refreshing ? "animate-spin text-orange-500" : "text-gray-600"
-              }
-            />
-          </button>
-
           {/* Search */}
           <div className="relative flex-1 sm:w-72">
             <Search
@@ -335,6 +321,29 @@ export default function StudentHomeworkPage() {
       "
             />
           </div>
+          {/* Refresh */}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="
+      h-11 w-11 shrink-0
+      flex items-center justify-center
+      rounded-xl
+      border border-gray-200
+      bg-white
+      transition-all
+      hover:bg-gray-50
+      disabled:opacity-50
+    "
+            title="Refresh homework"
+          >
+            <RefreshCw
+              size={18}
+              className={
+                refreshing ? "animate-spin text-orange-500" : "text-gray-600"
+              }
+            />
+          </button>
         </div>
       </div>
 
@@ -374,6 +383,9 @@ export default function StudentHomeworkPage() {
         {filteredHomework.map((hw) => {
           const submission = hw.homework_submissions?.[0];
 
+          const isPastDue = hw.due_date && new Date(hw.due_date) < new Date();
+          const canSubmit = !isPastDue && submission?.status !== "reviewed";
+
           return (
             <motion.div
               key={hw.id}
@@ -389,10 +401,12 @@ export default function StudentHomeworkPage() {
               {/* TOP */}
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-semibold text-gray-900">{hw.title}</h3>
+                  <h3 className="font-semibold text-gray-900">
+                    {hw.title.charAt(0).toUpperCase() + hw.title.slice(1)}
+                  </h3>
 
                   <p className="text-sm text-gray-500 mt-1">
-                    {hw.category || "General"}
+                    {hw.category.charAt(0).toUpperCase() + hw.category.slice(1)}
                   </p>
                 </div>
 
@@ -410,19 +424,25 @@ export default function StudentHomeworkPage() {
                     }
                   `}
                 >
-                  {submission?.status || "pending"}
+                  {submission?.status
+                    ? submission.status.charAt(0).toUpperCase() +
+                      submission.status.slice(1)
+                    : "Pending"}
                 </span>
               </div>
 
               {/* DETAILS */}
               <div className="mt-4 space-y-3">
-                <p className="text-sm text-gray-600">
-                  {hw.instructions || "No instructions"}
-                </p>
+                {submission?.status !== "submitted" &&
+                  submission?.status !== "reviewed" && (
+                    <p className="text-sm text-gray-600 whitespace-pre-line">
+                      {hw.instructions || ""}
+                    </p>
+                  )}
 
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                   <Clock3 size={14} />
-                  {hw.due_date ? `Due ${hw.due_date}` : "No due date"}
+                  Due: {formatDate(hw.due_date)}
                 </div>
 
                 {/* SCORE */}
@@ -434,7 +454,9 @@ export default function StudentHomeworkPage() {
                       text-green-600
                     "
                   >
-                    Score: {submission.score}
+                    <div className="text-sm font-medium text-orange-500">
+                      Score: {submission.score}
+                    </div>
                   </div>
                 )}
 
@@ -447,16 +469,17 @@ export default function StudentHomeworkPage() {
                       border border-gray-100
                       rounded-2xl
                       p-3
+                      whitespace-pre-line
                     "
                   >
-                    {submission.remarks}
+                    {submission.remarks.charAt(0).toUpperCase() +
+                      submission.remarks.slice(1)}
                   </div>
                 )}
 
                 {submission?.submitted_at && (
                   <p className="text-xs text-gray-400">
-                    Submitted{" "}
-                    {new Date(submission.submitted_at).toLocaleDateString()}
+                    Submitted {formatDate(submission.submitted_at)}
                   </p>
                 )}
               </div>
@@ -464,18 +487,21 @@ export default function StudentHomeworkPage() {
               {/* ACTIONS */}
               <div className="mt-5 flex flex-wrap gap-3">
                 {/* DOWNLOAD */}
-                <button
-                  onClick={() => downloadFile(hw.file_url, hw.title)}
-                  className="
-                    flex items-center gap-2
-                    text-sm
-                    text-blue-600
-                    hover:underline
-                  "
-                >
-                  <Download size={16} />
-                  Worksheet
-                </button>
+                {submission?.status !== "submitted" &&
+                  submission?.status !== "reviewed" && (
+                    <button
+                      onClick={() => downloadFile(hw.file_url, hw.title)}
+                      className="
+      flex items-center gap-2
+      text-sm
+      text-blue-600
+      hover:underline
+    "
+                    >
+                      <Download size={16} />
+                      Worksheet
+                    </button>
+                  )}
 
                 {submission?.submission_file_url && (
                   <button
@@ -499,29 +525,56 @@ export default function StudentHomeworkPage() {
                 )}
 
                 {/* SUBMIT */}
-                <label
-                  className="
-                    flex items-center gap-2
-                    text-sm
-                    text-orange-600
-                    cursor-pointer
-                    hover:underline
-                  "
-                >
-                  <Upload size={16} />
+                {canSubmit && (
+                  <label
+                    className="
+      flex items-center gap-2
+      text-sm
+      text-orange-600
+      cursor-pointer
+      hover:underline
+    "
+                  >
+                    <Upload size={16} />
 
-                  {submission ? "Resubmit" : "Submit"}
+                    {submission ? "Resubmit" : "Submit"}
 
-                  <input
-                    type="file"
-                    hidden
-                    accept="application/pdf,.pdf"
-                    onChange={(e) => {
-                      uploadSubmission(hw, e.target.files[0]);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
+                    <input
+                      type="file"
+                      hidden
+                      accept="application/pdf,.pdf"
+                      onChange={(e) => {
+                        uploadSubmission(hw, e.target.files[0]);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                )}
+                {isPastDue && submission?.status !== "reviewed" && (
+                  <span className="text-sm text-red-500">
+                    Submission closed
+                  </span>
+                )}
+                {submission?.marked_file_url && (
+                  <button
+                    onClick={() =>
+                      downloadFile(
+                        submission.marked_file_url,
+                        hw.title,
+                        "marked",
+                      )
+                    }
+                    className="
+      flex items-center gap-2
+      text-sm
+      text-green-600
+      hover:underline
+    "
+                  >
+                    <Download size={16} />
+                    Marked Homework
+                  </button>
+                )}
               </div>
             </motion.div>
           );

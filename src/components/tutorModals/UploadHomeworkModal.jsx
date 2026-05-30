@@ -295,7 +295,7 @@ export default function UploadHomeworkModal({
 
           {/* CATEGORY */}
           <div>
-            <label className="text-sm font-medium">Category</label>
+            <label className="text-sm font-medium">Topic</label>
 
             <input
               type="text"

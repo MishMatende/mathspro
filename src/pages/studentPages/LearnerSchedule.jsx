@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
-import { getCache, setCache } from "../../lib/cache";
+import { getCache, setCache, clearCache } from "../../lib/cache";
 import toast from "react-hot-toast";
+import { RefreshCw } from "lucide-react";
 import StudentLessonCalendar from "../../components/student/StudentLessonCalendar";
 
 export default function LearnerSchedule() {
@@ -15,9 +12,10 @@ export default function LearnerSchedule() {
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // 🔥 Fetch learner profile
-  const fetchLearner = async () => {
+  const fetchLearner = async (forceRefresh = false) => {
     if (!user) return;
 
     const cacheKey = `learner_profile_${user.id}`;
@@ -51,20 +49,20 @@ export default function LearnerSchedule() {
   };
 
   // 🔥 Fetch learner lessons
-  const fetchLessons = async () => {
+  const fetchLessons = async (forceRefresh = false) => {
     if (!user) return;
 
     const cacheKey = `learner_schedule_${user.id}`;
 
     // 1. Cache first
-    const cachedLessons = getCache(cacheKey);
+    if (!forceRefresh) {
+      const cachedLessons = getCache(cacheKey);
 
-    if (cachedLessons) {
-      setLessons(cachedLessons);
-
-      setLoading(false);
-
-      return;
+      if (cachedLessons) {
+        setLessons(cachedLessons);
+        setLoading(false);
+        return;
+      }
     }
 
     // 2. Fetch DB
@@ -98,6 +96,27 @@ export default function LearnerSchedule() {
 
     // 3. Cache
     setCache(cacheKey, data);
+  };
+
+  const handleRefresh = async () => {
+    if (!user) return;
+
+    setRefreshing(true);
+
+    try {
+      clearCache(`learner_profile_${user.id}`);
+      clearCache(`learner_schedule_${user.id}`);
+
+      await fetchLearner(true);
+      await fetchLessons(true);
+
+      toast.success("Schedule refreshed");
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to refresh schedule");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
@@ -137,6 +156,34 @@ export default function LearnerSchedule() {
 
   return (
     <>
+      <div className="flex items-center justify-between m-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">My Schedule</h1>
+
+          <p className="text-sm text-gray-400">View your upcoming lessons</p>
+        </div>
+
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="
+        flex items-center justify-center
+        h-11 w-11
+        rounded-xl
+        border border-gray-200
+        bg-white
+        hover:bg-gray-50
+        transition
+        disabled:opacity-50
+      "
+        >
+          <RefreshCw
+            size={18}
+            className={refreshing ? "animate-spin text-orange-500" : ""}
+          />
+        </button>
+      </div>
+
       <StudentLessonCalendar
         lessons={lessons}
         onLessonClick={(lesson) => {

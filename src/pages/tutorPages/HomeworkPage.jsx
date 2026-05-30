@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-
 import {
   FileText,
   Download,
@@ -11,15 +10,10 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-
 import { supabase } from "../../lib/supabase";
-
 import { useAuth } from "../../context/AuthContext";
-
 import toast from "react-hot-toast";
-
 import UploadHomeworkModal from "../../components/tutorModals/UploadHomeworkModal";
-
 import { clearCache, getCache, setCache } from "../../lib/cache";
 
 const defaultCategories = ["All", "Algebra", "Geometry", "Fractions"];
@@ -35,22 +29,16 @@ const getDownloadName = (title, filePath) => {
   return extension ? `${safeTitle}.${extension}` : safeTitle;
 };
 
-const HomeworkPage = () => {
+export default function HomeworkPage() {
   const { user } = useAuth();
-
   const [search, setSearch] = useState("");
-
   const [activeCategory, setActiveCategory] = useState("All");
-
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   const [selectedHomework, setSelectedHomework] = useState(null);
-
   const [homeworkToDelete, setHomeworkToDelete] = useState(null);
-
   const [homework, setHomework] = useState([]);
-
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const cacheKey = user?.id ? `tutor_homework_${user.id}` : null;
 
@@ -262,6 +250,7 @@ const HomeworkPage = () => {
     } finally {
       toast.dismiss(loadingToast);
     }
+    console.log(hw);
   };
 
   return (
@@ -524,7 +513,22 @@ const HomeworkPage = () => {
                       {hw.due_date ? `Due ${hw.due_date}` : "No due date"}
                     </span>
 
-                    <span>{submitted}/1 submitted</span>
+                    <button
+                      onClick={() => {
+                        console.log("Learner ID", hw.learners?.id);
+                        navigate(`/learners/${hw.learners?.id}?tab=homework`);
+                      }}
+                      className="
+    px-2 py-1
+    rounded-full
+    bg-green-50
+    text-green-700
+    hover:bg-green-100
+    transition
+  "
+                    >
+                      {submitted}/1 submitted
+                    </button>
                   </div>
                 </div>
 
@@ -674,6 +678,4 @@ const HomeworkPage = () => {
       )}
     </>
   );
-};
-
-export default HomeworkPage;
+}

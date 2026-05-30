@@ -10,6 +10,7 @@ import {
   AlertCircle,
   User,
   ClipboardList,
+  RefreshCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -23,11 +24,53 @@ export default function StudentDashboard() {
   const [pendingHomework, setPendingHomework] = useState(0);
   const [pendingTests, setPendingTests] = useState(0);
 
+  const CACHE_DURATION = 5 * 60 * 1000;
+
+  const formatDate = (date) => {
+    if (!date) return "No date";
+
+    const d = new Date(date);
+
+    const day = String(d.getDate()).padStart(2, "0");
+
+    const month = d.toLocaleString("en-GB", {
+      month: "long",
+    });
+
+    const year = d.getFullYear();
+
+    return `${day}-${month}-${year}`;
+  };
+
   // 🔥 Fetch dashboard data
-  const fetchDashboard = async () => {
+  const fetchDashboard = async (forceRefresh = false) => {
     if (!user) return;
 
+    const cacheKey = `student_dashboard_${user.id}`;
+
     setLoading(true);
+
+    if (!forceRefresh) {
+      const cached = sessionStorage.getItem(cacheKey);
+
+      if (cached) {
+        const parsed = JSON.parse(cached);
+
+        const isValid = Date.now() - parsed.timestamp < CACHE_DURATION;
+
+        if (isValid) {
+          setStudent(parsed.student);
+          setUpcomingLessons(parsed.upcomingLessons);
+          setCompletedLessons(parsed.completedLessons);
+          setNextLesson(parsed.nextLesson);
+          setPendingHomework(parsed.pendingHomework);
+          setPendingTests(parsed.pendingTests);
+
+          setLoading(false);
+          return;
+        }
+      }
+    }
 
     try {
       // 🔥 Student profile
@@ -81,9 +124,16 @@ export default function StudentDashboard() {
       // Pending homework
       const homeworkPromise = supabase
         .from("homework")
-        .select("*", { count: "exact", head: true })
-        .eq("learner_id", user.id)
-        .eq("status", "active");
+        .select(
+          `
+    id,
+    homework_submissions (
+      id,
+      status
+    )
+  `,
+        )
+        .eq("learner_id", user.id);
 
       //Pending Tests
       const testsPromise = supabase
@@ -104,17 +154,46 @@ export default function StudentDashboard() {
           testsPromise,
         ]);
 
+      const pendingHomeworkCount = (homeworkRes.data || []).filter((hw) => {
+        const submission = hw.homework_submissions?.[0];
+
+        return !submission || submission.status === "pending";
+      }).length;
+
+      if (homeworkRes.error) throw homeworkRes.error;
       if (studentRes.error) throw studentRes.error;
       if (upcomingRes.error) throw upcomingRes.error;
       if (completedRes.error) throw completedRes.error;
       if (testsRes.error) throw testsRes.error;
 
       setStudent(studentRes.data);
-      setUpcomingLessons(upcomingRes.data || []);
       setCompletedLessons(completedRes.data || []);
-      setNextLesson(upcomingRes.data?.[0] || null);
-      setPendingHomework(homeworkRes.count || 0);
+      setPendingHomework(pendingHomeworkCount);
       setPendingTests(testsRes.count || 0);
+
+      const now = new Date();
+
+      const futureLessons = (upcomingRes.data || []).filter((lesson) => {
+        const lessonEnd = new Date(`${lesson.lesson_date}T${lesson.end_time}`);
+
+        return lessonEnd > now;
+      });
+
+      setUpcomingLessons(futureLessons);
+      setNextLesson(futureLessons[0] || null);
+
+      sessionStorage.setItem(
+        cacheKey,
+        JSON.stringify({
+          timestamp: Date.now(),
+          student: studentRes.data,
+          completedLessons: completedRes.data || [],
+          upcomingLessons: futureLessons,
+          nextLesson: futureLessons[0] || null,
+          pendingHomework: pendingHomeworkCount,
+          pendingTests: testsRes.count || 0,
+        }),
+      );
     } catch (err) {
       console.log(err);
 
@@ -140,15 +219,39 @@ export default function StudentDashboard() {
   return (
     <div className="p-4 lg:p-6 space-y-6">
       {/* HEADER */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">
-          Welcome back{student?.name ? `, ${student.name.split(" ")[0]}` : ""}{" "}
-          👋
-        </h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Welcome back
+            {student?.name ? `, ${student.name.split(" ")[0]}` : ""}
+            👋
+          </h1>
 
-        <p className="text-sm text-gray-400 mt-1">
-          Track your lessons and progress
-        </p>
+          <p className="text-sm text-gray-400 mt-1">
+            Track your lessons and progress
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            sessionStorage.removeItem(`student_dashboard_${user.id}`);
+
+            fetchDashboard(true);
+          }}
+          disabled={loading}
+          className="
+      flex items-center gap-2
+      px-3 py-2
+      rounded-xl
+      border border-gray-200
+      bg-white
+      hover:bg-gray-50
+      transition
+      disabled:opacity-50
+    "
+        >
+          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+        </button>
       </div>
 
       {/* LOADING */}
@@ -191,7 +294,7 @@ export default function StudentDashboard() {
                       <div className="mt-4 space-y-2 text-sm text-orange-50">
                         <div className="flex items-center gap-2">
                           <CalendarDays size={14} />
-                          {nextLesson.lesson_date}
+                          {formatDate(nextLesson.lesson_date)}
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -284,6 +387,30 @@ export default function StudentDashboard() {
                 </div>
               </div>
             </div>
+            {/* ASSIGNED TUTOR */}
+            <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">Assigned Tutor</p>
+
+                  <h3 className="text-lg font-semibold mt-2 text-gray-900">
+                    {student?.tutors?.name || "Not Assigned"}
+                  </h3>
+                </div>
+
+                <div
+                  className="
+        w-12 h-12
+        rounded-2xl
+        bg-purple-100
+        text-purple-600
+        flex items-center justify-center
+      "
+                >
+                  <User size={22} />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* UPCOMING LESSONS */}
@@ -329,7 +456,7 @@ export default function StudentDashboard() {
                       <div className="mt-3 space-y-2 text-sm text-gray-500">
                         <div className="flex items-center gap-2">
                           <CalendarDays size={14} />
-                          {lesson.lesson_date}
+                          {formatDate(lesson.lesson_date)}
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -406,7 +533,7 @@ export default function StudentDashboard() {
                       </h4>
 
                       <p className="text-xs text-gray-400 mt-1">
-                        {lesson.lesson_date}
+                        {formatDate(lesson.lesson_date)}
                       </p>
                     </div>
 

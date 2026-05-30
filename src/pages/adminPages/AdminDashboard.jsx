@@ -1,57 +1,81 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { Users, GraduationCap } from "lucide-react";
+import { Users, GraduationCap, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
-
-import { getCache, setCache } from "../../lib/cache";
+import toast from "react-hot-toast";
+import { getCache, setCache, clearCache } from "../../lib/cache";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
     learners: 0,
     tutors: 0,
   });
-
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchStats = async (forceRefresh = false) => {
-    const cacheKey = "admin_dashboard_stats";
+    setLoading(true);
 
-    // 🔥 Use cache first
-    if (!forceRefresh) {
-      const cachedStats = getCache(cacheKey);
+    try {
+      const cacheKey = "admin_dashboard_stats";
 
-      if (cachedStats) {
-        setStats(cachedStats);
-        setLoading(false);
-        return;
+      // Cache first
+      if (!forceRefresh) {
+        const cachedStats = getCache(cacheKey);
+
+        if (cachedStats) {
+          setStats(cachedStats);
+          setLoading(false);
+          return;
+        }
       }
+
+      const [learnersRes, tutorsRes] = await Promise.all([
+        supabase.from("learners").select("*", {
+          count: "exact",
+          head: true,
+        }),
+
+        supabase.from("tutors").select("*", {
+          count: "exact",
+          head: true,
+        }),
+      ]);
+
+      if (learnersRes.error) throw learnersRes.error;
+      if (tutorsRes.error) throw tutorsRes.error;
+
+      const newStats = {
+        learners: learnersRes.count || 0,
+        tutors: tutorsRes.count || 0,
+      };
+
+      setStats(newStats);
+
+      setCache(cacheKey, newStats);
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to load dashboard statistics");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // 🔥 Fetch counts from learners + tutors tables
-    const [learnersRes, tutorsRes] = await Promise.all([
-      supabase.from("learners").select("*", {
-        count: "exact",
-        head: true,
-      }),
+  const handleRefresh = async () => {
+    setRefreshing(true);
 
-      supabase.from("tutors").select("*", {
-        count: "exact",
-        head: true,
-      }),
-    ]);
+    try {
+      clearCache("admin_dashboard_stats");
 
-    const newStats = {
-      learners: learnersRes.count || 0,
-      tutors: tutorsRes.count || 0,
-    };
+      await fetchStats(true);
 
-    // 🔥 Update state
-    setStats(newStats);
-
-    // 🔥 Cache stats
-    setCache(cacheKey, newStats);
-
-    setLoading(false);
+      toast.success("Dashboard refreshed");
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to refresh dashboard");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
@@ -61,7 +85,31 @@ export default function AdminDashboard() {
   return (
     <div className="p-4 lg:p-6">
       {/* Header */}
-      <h1 className="text-lg font-semibold mb-6">Admin Dashboard</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-lg font-semibold">Admin Dashboard</h1>
+
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="
+      flex items-center justify-center
+      h-11 w-11
+      rounded-xl
+      border border-gray-200
+      bg-white
+      hover:bg-gray-50
+      transition
+      disabled:opacity-50
+    "
+        >
+          <RefreshCw
+            size={18}
+            className={`${
+              refreshing ? "animate-spin text-orange-500" : "text-gray-600"
+            }`}
+          />
+        </button>
+      </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -12,6 +12,8 @@ import {
   CheckCircle,
   RefreshCw,
   Clock3,
+  Award,
+  MessageSquare,
 } from "lucide-react";
 
 export default function StudentTestPage() {
@@ -24,6 +26,16 @@ export default function StudentTestPage() {
   useEffect(() => {
     loadTests();
   }, []);
+
+  const formatDate = (date) => {
+    if (!date) return "No due date";
+
+    return new Date(date).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  };
 
   const loadTests = async (forceRefresh = false) => {
     try {
@@ -241,10 +253,13 @@ export default function StudentTestPage() {
               {/* TOP */}
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-semibold text-gray-900">{test.title}</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {test.subject || "Test"}
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                    Title
                   </p>
+
+                  <h3 className="font-semibold text-gray-900 mt-1">
+                    {test.title.charAt(0).toUpperCase() + test.title.slice(1)}
+                  </h3>
                 </div>
 
                 <span
@@ -256,32 +271,60 @@ export default function StudentTestPage() {
                         : "bg-orange-100 text-orange-700"
                   }`}
                 >
-                  {test.status || "pending"}
+                  {test.status.charAt(0).toUpperCase() + test.status.slice(1) ||
+                    "pending"}
                 </span>
               </div>
 
               {/* DETAILS */}
               <div className="mt-4 space-y-3">
                 {test.instructions && (
-                  <p className="text-sm text-gray-600">{test.instructions}</p>
+                  <div className="mt-4">
+                    <p className="text-xs font-semibold text-slate-500 uppercase mb-1">
+                      Instructions
+                    </p>
+
+                    <p className="text-sm text-slate-700 whitespace-pre-line">
+                      {test.instructions.charAt(0).toUpperCase() +
+                        test.instructions.slice(1)}
+                    </p>
+                  </div>
                 )}
 
-                <div className="flex items-center gap-2 text-xs text-gray-400">
+                <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
                   <Clock3 size={14} />
-                  {test.due_date ? `Due ${test.due_date}` : "No due date"}
+                  <span>Due: {formatDate(test.due_date)}</span>
                 </div>
 
                 {/* SCORE */}
                 {test.score && (
-                  <div className="text-sm font-medium text-green-600">
-                    Score: {test.score}
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Award size={14} className="text-orange-500" />
+                      <span className="text-xs font-semibold text-slate-500 uppercase">
+                        Score
+                      </span>
+                    </div>
+
+                    <p className="text-lg font-bold text-orange-500">
+                      {test.score}
+                    </p>
                   </div>
                 )}
 
                 {/* REMARKS */}
-                {test.remarks && (
-                  <div className="text-sm bg-gray-50 border border-gray-100 rounded-2xl p-3">
-                    {test.remarks}
+                {test.feedback && (
+                  <div className="mt-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MessageSquare size={14} className="text-orange-500" />
+                      <span className="text-xs font-semibold text-slate-500 uppercase">
+                        Feedback
+                      </span>
+                    </div>
+
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      {test.feedback}
+                    </p>
                   </div>
                 )}
               </div>

@@ -67,26 +67,6 @@ export default function StudentLessonCalendar({ lessons = [], onLessonClick }) {
 
   return (
     <div className="calendar-wrapper">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-5">
-        <div
-          className="
-            flex h-12 w-12 items-center justify-center
-            rounded-2xl
-            bg-indigo-100
-            text-indigo-600
-          "
-        >
-          <CalendarDays size={22} />
-        </div>
-
-        <div>
-          <h2 className="text-lg font-bold text-slate-900">My Schedule</h2>
-
-          <p className="text-sm text-slate-500">View your upcoming lessons</p>
-        </div>
-      </div>
-
       {/* Calendar */}
       <FullCalendar
         key={isMobile ? "mobile" : "desktop"}

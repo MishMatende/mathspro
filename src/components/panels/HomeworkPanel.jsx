@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Upload, FileText, Plus } from "lucide-react";
+import {
+  Download,
+  Upload,
+  FileText,
+  Plus,
+  Pencil,
+  Loader2,
+} from "lucide-react";
 import toast from "react-hot-toast";
 
 import { supabase } from "../../lib/supabase";
@@ -20,12 +27,13 @@ const getDownloadName = (title, filePath, suffix = "") => {
 
 const HomeworkPanel = ({ studentId }) => {
   const { user } = useAuth();
-
+  const [pendingMarkedFiles, setPendingMarkedFiles] = useState({});
   const [homework, setHomework] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isHomeworkModalOpen, setIsHomeworkModalOpen] = useState(false);
   const [savingSubmissionId, setSavingSubmissionId] = useState(null);
   const [feedback, setFeedback] = useState({});
+  const [uploadingSubmissionId, setUploadingSubmissionId] = useState(null);
 
   const fetchHomework = async () => {
     if (!studentId || !user?.id) return;
@@ -106,13 +114,15 @@ const HomeworkPanel = ({ studentId }) => {
     }));
   };
 
-  const saveFeedback = async (submission, markedFile = null) => {
+  const saveFeedback = async (submission) => {
     const values = feedback[submission.id] || {};
+    const markedFile = pendingMarkedFiles[submission.id];
     let markedFilePath = submission.marked_file_url || null;
 
     setSavingSubmissionId(submission.id);
 
     if (markedFile) {
+      setUploadingSubmissionId(submission.id);
       const fileName = `${crypto.randomUUID()}.pdf`;
       markedFilePath = `${user.id}/marked/${submission.id}/${fileName}`;
 
@@ -125,6 +135,7 @@ const HomeworkPanel = ({ studentId }) => {
         toast.error(uploadError.message || "Failed to upload marked work");
         return;
       }
+      setUploadingSubmissionId(null);
     }
 
     const { error } = await supabase
@@ -132,7 +143,10 @@ const HomeworkPanel = ({ studentId }) => {
       .update({
         marked_file_url: markedFilePath,
         remarks: values.remarks ?? submission.remarks ?? null,
-        score: values.score === "" ? null : (values.score ?? submission.score),
+        score:
+          values.score?.trim?.() === ""
+            ? null
+            : (values.score ?? submission.score),
         status: "reviewed",
         reviewed_at: new Date().toISOString(),
       })
@@ -149,8 +163,16 @@ const HomeworkPanel = ({ studentId }) => {
       return;
     }
 
-    toast.success("Feedback saved");
-    fetchHomework();
+    if (!error) {
+      setPendingMarkedFiles((current) => {
+        const next = { ...current };
+        delete next[submission.id];
+        return next;
+      });
+
+      toast.success("Feedback saved");
+      fetchHomework();
+    }
   };
 
   return (
@@ -230,13 +252,6 @@ const HomeworkPanel = ({ studentId }) => {
                       </p>
                     </div>
                   </div>
-
-                  <button
-                    onClick={() => downloadFile(hw.file_url, hw.title)}
-                    className="text-xs text-blue-600 hover:underline whitespace-nowrap"
-                  >
-                    Worksheet
-                  </button>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between gap-3 text-xs text-gray-400">
@@ -300,19 +315,68 @@ const HomeworkPanel = ({ studentId }) => {
                         </button>
                       )}
 
-                      <label className="flex items-center gap-1.5 text-green-600 hover:underline cursor-pointer">
-                        <Upload size={14} />
-                        Upload Marked
-                        <input
-                          type="file"
-                          hidden
-                          accept="application/pdf,.pdf"
-                          onChange={(e) => {
-                            saveFeedback(submission, e.target.files[0]);
-                            e.target.value = "";
-                          }}
-                        />
-                      </label>
+                      {!submission.marked_file_url && (
+                        <div className="flex gap-4">
+                          <label
+                            className={`
+        flex items-center gap-1.5
+        ${
+          pendingMarkedFiles[submission.id]
+            ? "text-gray-400 cursor-not-allowed"
+            : "text-green-600 hover:underline cursor-pointer"
+        }
+      `}
+                          >
+                            <Upload size={14} />
+
+                            {pendingMarkedFiles[submission.id]
+                              ? "Marked File Selected"
+                              : "Upload Marked"}
+
+                            <input
+                              type="file"
+                              hidden
+                              disabled={!!pendingMarkedFiles[submission.id]}
+                              accept="application/pdf,.pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+
+                                if (!file) return;
+
+                                setPendingMarkedFiles((current) => ({
+                                  ...current,
+                                  [submission.id]: file,
+                                }));
+
+                                toast.success("Marked work ready to save");
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+
+                          {pendingMarkedFiles[submission.id] && (
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-green-600">
+                                ✓ {pendingMarkedFiles[submission.id].name}
+                              </p>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPendingMarkedFiles((current) => {
+                                    const next = { ...current };
+                                    delete next[submission.id];
+                                    return next;
+                                  })
+                                }
+                                className="text-xs text-red-500 hover:underline"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-3">
@@ -359,11 +423,27 @@ const HomeworkPanel = ({ studentId }) => {
                         <button
                           onClick={() => saveFeedback(submission)}
                           disabled={savingSubmissionId === submission.id}
-                          className="h-9 px-3 rounded-lg text-xs font-medium bg-(--color-primary) text-white hover:shadow-md active:scale-[0.98] transition-all disabled:opacity-60 whitespace-nowrap"
+                          className="
+    h-9 px-3 rounded-lg text-xs font-medium
+    bg-(--color-primary)
+    text-white
+    hover:shadow-md
+    active:scale-[0.98]
+    transition-all
+    disabled:opacity-60
+    flex items-center gap-2
+  "
                         >
-                          {savingSubmissionId === submission.id
-                            ? "Saving..."
-                            : "Save"}
+                          {savingSubmissionId === submission.id ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin" />
+                              Saving...
+                            </>
+                          ) : submission.status === "reviewed" ? (
+                            <Pencil size={14} />
+                          ) : (
+                            "Save"
+                          )}
                         </button>
                       </div>
                     </div>

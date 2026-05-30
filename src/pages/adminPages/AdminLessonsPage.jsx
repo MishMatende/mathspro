@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { getCache, setCache, clearCache } from "../../lib/cache";
 import {
   CalendarDays,
   Plus,
@@ -8,6 +9,7 @@ import {
   GraduationCap,
   Pencil,
   Filter,
+  RefreshCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
@@ -22,25 +24,38 @@ export default function AdminLessonsPage() {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [dateFilter, setDateFilter] = useState("weekly");
   const [tutorFilter, setTutorFilter] = useState("all");
+  const [refreshing, setRefreshing] = useState(false);
 
   // 🔥 Fetch lessons
-  const fetchLessons = async () => {
+  const fetchLessons = async (forceRefresh = false) => {
     setLoading(true);
+
+    const cacheKey = "admin_lessons";
+
+    if (!forceRefresh) {
+      const cachedLessons = getCache(cacheKey);
+
+      if (cachedLessons) {
+        setLessons(cachedLessons);
+        setLoading(false);
+        return;
+      }
+    }
 
     const { data, error } = await supabase
       .from("lessons")
       .select(
         `
-        *,
-        learners (
-          id,
-          name
-        ),
-        tutors (
-          id,
-          name
-        )
-      `,
+      *,
+      learners (
+        id,
+        name
+      ),
+      tutors (
+        id,
+        name
+      )
+    `,
       )
       .order("lesson_date", {
         ascending: true,
@@ -56,7 +71,27 @@ export default function AdminLessonsPage() {
       return;
     }
 
-    setLessons(data);
+    setLessons(data || []);
+
+    setCache(cacheKey, data || []);
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+
+    try {
+      clearCache("admin_lessons");
+
+      await fetchLessons(true);
+
+      toast.success("Lessons refreshed");
+    } catch (error) {
+      console.log(error);
+
+      toast.error("Failed to refresh lessons");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
@@ -83,7 +118,8 @@ export default function AdminLessonsPage() {
 
     toast.success("Lesson deleted");
 
-    fetchLessons();
+    clearCache("admin_lessons");
+    fetchLessons(true);
   };
 
   const today = new Date();
@@ -124,29 +160,54 @@ export default function AdminLessonsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-2">
             <CalendarDays size={22} />
-
             <h1 className="text-xl font-semibold">Lessons</h1>
           </div>
 
-          <button
-            onClick={() => setIsCreateOpen(true)}
-            className="
-                  group
-                  flex items-center justify-center gap-2
-                  bg-white
-                  text-slate-900
-                  px-5 py-3.5
-                  rounded-2xl
-                  font-semibold
-                  shadow-lg
-                  hover:scale-[1.02]
-                  transition-all
-                  self-end
-                "
-          >
-            <Plus size={18} className="group-hover:rotate-90 transition-all" />
-            Schedule Lesson
-          </button>
+          <div className="flex items-center gap-2 self-end">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="
+        h-12 w-12
+        flex items-center justify-center
+        rounded-2xl
+        border border-slate-200
+        bg-white
+        hover:bg-slate-50
+        transition
+        disabled:opacity-50
+      "
+            >
+              <RefreshCw
+                size={18}
+                className={
+                  refreshing ? "animate-spin text-orange-500" : "text-slate-600"
+                }
+              />
+            </button>
+
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="
+        group
+        flex items-center justify-center gap-2
+        bg-white
+        text-slate-900
+        px-5 py-3.5
+        rounded-2xl
+        font-semibold
+        shadow-lg
+        hover:scale-[1.02]
+        transition-all
+      "
+            >
+              <Plus
+                size={18}
+                className="group-hover:rotate-90 transition-all"
+              />
+              Schedule Lesson
+            </button>
+          </div>
         </div>
 
         {/* LOADING */}
@@ -359,15 +420,20 @@ export default function AdminLessonsPage() {
       <CreateLessonModal
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onCreated={fetchLessons}
+        onCreated={() => {
+          clearCache("admin_lessons");
+          fetchLessons(true);
+        }}
       />
 
-      {/* EDIT */}
       <EditLessonModal
         open={!!selectedLesson}
         lesson={selectedLesson}
         onClose={() => setSelectedLesson(null)}
-        onUpdated={fetchLessons}
+        onUpdated={() => {
+          clearCache("admin_lessons");
+          fetchLessons(true);
+        }}
       />
     </>
   );

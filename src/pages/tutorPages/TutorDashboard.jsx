@@ -237,7 +237,7 @@ export default function TutorDashboard() {
 
         <Card
           icon={<ClipboardList size={18} />}
-          title="Pending Tests"
+          title="Unmarked Tests"
           value={pendingTests}
         />
       </div>

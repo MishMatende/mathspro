@@ -22,8 +22,9 @@ const LearnerProfilePage = () => {
         .from("learners")
         .select("*")
         .eq("id", id)
-        .eq("tutor_id", user.id)
         .maybeSingle();
+
+      console.log("Learner:", data);
 
       setLoading(false);
 
@@ -33,11 +34,18 @@ const LearnerProfilePage = () => {
         return;
       }
 
+      console.log("Route ID:", id);
+      console.log("Tutor ID:", user?.id);
+      console.log("Learner result:", data);
+      console.log("Learner error:", error);
+
       setLearner(data);
     };
 
     fetchLearner();
   }, [id, user?.id]);
+
+  console.log("LearnerProfilePage mounted", id);
 
   if (loading) {
     return (

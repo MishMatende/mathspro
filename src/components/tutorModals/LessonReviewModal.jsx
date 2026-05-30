@@ -294,7 +294,7 @@ export default function LessonReviewModal({
               <div>
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
                   <StickyNote size={15} />
-                  Lesson Notes
+                  Feedback/Comment
                 </label>
 
                 <textarea

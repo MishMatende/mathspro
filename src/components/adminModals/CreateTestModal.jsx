@@ -3,6 +3,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import {
+  FileText,
+  CalendarDays,
+  GraduationCap,
+  ClipboardList,
+  X,
+} from "lucide-react";
 
 export default function CreateTestModal({ onClose, onCreated }) {
   const [loading, setLoading] = useState(false);
@@ -87,127 +94,258 @@ export default function CreateTestModal({ onClose, onCreated }) {
   return (
     <>
       {/* BACKDROP */}
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div
+        className="
+    fixed inset-0
+    bg-black/40
+    backdrop-blur-sm
+    z-40
+  "
+        onClick={onClose}
+      />
 
       {/* MODAL */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="w-full max-w-lg bg-white rounded-2xl shadow-xl"
+          className="
+max-w-2xl
+bg-white
+rounded-3xl
+shadow-2xl
+overflow-hidden
+"
           onClick={(e) => e.stopPropagation()}
         >
           {/* HEADER */}
-          <div className="px-6 py-5 border-b">
-            <h2 className="text-xl font-semibold">Create Test</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Assign a new test to a learner.
-            </p>
-          </div>
+          <div className="px-6 pt-6 pb-5 border-b border-slate-100">
+            <div className="flex items-start justify-between">
+              <div className="flex gap-4">
+                <div
+                  className="
+          h-12 w-12
+          rounded-2xl
+          bg-orange-100
+          text-orange-600
+          flex items-center justify-center
+        "
+                >
+                  <FileText size={22} />
+                </div>
 
-          {/* FORM */}
-          <form onSubmit={handleCreate} className="p-6 space-y-5">
-            {/* TITLE */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Test Title *
-              </label>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">
+                    Create Test
+                  </h2>
 
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    title: e.target.value,
-                  }))
-                }
-                className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g. Algebra Test 3"
-              />
-            </div>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Assign a new test to a learner
+                  </p>
+                </div>
+              </div>
 
-            {/* LEARNER */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Learner *
-              </label>
-
-              <select
-                value={formData.learner_id}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    learner_id: e.target.value,
-                  }))
-                }
-                className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select learner</option>
-
-                {learners.map((learner) => (
-                  <option key={learner.id} value={learner.id}>
-                    {learner.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* DUE DATE */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Due Date *
-              </label>
-
-              <input
-                type="date"
-                value={formData.due_date}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    due_date: e.target.value,
-                  }))
-                }
-                className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* INSTRUCTIONS */}
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Instructions
-              </label>
-
-              <textarea
-                rows={5}
-                value={formData.instructions}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    instructions: e.target.value,
-                  }))
-                }
-                className="w-full border rounded-xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter instructions for the learner..."
-              />
-            </div>
-
-            {/* ACTIONS */}
-            <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
                 onClick={onClose}
-                disabled={loading}
-                className="px-4 py-2 rounded-xl border hover:bg-gray-50"
+                className="
+        h-10 w-10
+        rounded-xl
+        hover:bg-slate-100
+        flex items-center justify-center
+      "
               >
-                Cancel
+                <X size={18} />
               </button>
+            </div>
+          </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+          {/* FORM */}
+          <form onSubmit={handleCreate} className="space-y-5">
+            <div className="p-6 space-y-5">
+              {/* TITLE */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                  <FileText size={15} />
+                  Test Title <span className="text-red-600">*</span>
+                </label>
+
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      title: e.target.value,
+                    }))
+                  }
+                  className="
+w-full
+rounded-2xl
+border border-slate-200
+bg-slate-50
+px-4 py-3
+text-sm
+transition
+focus:outline-none
+focus:ring-4
+focus:ring-orange-100
+focus:border-orange-300
+focus:bg-white
+"
+                  placeholder="e.g. Algebra Test 3"
+                />
+              </div>
+
+              {/* LEARNER */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                    <GraduationCap size={15} />
+                    Learner <span className="text-red-600">*</span>
+                  </label>
+
+                  <select
+                    value={formData.learner_id}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        learner_id: e.target.value,
+                      }))
+                    }
+                    className="
+w-full
+rounded-2xl
+border border-slate-200
+bg-slate-50
+px-4 py-3
+text-sm
+transition
+focus:outline-none
+focus:ring-4
+focus:ring-orange-100
+focus:border-orange-300
+focus:bg-white
+"
+                  >
+                    <option value="">Select learner</option>
+
+                    {learners.map((learner) => (
+                      <option key={learner.id} value={learner.id}>
+                        {learner.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* DUE DATE */}
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                    <CalendarDays size={15} />
+                    Due Date <span className="text-red-600">*</span>
+                  </label>
+
+                  <input
+                    type="date"
+                    value={formData.due_date}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        due_date: e.target.value,
+                      }))
+                    }
+                    className="
+w-full
+rounded-2xl
+border border-slate-200
+bg-slate-50
+px-4 py-3
+text-sm
+transition
+focus:outline-none
+focus:ring-4
+focus:ring-orange-100
+focus:border-orange-300
+focus:bg-white
+"
+                  />
+                </div>
+              </div>
+
+              {/* INSTRUCTIONS */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                  <ClipboardList size={15} />
+                  Instructions <span className="text-red-600">*</span>
+                </label>
+
+                <textarea
+                  rows={6}
+                  value={formData.instructions}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      instructions: e.target.value,
+                    }))
+                  }
+                  className="
+w-full
+rounded-2xl
+border border-slate-200
+bg-slate-50
+px-4 py-3
+text-sm
+transition
+focus:outline-none
+focus:ring-4
+focus:ring-orange-100
+focus:border-orange-300
+focus:bg-white
+"
+                  placeholder="Enter instructions for the learner..."
+                />
+              </div>
+
+              {/* ACTIONS */}
+              <div
+                className="
+    flex justify-end gap-3
+    border-t border-slate-100
+    px-6 py-4
+    bg-white
+    rounded-b-3xl
+  "
               >
-                {loading ? "Creating..." : "Create Test"}
-              </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={loading}
+                  className="
+      px-5 py-3
+      rounded-2xl
+      border border-slate-200
+      hover:bg-slate-50
+      transition
+    "
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="
+      px-6 py-3
+      rounded-2xl
+      bg-orange-500
+      text-white
+      font-medium
+      hover:bg-orange-600
+      disabled:opacity-50
+      transition
+    "
+                >
+                  {loading ? "Creating..." : "Create Test"}
+                </button>
+              </div>
             </div>
           </form>
         </div>

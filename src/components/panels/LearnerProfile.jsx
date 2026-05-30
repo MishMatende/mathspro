@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LessonTimeline from "./LessonTimeline";
 import HomeworkPanel from "./HomeworkPanel";
 import { motion } from "framer-motion";
@@ -12,10 +12,21 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
-const LearnerProfile = ({ learner }) => {
-  const [activeTab, setActiveTab] = useState("overview");
+export default function LearnerProfile({ learner }) {
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "overview";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   if (!learner) {
     return (
@@ -166,6 +177,4 @@ const LearnerProfile = ({ learner }) => {
       </div>
     </motion.div>
   );
-};
-
-export default LearnerProfile;
+}
