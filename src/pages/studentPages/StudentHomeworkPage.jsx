@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 
 import { motion } from "framer-motion";
 
-import { FileText, Download, Upload, Search, Clock3 } from "lucide-react";
+import {
+  FileText,
+  Download,
+  Upload,
+  Search,
+  Clock3,
+  RefreshCw,
+} from "lucide-react";
 
 import { supabase } from "../../lib/supabase";
 
@@ -25,12 +32,10 @@ const getDownloadName = (title, filePath, suffix = "") => {
 
 export default function StudentHomeworkPage() {
   const { user } = useAuth();
-
   const [homework, setHomework] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const cacheKey = user?.id ? `student_homework_${user.id}` : null;
 
@@ -38,22 +43,27 @@ export default function StudentHomeworkPage() {
   const fetchHomework = async (forceRefresh = false) => {
     if (!user) return;
 
-    if (!forceRefresh && cacheKey) {
-      const cachedHomework = getCache(cacheKey);
-
-      if (cachedHomework) {
-        setHomework(cachedHomework);
-        setLoading(false);
-        return;
-      }
+    if (forceRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
     }
 
-    setLoading(true);
+    try {
+      // Cache first
+      if (!forceRefresh && cacheKey) {
+        const cachedHomework = getCache(cacheKey);
 
-    const { data, error } = await supabase
-      .from("homework")
-      .select(
-        `
+        if (cachedHomework) {
+          setHomework(cachedHomework);
+          return;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from("homework")
+        .select(
+          `
         id,
         learner_id,
         title,
@@ -76,29 +86,42 @@ export default function StudentHomeworkPage() {
           reviewed_at
         )
       `,
-      )
-      .eq("learner_id", user.id)
-      .order("created_at", {
-        ascending: false,
-      });
+        )
+        .eq("learner_id", user.id)
+        .order("created_at", {
+          ascending: false,
+        });
 
-    setLoading(false);
+      if (error) {
+        console.log(error);
+        toast.error("Failed to fetch homework");
+        return;
+      }
 
-    if (error) {
-      console.log(error);
+      const nextHomework = data || [];
 
-      toast.error("Failed to fetch homework");
+      setHomework(nextHomework);
 
-      return;
+      if (cacheKey) {
+        setCache(cacheKey, nextHomework);
+      }
+    } catch (err) {
+      console.log(err);
+      toast.error("Something went wrong");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
+  };
 
-    const nextHomework = data || [];
+  const handleRefresh = async () => {
+    if (!cacheKey) return;
 
-    setHomework(nextHomework);
+    clearCache(cacheKey);
 
-    if (cacheKey) {
-      setCache(cacheKey, nextHomework);
-    }
+    await fetchHomework(true);
+
+    toast.success("Homework refreshed");
   };
 
   useEffect(() => {
@@ -258,33 +281,60 @@ export default function StudentHomeworkPage() {
         </div>
 
         {/* SEARCH */}
-        <div className="relative w-full sm:w-72">
-          <Search
-            size={16}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Refresh */}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
             className="
-              absolute
-              left-3 top-1/2
-              -translate-y-1/2
-              text-gray-400
-            "
-          />
+      h-11 w-11 shrink-0
+      flex items-center justify-center
+      rounded-xl
+      border border-gray-200
+      bg-white
+      transition-all
+      hover:bg-gray-50
+      disabled:opacity-50
+    "
+            title="Refresh homework"
+          >
+            <RefreshCw
+              size={18}
+              className={
+                refreshing ? "animate-spin text-orange-500" : "text-gray-600"
+              }
+            />
+          </button>
 
-          <input
-            type="text"
-            placeholder="Search homework..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="
-              w-full
-              pl-9 pr-3 py-2
-              border border-gray-200
-              rounded-xl
-              text-sm
-              focus:outline-none
-              focus:ring-2
-              focus:ring-orange-200
-            "
-          />
+          {/* Search */}
+          <div className="relative flex-1 sm:w-72">
+            <Search
+              size={16}
+              className="
+        absolute
+        left-3 top-1/2
+        -translate-y-1/2
+        text-gray-400
+      "
+            />
+
+            <input
+              type="text"
+              placeholder="Search homework..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="
+        w-full
+        pl-9 pr-3 py-2
+        border border-gray-200
+        rounded-xl
+        text-sm
+        focus:outline-none
+        focus:ring-2
+        focus:ring-orange-200
+      "
+            />
+          </div>
         </div>
       </div>
 

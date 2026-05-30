@@ -15,7 +15,12 @@ import {
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
 
-export default function LessonReviewModal({ isOpen, onClose, lesson, onSaved }) {
+export default function LessonReviewModal({
+  isOpen,
+  onClose,
+  lesson,
+  onSaved,
+}) {
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -67,6 +72,9 @@ export default function LessonReviewModal({ isOpen, onClose, lesson, onSaved }) 
     const { error } = await supabase
       .from("lessons")
       .update({
+        title: formData.title.trim(),
+        objective: formData.objective.trim(),
+        notes: formData.notes.trim(),
         status,
         struggles: formData.struggles.trim() || null,
         next_action: formData.nextAction.trim() || null,
@@ -217,17 +225,18 @@ export default function LessonReviewModal({ isOpen, onClose, lesson, onSaved }) 
                   </label>
 
                   <input
+                    name="title"
                     value={formData.title}
-                    disabled
+                    onChange={handleChange}
                     className="
-                  w-full
-                  rounded-2xl
-                  border border-slate-200
-                  bg-slate-50
-                  px-4 py-3
-                  text-sm
-                  text-slate-700
-                "
+    w-full
+    rounded-2xl
+    border border-slate-200
+    bg-slate-50
+    px-4 py-3
+    text-sm
+    text-slate-700
+  "
                   />
                 </div>
 
@@ -264,19 +273,20 @@ export default function LessonReviewModal({ isOpen, onClose, lesson, onSaved }) 
                 </label>
 
                 <textarea
+                  name="objective"
                   value={formData.objective}
-                  disabled
+                  onChange={handleChange}
                   rows={3}
                   className="
-                w-full
-                resize-none
-                rounded-2xl
-                border border-slate-200
-                bg-slate-50
-                px-4 py-3
-                text-sm
-                text-slate-700
-              "
+    w-full
+    resize-none
+    rounded-2xl
+    border border-slate-200
+    bg-slate-50
+    px-4 py-3
+    text-sm
+    text-slate-700
+  "
                 />
               </div>
 
@@ -288,19 +298,20 @@ export default function LessonReviewModal({ isOpen, onClose, lesson, onSaved }) 
                 </label>
 
                 <textarea
+                  name="notes"
                   value={formData.notes}
-                  disabled
+                  onChange={handleChange}
                   rows={4}
                   className="
-                w-full
-                resize-none
-                rounded-2xl
-                border border-slate-200
-                bg-slate-50
-                px-4 py-3
-                text-sm
-                text-slate-700
-              "
+    w-full
+    resize-none
+    rounded-2xl
+    border border-slate-200
+    bg-slate-50
+    px-4 py-3
+    text-sm
+    text-slate-700
+  "
                 />
               </div>
 
