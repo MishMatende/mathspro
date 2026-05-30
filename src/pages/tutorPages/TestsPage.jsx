@@ -183,7 +183,7 @@ export default function TestsPage() {
               className="group bg-white rounded-3xl border border-orange-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
             >
               {/* HEADER */}
-              <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-white px-5 py-4 border-b border-orange-100">
+              <div className="bg-linear-to-r from-orange-50 via-amber-50 to-white px-5 py-4 border-b border-orange-100">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex gap-3 min-w-0">
                     <div className="h-12 w-12 rounded-2xl bg-orange-100 flex items-center justify-center shrink-0">

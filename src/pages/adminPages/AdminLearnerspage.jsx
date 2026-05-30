@@ -177,7 +177,7 @@ export default function AdminLearnersPage() {
               className="group cursor-pointer bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-lg transition-all overflow-hidden"
             >
               {/* TOP */}
-              <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-white px-4 py-4 border-b border-orange-100">
+              <div className="bg-linear-to-r from-orange-50 via-amber-50 to-white px-4 py-4 border-b border-orange-100">
                 <div className="flex items-center justify-between">
                   <div className="flex gap-3 items-center">
                     <div className="h-11 w-11 rounded-2xl bg-orange-100 flex items-center justify-center">

@@ -87,6 +87,11 @@ export default function UploadHomeworkModal({
       return;
     }
 
+    if (file.type !== "application/pdf") {
+      toast.error("Please upload a PDF file");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -172,7 +177,9 @@ export default function UploadHomeworkModal({
       }
 
       if (isEditing && uploadedPath && homework?.file_url) {
-        await supabase.storage.from("homework-files").remove([homework.file_url]);
+        await supabase.storage
+          .from("homework-files")
+          .remove([homework.file_url]);
       }
 
       toast.success(isEditing ? "Homework updated" : "Homework uploaded");
@@ -397,7 +404,7 @@ export default function UploadHomeworkModal({
               <input
                 type="file"
                 hidden
-                accept=".pdf,.doc,.docx"
+                accept=".pdf,.*pdf"
                 onChange={(e) => setFile(e.target.files[0])}
               />
             </label>
