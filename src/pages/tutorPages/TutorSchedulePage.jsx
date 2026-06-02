@@ -14,6 +14,8 @@ export default function TutorSchedulePage() {
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [tutor, setTutor] = useState(null);
+  const [userId, setUserId] = useState(null);
 
   const getCacheKey = (userId) => `tutor_lessons_cache_${userId}`;
 
@@ -42,15 +44,45 @@ export default function TutorSchedulePage() {
     loadCachedLessons();
   }, []);
 
-  // 🔥 Fetch tutor lessons
-  const fetchLessons = async () => {
-    setLoading(true);
-
+  const fetchTutor = async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!user) return null;
+
+    const cacheKey = `tutor_profile_${user.id}`;
+
+    const cached = localStorage.getItem(cacheKey);
+
+    if (cached) {
+      const tutorData = JSON.parse(cached);
+
+      setTutor(tutorData);
+
+      return tutorData;
+    }
+
+    const { data, error } = await supabase
+      .from("tutors")
+      .select("*")
+      .eq("email", user.email)
+      .single();
+
+    if (error) throw error;
+
+    localStorage.setItem(cacheKey, JSON.stringify(data));
+
+    setTutor(data);
+
+    return data;
+  };
+
+  // 🔥 Fetch tutor lessons
+  const fetchLessons = async () => {
+    setLoading(true);
+
+    if (!userId) {
       setLoading(false);
 
       return;
@@ -58,12 +90,9 @@ export default function TutorSchedulePage() {
 
     const cacheKey = getCacheKey(user.id);
 
-    // 🔥 Find tutor record
-    const { data: tutorData, error: tutorError } = await supabase
-      .from("tutors")
-      .select("*")
-      .eq("email", user.email)
-      .single();
+    const tutorData = tutor || (await fetchTutor());
+
+    if (!tutorData) return;
 
     if (tutorError || !tutorData) {
       console.log(tutorError);
@@ -113,6 +142,7 @@ export default function TutorSchedulePage() {
 
   useEffect(() => {
     fetchLessons();
+    fetchTutor();
   }, []);
 
   return (
@@ -180,12 +210,8 @@ export default function TutorSchedulePage() {
 
             <button
               onClick={async () => {
-                const {
-                  data: { user },
-                } = await supabase.auth.getUser();
-
-                if (user) {
-                  localStorage.removeItem(getCacheKey(user.id));
+                if (userId) {
+                  localStorage.removeItem(getCacheKey(userId));
                 }
 
                 fetchLessons();

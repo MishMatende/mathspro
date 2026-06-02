@@ -229,7 +229,7 @@ export default function EditTutorLessonModal({
               "
             >
               {learners.map((learner) => (
-                <option key={learner.id} value={learner.id}>
+                <option key={`learner-${learner.id}`} value={learner.id}>
                   {learner.name}
                 </option>
               ))}

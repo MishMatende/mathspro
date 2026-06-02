@@ -195,7 +195,9 @@ export default function LessonReviewModal({
 
                   <button
                     type="button"
-                    onClick={() => setShowEditModal(true)}
+                    onClick={() => {
+                      setShowEditModal(true);
+                    }}
                     className="
       px-4 py-2
       rounded-xl
