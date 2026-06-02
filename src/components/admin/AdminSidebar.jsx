@@ -6,6 +6,7 @@ import {
   LogOut,
   CalendarDays,
   ClipboardList,
+  ListChecks,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -42,6 +43,11 @@ export default function AdminSidebar({ open, setOpen }) {
       icon: ClipboardList,
       path: "/admin-tests",
     },
+    // {
+    //   label: "Checklist",
+    //   icon: ListChecks,
+    //   path: "/admin-checklist",
+    // },
   ];
 
   const handleLogout = async () => {

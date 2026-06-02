@@ -10,9 +10,12 @@ import {
   GraduationCap,
   Layers,
   ArrowLeft,
+  File,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
+import TutorFilesPage from "../../pages/tutorPages/TutorFilesPage";
+import TutorTestsPanel from "./TutorTestsPanel";
 
 export default function LearnerProfile({ learner }) {
   const [searchParams] = useSearchParams();
@@ -41,6 +44,7 @@ export default function LearnerProfile({ learner }) {
     { id: "lessons", label: "Lessons", icon: BookOpen },
     { id: "homework", label: "Homework", icon: FileText },
     { id: "tests", label: "Tests", icon: ClipboardList },
+    { id: "files", label: "Files", icon: File },
   ];
 
   return (
@@ -156,24 +160,8 @@ export default function LearnerProfile({ learner }) {
 
         {activeTab === "lessons" && <LessonTimeline learnerId={learner.id} />}
         {activeTab === "homework" && <HomeworkPanel studentId={learner.id} />}
-
-        {activeTab === "tests" && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center min-h-[60vh] text-center text-gray-400"
-          >
-            <FileText className="w-8 h-8 mb-2 text-gray-300" />
-
-            <p className="text-sm font-medium text-gray-500">
-              No tests available yet
-            </p>
-
-            <p className="text-xs text-gray-400 mt-1">
-              Tests assigned by admin will appear here
-            </p>
-          </motion.div>
-        )}
+        {activeTab === "files" && <TutorFilesPage studentId={learner.id} />}
+        {activeTab === "tests" && <TutorTestsPanel studentId={learner.id} />}
       </div>
     </motion.div>
   );

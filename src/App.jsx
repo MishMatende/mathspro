@@ -6,7 +6,6 @@ import LearnerProfilePage from "./pages/tutorPages/LearnerProfilePage";
 import TutorDashboardLayout from "./components/layouts/TutorDashboardLayout";
 import LearnersPage from "./pages/tutorPages/LearnersPage";
 import HomeworkPage from "./pages/tutorPages/HomeworkPage";
-import TestsPage from "./pages/tutorPages/TestsPage";
 import TutorSchedulePage from "./pages/tutorPages/TutorSchedulePage";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -28,6 +27,9 @@ import ReachOutPage from "./pages/ReachOutPage";
 import HowItWorksPage from "./pages/HowItWorksPage";
 import StudentTestPage from "./pages/studentPages/StudentTestPage";
 import AdminTestsPage from "./pages/adminPages/AdminTestsPage";
+import StudentFilesPage from "./pages/studentPages/StudentFilesPage";
+import NotFound from "./pages/NotFound";
+import AdminChecklistPage from "./pages/adminPages/AdminChecklistPage";
 
 function App() {
   return (
@@ -50,7 +52,7 @@ function App() {
           <Route path="/learners/:id" element={<LearnerProfilePage />} />
           <Route path="/learners" element={<LearnersPage />} />
           <Route path="/homework" element={<HomeworkPage />} />
-          <Route path="/tests" element={<TestsPage />} />
+          {/* <Route path="/tests" element={<TestsPage />} /> */}
           <Route path="/tutor-schedule" element={<TutorSchedulePage />} />
         </Route>
       </Route>
@@ -60,6 +62,7 @@ function App() {
         <Route path="/student-schedule" element={<LearnerSchedule />} />
         <Route path="/student-homework" element={<StudentHomeworkPage />} />
         <Route path="/student-test" element={<StudentTestPage />} />
+        <Route path="/student-files" element={<StudentFilesPage />} />
       </Route>
 
       {/* Admin Dashboard layout — navbar + sidenav */}
@@ -70,8 +73,11 @@ function App() {
           <Route path="/admin-tutors" element={<AdminTutorsPage />} />
           <Route path="/admin-lessons" element={<AdminLessonsPage />} />
           <Route path="/admin-tests" element={<AdminTestsPage />} />
+          <Route path="/admin-checklist" element={<AdminChecklistPage />} />
         </Route>
       </Route>
+
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

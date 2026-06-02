@@ -5,6 +5,7 @@ import {
   Calendar,
   FileText,
   ClipboardList,
+  File,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -22,11 +23,6 @@ export default function StudentSidebar({ open, setOpen }) {
       path: "/student-dashboard",
     },
     {
-      label: "Schedule",
-      icon: Calendar,
-      path: "/student-schedule",
-    },
-    {
       label: "Homework",
       icon: FileText,
       path: "/student-homework",
@@ -35,6 +31,11 @@ export default function StudentSidebar({ open, setOpen }) {
       label: "Tests",
       icon: ClipboardList,
       path: "/student-test",
+    },
+    {
+      label: "My Files",
+      icon: File,
+      path: "/student-files",
     },
   ];
 

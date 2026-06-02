@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import EditTutorLessonModal from "./EditTutorLessonModal";
 
 export default function LessonReviewModal({
   isOpen,
@@ -22,7 +23,7 @@ export default function LessonReviewModal({
   onSaved,
 }) {
   const [loading, setLoading] = useState(false);
-
+  const [showEditModal, setShowEditModal] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     objective: "",
@@ -180,29 +181,46 @@ export default function LessonReviewModal({
                 <div className="flex items-center gap-3">
                   <div
                     className="
-                  hidden sm:flex
-                  h-12 w-12
-                  items-center justify-center
-                  rounded-2xl
-                  bg-orange-500
-                  text-white
-                  shadow-lg shadow-orange-500/20
-                "
+      hidden sm:flex
+      h-12 w-12
+      items-center justify-center
+      rounded-2xl
+      bg-orange-500
+      text-white
+      shadow-lg shadow-orange-500/20
+    "
                   >
                     <ClipboardCheck size={22} />
                   </div>
 
                   <button
+                    type="button"
+                    onClick={() => setShowEditModal(true)}
+                    className="
+      px-4 py-2
+      rounded-xl
+      border border-orange-200
+      text-orange-600
+      text-sm
+      font-medium
+      hover:bg-orange-50
+      transition
+    "
+                  >
+                    Edit Lesson
+                  </button>
+
+                  <button
                     onClick={onClose}
                     className="
-                  flex h-10 w-10
-                  items-center justify-center
-                  rounded-xl
-                  border border-slate-200
-                  text-slate-500
-                  transition-all
-                  hover:bg-slate-50
-                "
+      flex h-10 w-10
+      items-center justify-center
+      rounded-xl
+      border border-slate-200
+      text-slate-500
+      transition-all
+      hover:bg-slate-50
+    "
                   >
                     <X size={18} />
                   </button>
@@ -537,15 +555,15 @@ export default function LessonReviewModal({
                   type="button"
                   onClick={onClose}
                   className="
-                rounded-2xl
-                border border-slate-200
-                px-5 py-2.5
-                text-sm
-                font-medium
-                text-slate-700
-                transition-all
-                hover:bg-slate-50
-              "
+      rounded-2xl
+      border border-slate-200
+      px-5 py-2.5
+      text-sm
+      font-medium
+      text-slate-700
+      transition-all
+      hover:bg-slate-50
+    "
                 >
                   Cancel
                 </button>
@@ -554,16 +572,16 @@ export default function LessonReviewModal({
                   type="submit"
                   disabled={loading}
                   className="
-                rounded-2xl
-                bg-orange-500
-                px-5 py-2.5
-                text-sm
-                font-medium
-                text-white
-                shadow-lg shadow-orange-500/20
-                transition-all
-                hover:bg-orange-600
-              "
+      rounded-2xl
+      bg-orange-500
+      px-5 py-2.5
+      text-sm
+      font-medium
+      text-white
+      shadow-lg shadow-orange-500/20
+      transition-all
+      hover:bg-orange-600
+    "
                 >
                   {loading ? "Saving..." : "Save Review"}
                 </button>
@@ -572,6 +590,18 @@ export default function LessonReviewModal({
           </motion.div>
         </motion.div>
       )}
+      <EditTutorLessonModal
+        open={showEditModal}
+        lesson={lesson}
+        onClose={() => setShowEditModal(false)}
+        onUpdated={() => {
+          setShowEditModal(false);
+
+          toast.success("Lesson updated");
+
+          onSaved?.();
+        }}
+      />
     </AnimatePresence>
   );
 }

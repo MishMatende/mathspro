@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
-const Sidebar = ({ open, setOpen }) => {
+export default function Sidebar({ open, setOpen }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -20,7 +20,7 @@ const Sidebar = ({ open, setOpen }) => {
     { label: "Schedule", icon: Calendar, path: "/tutor-schedule" },
     { label: "Learners", icon: Users, path: "/learners" },
     { label: "Homework", icon: FileText, path: "/homework" },
-    { label: "Tests", icon: ClipboardList, path: "/tests" },
+    // { label: "Tests", icon: ClipboardList, path: "/tests" },
   ];
 
   const handleLogout = async () => {
@@ -131,6 +131,4 @@ const Sidebar = ({ open, setOpen }) => {
       </div>
     </>
   );
-};
-
-export default Sidebar;
+}

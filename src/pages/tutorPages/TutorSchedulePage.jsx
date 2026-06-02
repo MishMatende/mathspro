@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, RefreshCw } from "lucide-react";
+import { CalendarDays, RefreshCw, Plus } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import TutorLessonCalendar from "../../components/tutor/TutorLessonCalendar";
 import LessonReviewModal from "../../components/tutorModals/LessonReviewModal";
 import toast from "react-hot-toast";
+import CreateTutorLessonModal from "../../components/tutorModals/CreateTutorLessonModal";
 
 export default function TutorSchedulePage() {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const getCacheKey = (userId) => `tutor_lessons_cache_${userId}`;
 
@@ -159,20 +161,37 @@ export default function TutorSchedulePage() {
             </div>
           </div>
 
-          <button
-            onClick={async () => {
-              const {
-                data: { user },
-              } = await supabase.auth.getUser();
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="
+      flex items-center gap-2
+      px-4 py-2
+      rounded-xl
+      bg-orange-500
+      text-white
+      hover:bg-orange-600
+      transition
+    "
+            >
+              <Plus size={16} />
+              Lesson
+            </button>
 
-              if (user) {
-                localStorage.removeItem(getCacheKey(user.id));
-              }
+            <button
+              onClick={async () => {
+                const {
+                  data: { user },
+                } = await supabase.auth.getUser();
 
-              fetchLessons();
-            }}
-            disabled={loading}
-            className="
+                if (user) {
+                  localStorage.removeItem(getCacheKey(user.id));
+                }
+
+                fetchLessons();
+              }}
+              disabled={loading}
+              className="
       flex items-center gap-2
       px-3 py-2
       rounded-xl
@@ -182,9 +201,10 @@ export default function TutorSchedulePage() {
       transition
       disabled:opacity-50
     "
-          >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-          </button>
+            >
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            </button>
+          </div>
         </div>
 
         {/* LOADING */}
@@ -218,6 +238,22 @@ export default function TutorSchedulePage() {
         isOpen={!!selectedLesson}
         onClose={() => setSelectedLesson(null)}
         lesson={selectedLesson}
+      />
+
+      <CreateTutorLessonModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={async () => {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+
+          if (user) {
+            localStorage.removeItem(getCacheKey(user.id));
+          }
+
+          fetchLessons();
+        }}
       />
     </>
   );
