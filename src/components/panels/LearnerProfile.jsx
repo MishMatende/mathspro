@@ -11,15 +11,17 @@ import {
   Layers,
   ArrowLeft,
   File,
+  ListChecks,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import TutorFilesPage from "../../pages/tutorPages/TutorFilesPage";
 import TutorTestsPanel from "./TutorTestsPanel";
+import TutorChecklistPanel from "./TutorChecklistPanel";
 
 export default function LearnerProfile({ learner }) {
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") || "overview";
+  const initialTab = searchParams.get("tab") || "checklist";
   const [activeTab, setActiveTab] = useState(initialTab);
   const navigate = useNavigate();
 
@@ -40,7 +42,8 @@ export default function LearnerProfile({ learner }) {
   }
 
   const tabs = [
-    { id: "overview", label: "Overview", icon: User },
+    // { id: "overview", label: "Overview", icon: User },
+    { id: "checklist", label: "Checklist", icon: ListChecks },
     { id: "lessons", label: "Lessons", icon: BookOpen },
     { id: "homework", label: "Homework", icon: FileText },
     { id: "tests", label: "Tests", icon: ClipboardList },
@@ -158,6 +161,7 @@ export default function LearnerProfile({ learner }) {
           </motion.div>
         )}
 
+        {activeTab === "checklist" && <TutorChecklistPanel learner={learner} />}
         {activeTab === "lessons" && <LessonTimeline learnerId={learner.id} />}
         {activeTab === "homework" && <HomeworkPanel studentId={learner.id} />}
         {activeTab === "files" && <TutorFilesPage studentId={learner.id} />}

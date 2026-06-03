@@ -1,259 +1,334 @@
 // src/pages/admin/AdminChecklistPage.jsx
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { Plus, RefreshCw, Pencil, Trash2, CheckSquare } from "lucide-react";
-import { getCache, setCache, clearCache } from "../../lib/cache";
-import CreateChecklistItemModal from "../../components/adminModals/CreateCheklistItemModal";
-import EditChecklistItemModal from "../../components/adminModals/EditChecklistItemModal";
-
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  BookOpen,
+  Layers,
+  RefreshCw,
+} from "lucide-react";
 import toast from "react-hot-toast";
-import DeleteChecklistItemModal from "../../components/adminModals/DeleteChecklistItemModal";
+import { getCache, setCache, clearCache } from "../../lib/cache";
+import CreateChecklistModal from "../../components/adminModals/CreateChecklistModal";
+import EditChecklistModal from "../../components/adminModals/EditChecklistModal";
+import DeleteChecklistModal from "../../components/adminModals/DeleteChecklistModal";
+import ChecklistBuilderModal from "../../components/adminModals/ChecklistBuilderModal";
+
+const CACHE_KEY = "checklist_levels";
 
 export default function AdminChecklistPage() {
-  const [templates, setTemplates] = useState([]);
+  const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedGrade, setSelectedGrade] = useState("All");
   const [showCreate, setShowCreate] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-  const [deleteItem, setDeleteItem] = useState(null);
+  const [editingLevel, setEditingLevel] = useState(null);
+  const [deletingLevel, setDeletingLevel] = useState(null);
+  const [selectedLevel, setSelectedLevel] = useState(null);
 
-  const CHECKLIST_CACHE_KEY = "admin_checklist_templates";
-
-  async function fetchTemplates(showLoader = true) {
+  async function fetchLevels(showLoader = true) {
     try {
       if (showLoader) setLoading(true);
 
       const { data, error } = await supabase
-        .from("checklist_templates")
-        .select("*")
-        .order("grade")
-        .order("unit")
+        .from("checklist_levels")
+        .select(
+          `
+          *,
+          checklist_topics (
+            id,
+            checklist_subtopics (
+              id
+            )
+          )
+        `,
+        )
         .order("sort_order");
 
       if (error) throw error;
 
-      setTemplates(data || []);
+      setLevels(data || []);
 
-      setCache(CHECKLIST_CACHE_KEY, data || []);
+      setCache(CACHE_KEY, data || []);
     } catch (error) {
       console.error(error);
-
-      toast.error("Failed to load checklist templates");
+      toast.error("Failed to load checklists");
     } finally {
       if (showLoader) setLoading(false);
     }
   }
 
   useEffect(() => {
-    const cached = getCache(CHECKLIST_CACHE_KEY);
+    const cached = getCache(CACHE_KEY);
 
     if (cached) {
-      setTemplates(cached);
+      setLevels(cached);
       setLoading(false);
 
-      fetchTemplates(false);
+      fetchLevels(false);
     } else {
-      fetchTemplates(true);
+      fetchLevels(true);
     }
   }, []);
 
+  function invalidateAndReload() {
+    clearCache(CACHE_KEY);
+    fetchLevels();
+  }
+
   async function handleDelete() {
-    if (!deleteItem) return;
+    if (!deletingLevel) return;
 
     try {
       const { error } = await supabase
-        .from("checklist_templates")
+        .from("checklist_levels")
         .delete()
-        .eq("id", deleteItem.id);
+        .eq("id", deletingLevel.id);
 
       if (error) throw error;
 
-      clearCache(CHECKLIST_CACHE_KEY);
+      toast.success("Checklist deleted");
 
-      toast.success("Skill deleted");
+      setDeletingLevel(null);
 
-      setDeleteItem(null);
-
-      fetchTemplates();
+      invalidateAndReload();
     } catch (error) {
       console.error(error);
 
-      toast.error("Failed to delete skill");
+      toast.error("Failed to delete checklist");
     }
-  }
-
-  const grades = useMemo(() => {
-    const unique = [...new Set(templates.map((x) => x.grade))];
-    return ["All", ...unique];
-  }, [templates]);
-
-  const filteredTemplates = useMemo(() => {
-    if (selectedGrade === "All") return templates;
-
-    return templates.filter((item) => item.grade === selectedGrade);
-  }, [templates, selectedGrade]);
-
-  const grouped = useMemo(() => {
-    const groups = {};
-
-    filteredTemplates.forEach((item) => {
-      const key = `${item.grade}__${item.unit}`;
-
-      if (!groups[key]) {
-        groups[key] = {
-          grade: item.grade,
-          unit: item.unit,
-          items: [],
-        };
-      }
-
-      groups[key].items.push(item);
-    });
-
-    return Object.values(groups);
-  }, [filteredTemplates]);
-
-  async function handleRefresh() {
-    clearCache(CHECKLIST_CACHE_KEY);
-
-    await fetchTemplates(true);
-
-    toast.success("Checklist refreshed");
   }
 
   return (
     <div className="p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Learning Checklists</h1>
 
-          <p className="text-gray-500">
-            Create and manage checklist templates.
-          </p>
+          <p className="text-gray-500">Manage checklist templates by level.</p>
         </div>
-
         <div className="flex gap-3">
           <button
-            onClick={handleRefresh}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl border"
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-orange-500 text-white hover:bg-orange-600"
           >
-            <RefreshCw size={18} />
-            Refresh
+            <Plus size={18} />
+            New Checklist
           </button>
 
           <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-orange-500 text-white hover:bg-orange-600"
+            onClick={() => {
+              clearCache(CACHE_KEY);
+              fetchLevels();
+            }}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl border"
           >
-            <Plus size={18} />
-            Add Skill
+            <RefreshCw size={18} />
           </button>
         </div>
-      </div>
-
-      <div className="mb-6">
-        <select
-          value={selectedGrade}
-          onChange={(e) => setSelectedGrade(e.target.value)}
-          className="px-4 py-3 rounded-2xl border"
-        >
-          {grades.map((grade) => (
-            <option key={grade}>{grade}</option>
-          ))}
-        </select>
       </div>
 
       {loading ? (
-        <div className="rounded-3xl bg-white p-12 text-center shadow-sm">
-          Loading checklist templates...
+        <div className="bg-white rounded-3xl p-12 text-center shadow-sm">
+          Loading checklists...
         </div>
-      ) : grouped.length === 0 ? (
-        <div className="rounded-3xl bg-white p-12 text-center shadow-sm">
-          <CheckSquare className="mx-auto mb-4 text-gray-400" size={48} />
+      ) : levels.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 text-center shadow-sm">
+          <BookOpen size={48} className="mx-auto text-gray-400 mb-4" />
 
-          <h2 className="font-semibold text-lg">No checklist items found</h2>
+          <h2 className="font-semibold text-xl">No Checklists Yet</h2>
 
-          <p className="text-gray-500">Create your first checklist skill.</p>
+          <p className="text-gray-500 mt-2">Create your first checklist.</p>
+
+          <button
+            onClick={() => setShowCreate(true)}
+            className="mt-5 px-5 py-3 rounded-2xl bg-orange-500 text-white"
+          >
+            Create Checklist
+          </button>
         </div>
       ) : (
-        <div className="space-y-6">
-          {grouped.map((group) => (
-            <div
-              key={`${group.grade}-${group.unit}`}
-              className="bg-white rounded-3xl shadow-sm overflow-hidden"
-            >
-              <div className="border-b p-5">
-                <h2 className="text-xl font-bold">{group.grade}</h2>
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {levels.map((level) => {
+            const topicCount = level.checklist_topics?.length || 0;
 
-                <p className="text-gray-500">{group.unit}</p>
-              </div>
+            const subtopicCount =
+              level.checklist_topics?.reduce(
+                (total, topic) =>
+                  total + (topic.checklist_subtopics?.length || 0),
+                0,
+              ) || 0;
 
-              <div>
-                {group.items.map((item) => (
+            return (
+              <div
+                key={level.id}
+                onClick={() => setSelectedLevel(level)}
+                className="
+    overflow-hidden
+    rounded-[28px]
+    border border-zinc-700
+    bg-white
+    text-black
+    cursor-pointer
+    transition-all
+    hover:-translate-y-1
+    hover:shadow-xl
+  "
+              >
+                {/* Header */}
+                <div className="bg-orange-500 p-6">
                   <div
-                    key={item.id}
-                    className="flex items-center justify-between px-5 py-4 border-b last:border-b-0"
+                    className="
+        inline-flex
+        items-center
+        gap-2
+        px-3 py-1
+        rounded-full
+        bg-orange-400/40
+        text-white
+        text-xs
+        font-medium
+        mb-4
+      "
                   >
-                    <div>
-                      <p className="font-medium">{item.skill}</p>
+                    <BookOpen size={12} />
+                    Grade level
+                  </div>
 
-                      <p className="text-sm text-gray-400">
-                        Sort Order: {item.sort_order}
-                      </p>
+                  <h3 className="text-4xl font-bold tracking-tight text-white">
+                    {level.name}
+                  </h3>
+                </div>
+
+                {/* Content */}
+                <div className="p-5">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="
+              w-10 h-10
+              rounded-xl
+              bg-stone-100
+              flex items-center justify-center
+            "
+                        >
+                          <Layers size={18} className="text-orange-500" />
+                        </div>
+
+                        <span className="text-black">Topics</span>
+                      </div>
+
+                      <span className="font-semibold">{topicCount}</span>
                     </div>
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setEditingItem(item)}
-                        className="p-2 rounded-xl border hover:bg-gray-50"
-                      >
-                        <Pencil size={18} />
-                      </button>
+                    <div className="border-t border-zinc-700" />
 
-                      <button
-                        onClick={() => setDeleteItem(item)}
-                        className="p-2 rounded-xl border hover:bg-red-50 text-red-500"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="
+              w-10 h-10
+              rounded-xl
+              bg-stone-100
+              flex items-center justify-center
+            "
+                        >
+                          <BookOpen size={18} className="text-orange-500" />
+                        </div>
+
+                        <span className="text-black">Subtopics</span>
+                      </div>
+
+                      <span className="font-semibold">{subtopicCount}</span>
                     </div>
                   </div>
-                ))}
+
+                  {/* Actions */}
+                  <div className="grid grid-cols-2 gap-3 mt-6">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingLevel(level);
+                      }}
+                      className="
+          flex items-center justify-center gap-2
+          h-12
+          rounded-xl
+          border border-zinc-600
+          text-black
+          hover:bg-zinc-700
+          hover:text-white
+          transition
+        "
+                    >
+                      <Pencil size={16} />
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingLevel(level);
+                      }}
+                      className="
+          flex items-center justify-center gap-2
+          h-12
+          rounded-xl
+          border border-zinc-600
+          text-red-500
+          hover:bg-red-500/10
+          transition
+        "
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {showCreate && (
-        <CreateChecklistItemModal
+        <CreateChecklistModal
           onClose={() => setShowCreate(false)}
           onCreated={() => {
-            clearCache(CHECKLIST_CACHE_KEY);
             setShowCreate(false);
-            fetchTemplates();
+            invalidateAndReload();
           }}
         />
       )}
 
-      {editingItem && (
-        <EditChecklistItemModal
-          item={editingItem}
-          onClose={() => setEditingItem(null)}
+      {editingLevel && (
+        <EditChecklistModal
+          level={editingLevel}
+          onClose={() => setEditingLevel(null)}
           onUpdated={() => {
-            clearCache(CHECKLIST_CACHE_KEY);
-            setEditingItem(null);
-            fetchTemplates();
+            setEditingLevel(null);
+            invalidateAndReload();
           }}
         />
       )}
 
-      {deleteItem && (
-        <DeleteChecklistItemModal
-          item={deleteItem}
-          onClose={() => setDeleteItem(null)}
+      {deletingLevel && (
+        <DeleteChecklistModal
+          level={deletingLevel}
+          onClose={() => setDeletingLevel(null)}
           onConfirm={handleDelete}
+        />
+      )}
+
+      {selectedLevel && (
+        <ChecklistBuilderModal
+          level={selectedLevel}
+          onClose={() => {
+            setSelectedLevel(null);
+            invalidateAndReload();
+          }}
         />
       )}
     </div>

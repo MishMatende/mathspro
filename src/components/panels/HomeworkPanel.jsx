@@ -7,9 +7,10 @@ import {
   Plus,
   Pencil,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import toast from "react-hot-toast";
-
+import { getCache, setCache, clearCache } from "../../lib/cache";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import UploadHomeworkModal from "../tutorModals/UploadHomeworkModal";
@@ -25,7 +26,7 @@ const getDownloadName = (title, filePath, suffix = "") => {
   return extension ? `${safeTitle}.${extension}` : safeTitle;
 };
 
-const HomeworkPanel = ({ studentId }) => {
+export default function HomeworkPanel({ studentId }) {
   const { user } = useAuth();
   const [pendingMarkedFiles, setPendingMarkedFiles] = useState({});
   const [homework, setHomework] = useState([]);
@@ -34,42 +35,62 @@ const HomeworkPanel = ({ studentId }) => {
   const [savingSubmissionId, setSavingSubmissionId] = useState(null);
   const [feedback, setFeedback] = useState({});
   const [uploadingSubmissionId, setUploadingSubmissionId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchHomework = async () => {
+  const HOMEWORK_CACHE_KEY = `tutor_homework_${studentId}_${user?.id}`;
+
+  const fetchHomework = async ({
+    forceRefresh = false,
+    showLoader = true,
+  } = {}) => {
     if (!studentId || !user?.id) return;
 
-    setLoading(true);
+    if (!forceRefresh) {
+      const cached = getCache(HOMEWORK_CACHE_KEY);
+
+      if (cached) {
+        setHomework(cached);
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (showLoader) {
+      setLoading(true);
+    }
 
     const { data, error } = await supabase
       .from("homework")
       .select(
         `
+      id,
+      title,
+      category,
+      instructions,
+      file_url,
+      due_date,
+      status,
+      homework_submissions (
         id,
-        title,
-        category,
-        instructions,
-        file_url,
-        due_date,
+        homework_id,
+        learner_id,
+        submission_file_url,
+        marked_file_url,
+        remarks,
+        score,
         status,
-        homework_submissions (
-          id,
-          homework_id,
-          learner_id,
-          submission_file_url,
-          marked_file_url,
-          remarks,
-          score,
-          status,
-          submitted_at,
-          reviewed_at
-        )
-      `,
+        submitted_at,
+        reviewed_at
+      )
+    `,
       )
       .eq("learner_id", studentId)
       .eq("tutor_id", user.id)
       .order("created_at", { ascending: false });
 
-    setLoading(false);
+    if (showLoader) {
+      setLoading(false);
+    }
 
     if (error) {
       console.log(error);
@@ -77,7 +98,11 @@ const HomeworkPanel = ({ studentId }) => {
       return;
     }
 
-    setHomework(data || []);
+    const homeworkData = data || [];
+
+    setHomework(homeworkData);
+
+    setCache(HOMEWORK_CACHE_KEY, homeworkData);
   };
 
   useEffect(() => {
@@ -170,9 +195,30 @@ const HomeworkPanel = ({ studentId }) => {
         return next;
       });
 
+      clearCache(HOMEWORK_CACHE_KEY);
+
       toast.success("Feedback saved");
-      fetchHomework();
+
+      await fetchHomework({
+        forceRefresh: true,
+        showLoader: false,
+      });
     }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+
+    clearCache(HOMEWORK_CACHE_KEY);
+
+    await fetchHomework({
+      forceRefresh: true,
+      showLoader: false,
+    });
+
+    setRefreshing(false);
+
+    toast.success("Homework refreshed");
   };
 
   return (
@@ -195,27 +241,77 @@ const HomeworkPanel = ({ studentId }) => {
           pointerEvents: isHomeworkModalOpen ? "none" : "auto",
         }}
       >
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
-          <h3 className="font-semibold text-gray-800 text-sm sm:text-base">
-            Homework
-          </h3>
+        {/* HEADER */}
 
-          <button
-            onClick={() => setIsHomeworkModalOpen(true)}
-            className="flex items-center justify-center gap-2 bg-(--color-primary) text-white px-4 py-2.5 rounded-xl text-sm cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition sm:w-auto"
-          >
-            <Plus size={16} />
-            Upload Homework
-          </button>
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Homework</h2>
+
+            <p className="text-sm text-gray-500 mt-1">
+              Assign work, review submissions and provide feedback.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsHomeworkModalOpen(true)}
+              className="
+        flex items-center gap-2
+        px-4 py-2
+        rounded-xl
+        bg-(--color-primary)
+        text-white
+        hover:shadow-md
+        transition
+      "
+            >
+              <Plus size={16} />
+              Upload Homework
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="
+        flex items-center gap-2
+        px-4 py-2
+        rounded-xl
+        border border-gray-200
+        bg-white
+        hover:bg-gray-50
+        transition
+        disabled:opacity-50
+      "
+            >
+              <RefreshCw
+                size={16}
+                className={refreshing ? "animate-spin" : ""}
+              />
+            </button>
+          </div>
         </div>
 
         {loading && (
-          <div className="text-sm text-gray-400">Loading homework...</div>
+          <div className="bg-white rounded-3xl p-12 text-center border">
+            <Loader2
+              size={24}
+              className="animate-spin mx-auto mb-4 text-gray-400"
+            />
+
+            <p className="text-gray-500">Loading homework...</p>
+          </div>
         )}
 
         {!loading && homework.length === 0 && (
-          <div className="bg-white rounded-2xl p-8 text-center text-sm text-gray-400 border border-gray-100">
-            No homework assigned yet
+          <div className="bg-white rounded-3xl border p-12 text-center">
+            <FileText size={48} className="mx-auto text-gray-300 mb-4" />
+
+            <h3 className="text-xl font-semibold text-gray-900">
+              No Homework Assigned
+            </h3>
+
+            <p className="text-gray-500 mt-2">
+              Upload homework for this learner to get started.
+            </p>
           </div>
         )}
 
@@ -228,14 +324,12 @@ const HomeworkPanel = ({ studentId }) => {
               <div
                 key={hw.id}
                 className="
-                  bg-white
-                  rounded-xl
-                  p-4
-                  shadow-sm
-                  border border-gray-100
-                  min-w-0
-                  flex flex-col
-                "
+  bg-white
+  rounded-3xl
+  p-5
+  border
+  border-gray-200
+"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
@@ -262,10 +356,10 @@ const HomeworkPanel = ({ studentId }) => {
                   <span
                     className={`px-2 py-1 rounded-full ${
                       submission?.status === "reviewed"
-                        ? "bg-green-100 text-green-600"
+                        ? "bg-green-50 text-green-700 border border-green-200"
                         : submission
-                          ? "bg-yellow-100 text-yellow-600"
-                          : "bg-gray-100 text-gray-500"
+                          ? ":bg-yellow-50 text-yellow-700 border border-yellow-200"
+                          : "bg-gray-50 text-gray-600 border border-gray-200"
                     }`}
                   >
                     {submission?.status === "reviewed"
@@ -458,11 +552,16 @@ const HomeworkPanel = ({ studentId }) => {
       <UploadHomeworkModal
         isOpen={isHomeworkModalOpen}
         onClose={() => setIsHomeworkModalOpen(false)}
-        onUploaded={fetchHomework}
         learnerId={studentId}
+        onUploaded={async () => {
+          clearCache(HOMEWORK_CACHE_KEY);
+
+          await fetchHomework({
+            forceRefresh: true,
+            showLoader: false,
+          });
+        }}
       />
     </>
   );
-};
-
-export default HomeworkPanel;
+}

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GraduationCap, Layers, ArrowRight } from "lucide-react";
 
-const LearnersList = ({ onSelect }) => {
+export default function LearnersList({ onSelect }) {
   const navigate = useNavigate();
   const [selectedId, setSelectedId] = useState(null);
 
@@ -85,6 +85,4 @@ const LearnersList = ({ onSelect }) => {
       </div>
     </div>
   );
-};
-
-export default LearnersList;
+}

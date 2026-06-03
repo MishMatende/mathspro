@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import LessonReviewModal from "../tutorModals/LessonReviewModal";
 import { motion } from "framer-motion";
-import { CheckCircle, AlertCircle, Info } from "lucide-react";
+import { CheckCircle, AlertCircle, Info, RefreshCw } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
+import { getCache, setCache, clearCache } from "../../lib/cache";
 
 const LessonTimeline = ({ learnerId }) => {
   const { user } = useAuth();
@@ -12,6 +13,9 @@ const LessonTimeline = ({ learnerId }) => {
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const LESSONS_CACHE_KEY = `tutor_lessons_${learnerId}_${user?.id}`;
 
   const statusConfig = {
     scheduled: {
@@ -36,10 +40,25 @@ const LessonTimeline = ({ learnerId }) => {
     },
   };
 
-  const fetchLessons = async () => {
+  const fetchLessons = async ({
+    forceRefresh = false,
+    showLoader = true,
+  } = {}) => {
     if (!learnerId || !user?.id) return;
 
-    setLoading(true);
+    if (!forceRefresh) {
+      const cached = getCache(LESSONS_CACHE_KEY);
+
+      if (cached) {
+        setLessons(cached);
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (showLoader) {
+      setLoading(true);
+    }
 
     const { data, error } = await supabase
       .from("lessons")
@@ -49,7 +68,9 @@ const LessonTimeline = ({ learnerId }) => {
       .order("lesson_date", { ascending: false })
       .order("start_time", { ascending: false });
 
-    setLoading(false);
+    if (showLoader) {
+      setLoading(false);
+    }
 
     if (error) {
       console.log(error);
@@ -58,11 +79,28 @@ const LessonTimeline = ({ learnerId }) => {
     }
 
     setLessons(data || []);
+
+    setCache(LESSONS_CACHE_KEY, data || []);
   };
 
   useEffect(() => {
     fetchLessons();
   }, [learnerId, user?.id]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+
+    clearCache(LESSONS_CACHE_KEY);
+
+    await fetchLessons({
+      forceRefresh: true,
+      showLoader: false,
+    });
+
+    setRefreshing(false);
+
+    toast.success("Lessons refreshed");
+  };
 
   return (
     <>
@@ -85,15 +123,48 @@ const LessonTimeline = ({ learnerId }) => {
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-800 text-sm sm:text-base">
-            Lesson History
-          </h3>
+        {/* HEADER */}
+
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Lessons</h2>
+
+            <p className="text-sm text-gray-500 mt-1">
+              Review lesson history, feedback and student progress.
+            </p>
+          </div>
+
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="
+      flex items-center gap-2
+      px-4 py-2
+      rounded-xl
+      border border-gray-200
+      bg-white
+      hover:bg-gray-50
+      transition
+      disabled:opacity-50
+    "
+          >
+            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+          </button>
         </div>
 
         {/* ✅ INFO BANNER */}
-        <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs sm:text-sm rounded-lg px-3 py-2 mb-4">
-          <Info size={16} className="mt-0.5" />
+        <div
+          className="
+    flex items-start gap-3
+    bg-blue-50
+    border border-blue-100
+    text-blue-700
+    rounded-2xl
+    px-4 py-3
+    mb-6
+  "
+        >
+          <Info size={18} className="mt-0.5 shrink-0" />
           <p>Tap on a lesson to add feedback and track student progress.</p>
         </div>
 
@@ -189,7 +260,14 @@ const LessonTimeline = ({ learnerId }) => {
         isOpen={!!selectedLesson}
         onClose={() => setSelectedLesson(null)}
         lesson={selectedLesson}
-        onSaved={fetchLessons}
+        onSaved={async () => {
+          clearCache(LESSONS_CACHE_KEY);
+
+          await fetchLessons({
+            forceRefresh: true,
+            showLoader: false,
+          });
+        }}
       />
     </>
   );

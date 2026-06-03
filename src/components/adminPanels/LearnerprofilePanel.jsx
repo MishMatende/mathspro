@@ -11,6 +11,9 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
   const [assigning, setAssigning] = useState(false);
   const { resetPassword } = useAuth();
   const [sendingReset, setSendingReset] = useState(false);
+  const [checklists, setChecklists] = useState([]);
+  const [selectedChecklistId, setSelectedChecklistId] = useState("");
+  const [assigningChecklist, setAssigningChecklist] = useState(false);
 
   // 🔥 Sync assigned tutor from learner
   useEffect(() => {
@@ -50,8 +53,33 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
   useEffect(() => {
     if (learner) {
       fetchTutors();
+      fetchChecklists();
     }
   }, [learner]);
+
+  // Fetch CheckList
+  async function fetchChecklists() {
+    const cached = getCache("checklist_levels");
+
+    if (cached) {
+      setChecklists(cached);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("checklist_levels")
+      .select("*")
+      .order("sort_order");
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setChecklists(data || []);
+
+    setCache("checklist_levels", data || []);
+  }
 
   // 🔥 Assign tutor
   const assignTutor = async (tutorId) => {
@@ -151,6 +179,89 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
 
     toast.success("Password reset email sent");
   };
+
+  // Assigning CheckList
+  async function assignChecklist(levelId) {
+    if (!learner?.id) return;
+
+    setAssigningChecklist(true);
+
+    try {
+      if (!levelId) {
+        const { error } = await supabase
+          .from("learner_checklists")
+          .delete()
+          .eq("learner_id", learner.id);
+
+        if (error) throw error;
+
+        setSelectedChecklistId("");
+        clearCache(`learner_checklist_${learner.id}`);
+        clearCache(`learner_checklist_panel_${learner.id}`);
+
+        toast.success("Checklist removed");
+
+        return;
+      }
+
+      const { error } = await supabase.from("learner_checklists").upsert(
+        {
+          learner_id: learner.id,
+          level_id: levelId,
+        },
+        {
+          onConflict: "learner_id",
+        },
+      );
+
+      if (error) throw error;
+
+      setSelectedChecklistId(levelId);
+      setCache(`learner_checklist_${learner.id}`, levelId);
+
+      toast.success("Checklist assigned");
+    } catch (error) {
+      console.error(error);
+
+      toast.error("Failed to update checklist");
+    } finally {
+      setAssigningChecklist(false);
+    }
+  }
+
+  useEffect(() => {
+    async function loadChecklistAssignment() {
+      if (!learner?.id) return;
+
+      const cacheKey = `learner_checklist_${learner.id}`;
+
+      const cached = getCache(cacheKey);
+
+      if (cached !== null) {
+        setSelectedChecklistId(cached);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("learner_checklists")
+        .select("level_id")
+        .eq("learner_id", learner.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      const levelId = data?.level_id || "";
+
+      setSelectedChecklistId(levelId);
+
+      setCache(cacheKey, levelId);
+    }
+
+    loadChecklistAssignment();
+  }, [learner]);
 
   if (!learner) return null;
 
@@ -297,6 +408,38 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
               {tutors.map((tutor) => (
                 <option key={tutor.id} value={tutor.id}>
                   {tutor.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mt-8">
+            <label className="block text-sm font-semibold text-gray-800 mb-3">
+              Assign Checklist
+            </label>
+
+            <select
+              disabled={assigningChecklist}
+              value={selectedChecklistId}
+              onChange={(e) => assignChecklist(e.target.value)}
+              className="
+      w-full h-13
+      bg-gray-50
+      border border-gray-200
+      rounded-2xl
+      px-4
+      text-sm
+      focus:outline-none
+      focus:ring-4
+      focus:ring-orange-500/10
+      focus:border-orange-400
+      transition
+    "
+            >
+              <option value="">Select Checklist</option>
+
+              {checklists.map((checklist) => (
+                <option key={checklist.id} value={checklist.id}>
+                  {checklist.name}
                 </option>
               ))}
             </select>
