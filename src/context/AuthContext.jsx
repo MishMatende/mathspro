@@ -86,10 +86,13 @@ export const AuthProvider = ({ children }) => {
 
   // 🔐 Login
   const login = async ({ email, password, expectedRole = null }) => {
+    console.log("1. Starting sign in");
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    console.log("2. Sign in finished");
 
     if (error) {
       return {
@@ -102,6 +105,8 @@ export const AuthProvider = ({ children }) => {
 
     // 🔥 Fetch fresh profile
     const profile = await fetchProfile(user.id, true);
+
+    console.log("3. Profile fetched");
 
     if (!profile) {
       await supabase.auth.signOut();
