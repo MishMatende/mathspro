@@ -18,8 +18,8 @@ export default function TutorProtectedRoute() {
     return <Navigate to="/login" replace />;
   }
 
-  // 🔥 Not admin
-  if (role !== "tutor") {
+  // 🔥 Only tutors and admins can access tutor tools
+  if (role !== "tutor" && role !== "admin") {
     return <Navigate to="/" replace />;
   }
 

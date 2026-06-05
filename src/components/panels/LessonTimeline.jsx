@@ -1,13 +1,28 @@
-import { useState } from "react";
-import { lessons } from "../data/mockData";
+import { useEffect, useState } from "react";
 import LessonReviewModal from "../tutorModals/LessonReviewModal";
 import { motion } from "framer-motion";
-import { CheckCircle, AlertCircle, Info } from "lucide-react";
+import { CheckCircle, AlertCircle, Info, RefreshCw } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
+import toast from "react-hot-toast";
+import { getCache, setCache, clearCache } from "../../lib/cache";
 
-const LessonTimeline = () => {
+const LessonTimeline = ({ learnerId }) => {
+  const { user } = useAuth();
+
+  const [lessons, setLessons] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const LESSONS_CACHE_KEY = `tutor_lessons_${learnerId}_${user?.id}`;
 
   const statusConfig = {
+    scheduled: {
+      label: "Scheduled",
+      color: "bg-blue-100 text-blue-700",
+      dot: "bg-blue-100 text-blue-600",
+    },
     pending: {
       label: "Pending",
       color: "bg-yellow-100 text-yellow-700",
@@ -23,6 +38,68 @@ const LessonTimeline = () => {
       color: "bg-red-100 text-red-700",
       dot: "bg-red-100 text-red-600",
     },
+  };
+
+  const fetchLessons = async ({
+    forceRefresh = false,
+    showLoader = true,
+  } = {}) => {
+    if (!learnerId || !user?.id) return;
+
+    if (!forceRefresh) {
+      const cached = getCache(LESSONS_CACHE_KEY);
+
+      if (cached) {
+        setLessons(cached);
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (showLoader) {
+      setLoading(true);
+    }
+
+    const { data, error } = await supabase
+      .from("lessons")
+      .select("*")
+      .eq("learner_id", learnerId)
+      .eq("tutor_id", user.id)
+      .order("lesson_date", { ascending: false })
+      .order("start_time", { ascending: false });
+
+    if (showLoader) {
+      setLoading(false);
+    }
+
+    if (error) {
+      console.log(error);
+      toast.error("Failed to load lessons");
+      return;
+    }
+
+    setLessons(data || []);
+
+    setCache(LESSONS_CACHE_KEY, data || []);
+  };
+
+  useEffect(() => {
+    fetchLessons();
+  }, [learnerId, user?.id]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+
+    clearCache(LESSONS_CACHE_KEY);
+
+    await fetchLessons({
+      forceRefresh: true,
+      showLoader: false,
+    });
+
+    setRefreshing(false);
+
+    toast.success("Lessons refreshed");
   };
 
   return (
@@ -46,27 +123,72 @@ const LessonTimeline = () => {
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-800 text-sm sm:text-base">
-            Lesson History
-          </h3>
+        {/* HEADER */}
+
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Lessons</h2>
+
+            <p className="text-sm text-gray-500 mt-1">
+              Review lesson history, feedback and student progress.
+            </p>
+          </div>
+
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="
+      flex items-center gap-2
+      px-4 py-2
+      rounded-xl
+      border border-gray-200
+      bg-white
+      hover:bg-gray-50
+      transition
+      disabled:opacity-50
+    "
+          >
+            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+          </button>
         </div>
 
         {/* ✅ INFO BANNER */}
-        <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs sm:text-sm rounded-lg px-3 py-2 mb-4">
-          <Info size={16} className="mt-0.5" />
+        <div
+          className="
+    flex items-start gap-3
+    bg-blue-50
+    border border-blue-100
+    text-blue-700
+    rounded-2xl
+    px-4 py-3
+    mb-6
+  "
+        >
+          <Info size={18} className="mt-0.5 shrink-0" />
           <p>Tap on a lesson to add feedback and track student progress.</p>
         </div>
 
         {/* Timeline */}
         <div className="relative">
+          {loading && (
+            <div className="text-sm text-gray-400">Loading lessons...</div>
+          )}
+
+          {!loading && lessons.length === 0 && (
+            <div className="bg-white rounded-xl p-8 text-center text-sm text-gray-400 border border-gray-100">
+              No lessons found for this learner
+            </div>
+          )}
+
           {/* Vertical line */}
-          <div className="absolute left-4 sm:left-5 top-0 bottom-0 w-0.5 bg-gray-200" />
+          {lessons.length > 0 && (
+            <div className="absolute left-4 sm:left-5 top-0 bottom-0 w-0.5 bg-gray-200" />
+          )}
 
           <div className="space-y-4 sm:space-y-6">
             {lessons.map((lesson) => {
               const status = lesson.status || "pending";
-              const config = statusConfig[status];
+              const config = statusConfig[status] || statusConfig.pending;
 
               return (
                 <div key={lesson.id} className="relative pl-8 sm:pl-10">
@@ -92,7 +214,8 @@ const LessonTimeline = () => {
                         </p>
 
                         <p className="text-xs text-gray-400 mt-1">
-                          {lesson.date}
+                          {lesson.lesson_date} •{" "}
+                          {lesson.start_time?.slice(0, 5)}
                         </p>
                       </div>
 
@@ -120,7 +243,7 @@ const LessonTimeline = () => {
                           Next Step:
                         </span>
                         <p className="text-gray-700">
-                          {lesson.struggles || "Not recorded"}
+                          {lesson.next_action || "Not recorded"}
                         </p>
                       </div>
                     </div>
@@ -137,6 +260,14 @@ const LessonTimeline = () => {
         isOpen={!!selectedLesson}
         onClose={() => setSelectedLesson(null)}
         lesson={selectedLesson}
+        onSaved={async () => {
+          clearCache(LESSONS_CACHE_KEY);
+
+          await fetchLessons({
+            forceRefresh: true,
+            showLoader: false,
+          });
+        }}
       />
     </>
   );

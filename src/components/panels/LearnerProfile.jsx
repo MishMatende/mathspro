@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LessonTimeline from "./LessonTimeline";
 import HomeworkPanel from "./HomeworkPanel";
 import { motion } from "framer-motion";
@@ -10,12 +10,28 @@ import {
   GraduationCap,
   Layers,
   ArrowLeft,
+  File,
+  ListChecks,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+import TutorFilesPage from "../../pages/tutorPages/TutorFilesPage";
+import TutorTestsPanel from "./TutorTestsPanel";
+import TutorChecklistPanel from "./TutorChecklistPanel";
 
-const LearnerProfile = ({ learner }) => {
-  const [activeTab, setActiveTab] = useState("overview");
+export default function LearnerProfile({ learner }) {
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "checklist";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   if (!learner) {
     return (
@@ -26,10 +42,12 @@ const LearnerProfile = ({ learner }) => {
   }
 
   const tabs = [
-    { id: "overview", label: "Overview", icon: User },
+    // { id: "overview", label: "Overview", icon: User },
+    { id: "checklist", label: "Checklist", icon: ListChecks },
     { id: "lessons", label: "Lessons", icon: BookOpen },
     { id: "homework", label: "Homework", icon: FileText },
     { id: "tests", label: "Tests", icon: ClipboardList },
+    { id: "files", label: "Files", icon: File },
   ];
 
   return (
@@ -143,29 +161,12 @@ const LearnerProfile = ({ learner }) => {
           </motion.div>
         )}
 
-        {activeTab === "lessons" && <LessonTimeline />}
+        {activeTab === "checklist" && <TutorChecklistPanel learner={learner} />}
+        {activeTab === "lessons" && <LessonTimeline learnerId={learner.id} />}
         {activeTab === "homework" && <HomeworkPanel studentId={learner.id} />}
-
-        {activeTab === "tests" && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center min-h-[60vh] text-center text-gray-400"
-          >
-            <FileText className="w-8 h-8 mb-2 text-gray-300" />
-
-            <p className="text-sm font-medium text-gray-500">
-              No tests available yet
-            </p>
-
-            <p className="text-xs text-gray-400 mt-1">
-              Tests assigned by admin will appear here
-            </p>
-          </motion.div>
-        )}
+        {activeTab === "files" && <TutorFilesPage studentId={learner.id} />}
+        {activeTab === "tests" && <TutorTestsPanel studentId={learner.id} />}
       </div>
     </motion.div>
   );
-};
-
-export default LearnerProfile;
+}

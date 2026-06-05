@@ -4,7 +4,8 @@ import { useAuth } from "../../../context/AuthContext";
 export default function Header({ open, setOpen }) {
   const { user } = useAuth();
 
-  const firstLetter = user?.user_metadata?.name.charAt(0)?.toUpperCase() || "A";
+  const firstLetter =
+    user?.user_metadata?.name?.charAt(0)?.toUpperCase() || "A";
 
   return (
     <div className="flex justify-between items-center px-4 lg:px-6 py-4 bg-white">

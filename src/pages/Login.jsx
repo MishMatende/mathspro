@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import "../styles/login.css";
 
 import { useAuth } from "../context/AuthContext";
+import { ArrowLeft } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -82,6 +83,13 @@ const Login = () => {
             <div className="login-form-inner">
               {step === "role" && (
                 <div className="step-enter">
+                  <button
+                    onClick={() => navigate("/")}
+                    className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 hover:text-gray-700 transition-colors mb-8"
+                  >
+                    <ArrowLeft size={14} />
+                    Back to Home
+                  </button>
                   <p className="role-heading">Welcome Back</p>
 
                   <p className="role-sub">How are you logging in today?</p>

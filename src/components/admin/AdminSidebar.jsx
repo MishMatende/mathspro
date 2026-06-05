@@ -1,5 +1,13 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, GraduationCap, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  GraduationCap,
+  LogOut,
+  CalendarDays,
+  ClipboardList,
+  ListChecks,
+} from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
 
@@ -16,6 +24,11 @@ export default function AdminSidebar({ open, setOpen }) {
       path: "/admin-dashboard",
     },
     {
+      label: "Lessons",
+      icon: CalendarDays,
+      path: "/admin-lessons",
+    },
+    {
       label: "Learners",
       icon: GraduationCap,
       path: "/admin-learners",
@@ -24,6 +37,16 @@ export default function AdminSidebar({ open, setOpen }) {
       label: "Tutors",
       icon: Users,
       path: "/admin-tutors",
+    },
+    {
+      label: "Tests",
+      icon: ClipboardList,
+      path: "/admin-tests",
+    },
+    {
+      label: "Checklist",
+      icon: ListChecks,
+      path: "/admin-checklist",
     },
   ];
 

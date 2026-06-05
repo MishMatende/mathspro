@@ -11,6 +11,7 @@ import {
   Layers,
   ArrowRight,
   Info,
+  RefreshCw,
 } from "lucide-react";
 
 import { motion } from "framer-motion";
@@ -19,31 +20,28 @@ import { getCache, setCache } from "../../lib/cache";
 
 const LearnersPage = () => {
   const navigate = useNavigate();
-
   const { user } = useAuth();
-
   const [learners, setLearners] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   // 🔥 Fetch assigned learners
-  const fetchLearners = async () => {
+  const fetchLearners = async (forceRefresh = false) => {
     if (!user?.id) return;
 
     const cacheKey = `tutor_learners_${user.id}`;
 
-    // 🔥 1. cache first
-    const cachedLearners = getCache(cacheKey);
+    if (!forceRefresh) {
+      const cachedLearners = getCache(cacheKey);
 
-    if (cachedLearners) {
-      setLearners(cachedLearners);
-      setLoading(false);
-      return;
+      if (cachedLearners) {
+        setLearners(cachedLearners);
+        setLoading(false);
+        return;
+      }
     }
 
-    // 🔥 2. fetch db
     const { data, error } = await supabase
       .from("learners")
       .select("*")
@@ -53,15 +51,22 @@ const LearnersPage = () => {
     if (error) {
       console.log(error);
       setLoading(false);
+      setRefreshing(false);
       return;
     }
 
     setLearners(data || []);
 
-    // 🔥 3. cache
     setCache(cacheKey, data || []);
 
     setLoading(false);
+    setRefreshing(false);
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+
+    await fetchLearners(true);
   };
 
   useEffect(() => {
@@ -95,26 +100,56 @@ const LearnersPage = () => {
           </h1>
         </div>
 
-        {/* SEARCH */}
-        <div className="relative w-full sm:w-64">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
+        <div className="flex items-center gap-2">
+          {/* Search */}
+          <div className="relative w-full sm:w-64">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
 
-          <input
-            type="text"
-            placeholder="Search learners..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            <input
+              type="text"
+              placeholder="Search learners..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="
+          w-full pl-9 pr-3 py-2 text-sm
+          border border-gray-200 rounded-lg
+          focus:outline-none
+          focus:ring-2
+          focus:ring-(--color-primary)/30
+        "
+            />
+          </div>
+
+          {/* Refresh */}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
             className="
-              w-full pl-9 pr-3 py-2 text-sm
-              border border-gray-200 rounded-lg
-              focus:outline-none
-              focus:ring-2
-              focus:ring-(--color-primary)/30
-            "
-          />
+        h-10 w-10
+        flex items-center justify-center
+        rounded-lg
+        border border-gray-200
+        bg-white
+        hover:bg-gray-50
+        transition
+        disabled:opacity-50
+      "
+            title="Refresh learners"
+          >
+            <motion.div
+              animate={refreshing ? { rotate: 360 } : {}}
+              transition={{
+                duration: 1,
+                repeat: refreshing ? Infinity : 0,
+                ease: "linear",
+              }}
+            >
+              <RefreshCw size={16} />
+            </motion.div>
+          </button>
         </div>
       </div>
 

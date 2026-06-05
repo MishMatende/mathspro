@@ -1,24 +1,257 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FileText, Download, Search, Plus, Info } from "lucide-react";
-import { homework as initialHomework } from "../../components/data/mockData";
+import {
+  FileText,
+  Download,
+  Search,
+  Plus,
+  Info,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../context/AuthContext";
+import toast from "react-hot-toast";
 import UploadHomeworkModal from "../../components/tutorModals/UploadHomeworkModal";
+import { clearCache, getCache, setCache } from "../../lib/cache";
 
-const categories = ["All", "Algebra", "Geometry", "Fractions"];
+const defaultCategories = ["All", "Algebra", "Geometry", "Fractions"];
 
-const HomeworkPage = () => {
+const getDownloadName = (title, filePath) => {
+  const extension = filePath?.split(".").pop();
+  const safeTitle = (title || "homework")
+    .trim()
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+
+  return extension ? `${safeTitle}.${extension}` : safeTitle;
+};
+
+export default function HomeworkPage() {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedHomework, setSelectedHomework] = useState(null);
+  const [homeworkToDelete, setHomeworkToDelete] = useState(null);
+  const [homework, setHomework] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  const filteredHomework = initialHomework.filter((hw) => {
-    const matchesSearch = hw.title.toLowerCase().includes(search.toLowerCase());
+  const cacheKey = user?.id ? `tutor_homework_${user.id}` : null;
 
-    const matchesCategory =
-      activeCategory === "All" || hw.category === activeCategory;
+  // 🔥 Fetch homework
+  const fetchHomework = async (forceRefresh = false) => {
+    if (!user) return;
 
-    return matchesSearch && matchesCategory;
-  });
+    if (!forceRefresh && cacheKey) {
+      const cachedHomework = getCache(cacheKey);
+
+      if (cachedHomework) {
+        setHomework(cachedHomework);
+        setLoading(false);
+        return;
+      }
+    }
+
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("homework")
+      .select(
+        `
+        id,
+        tutor_id,
+        learner_id,
+        title,
+        category,
+        instructions,
+        file_url,
+        due_date,
+        status,
+        created_at,
+        learners (
+          id,
+          name
+        ),
+        homework_submissions (
+          id,
+          status,
+          submitted_at,
+          reviewed_at
+        )
+      `,
+      )
+      .eq("tutor_id", user.id)
+      .order("created_at", {
+        ascending: false,
+      });
+
+    setLoading(false);
+
+    if (error) {
+      console.log(error);
+
+      toast.error("Failed to fetch homework");
+
+      return;
+    }
+
+    const nextHomework = data || [];
+
+    setHomework(nextHomework);
+
+    if (cacheKey) {
+      setCache(cacheKey, nextHomework);
+    }
+  };
+
+  useEffect(() => {
+    fetchHomework();
+  }, [user?.id]);
+
+  const categories = useMemo(() => {
+    const dynamicCategories = homework
+      .map((hw) => hw.category)
+      .filter(Boolean)
+      .filter((category, index, list) => list.indexOf(category) === index);
+
+    return [
+      ...defaultCategories,
+      ...dynamicCategories.filter(
+        (category) => !defaultCategories.includes(category),
+      ),
+    ];
+  }, [homework]);
+
+  // 🔥 Filter homework
+  const filteredHomework = useMemo(() => {
+    return homework.filter((hw) => {
+      const searchValue = search.toLowerCase();
+
+      const matchesSearch = `${hw.title || ""} ${hw.learners?.name || ""}`
+        .toLowerCase()
+        .includes(searchValue);
+
+      const matchesCategory =
+        activeCategory === "All" || hw.category === activeCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [homework, search, activeCategory]);
+
+  // 🔥 Download file
+  const handleDownload = async (filePath, title) => {
+    if (!filePath) {
+      toast.error("No worksheet file found");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.storage
+        .from("homework-files")
+        .createSignedUrl(filePath, 60, {
+          download: getDownloadName(title, filePath),
+        });
+
+      if (error) {
+        console.log(error);
+
+        toast.error("Failed to generate file link");
+
+        return;
+      }
+
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, "_blank");
+      }
+    } catch (err) {
+      console.log(err);
+
+      toast.error("Failed to download file");
+    }
+  };
+
+  const handleSaved = () => {
+    if (cacheKey) {
+      clearCache(cacheKey);
+    }
+
+    fetchHomework(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedHomework(null);
+  };
+
+  const handleEdit = (hw) => {
+    setSelectedHomework(hw);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!homeworkToDelete) return;
+    const hw = homeworkToDelete;
+    const loadingToast = toast.loading("Deleting homework...");
+
+    try {
+      const { error: submissionError } = await supabase
+        .from("homework_submissions")
+        .delete()
+        .eq("homework_id", hw.id);
+
+      if (submissionError) {
+        console.log(submissionError);
+      }
+
+      const { data, error } = await supabase
+        .from("homework")
+        .delete()
+        .eq("id", hw.id)
+        .eq("tutor_id", user.id)
+        .select("file_url")
+        .single();
+
+      if (error) {
+        console.log(error);
+        toast.error("Failed to delete homework");
+        return;
+      }
+
+      const filePath = data?.file_url || hw.file_url;
+
+      if (filePath) {
+        const { error: storageError } = await supabase.storage
+          .from("homework-files")
+          .remove([filePath]);
+
+        if (storageError) {
+          console.log(storageError);
+        }
+      }
+
+      const nextHomework = homework.filter((item) => item.id !== hw.id);
+
+      setHomework(nextHomework);
+
+      if (cacheKey) {
+        setCache(cacheKey, nextHomework);
+      }
+
+      toast.success("Homework deleted");
+      setHomeworkToDelete(null);
+    } catch (err) {
+      console.log(err);
+
+      toast.error("Failed to delete homework");
+    } finally {
+      toast.dismiss(loadingToast);
+    }
+    console.log(hw);
+  };
 
   return (
     <>
@@ -26,51 +259,110 @@ const HomeworkPage = () => {
       <motion.div
         animate={{
           scale: isModalOpen ? 0.96 : 1,
+
           filter: isModalOpen ? "blur(6px)" : "blur(0px)",
         }}
         transition={{
           type: "spring",
+
           stiffness: 220,
+
           damping: 25,
         }}
         className="p-4 lg:p-6"
       >
-        {/* Header */}
-        <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs sm:text-sm rounded-lg px-3 py-2 mb-4">
+        {/* HEADER INFO */}
+        <div
+          className="
+            flex items-start gap-2
+            bg-blue-50
+            border border-blue-100
+            text-blue-700
+            text-xs sm:text-sm
+            rounded-lg
+            px-3 py-2
+            mb-4
+          "
+        >
           <Info size={20} className="mt-0.5" />
+
           <p>
-            Use this page to see the list of homeworks and upload any new
-            homework.
+            Use this page to manage homework, assign worksheets and track
+            learner submissions.
           </p>
         </div>
-        <div className="flex flex-col lg:flex-row lg:justify-between gap-4 mb-6">
-          {/* Title */}
+
+        {/* TOP BAR */}
+        <div
+          className="
+            flex flex-col lg:flex-row
+            lg:justify-between
+            gap-4
+            mb-6
+          "
+        >
+          {/* TITLE */}
           <div className="flex items-center gap-2">
             <FileText size={20} />
-            <h1 className="text-lg font-semibold">Homework Bank</h1>
+
+            <h1 className="text-lg font-semibold">Homework Management</h1>
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-            {/* Search */}
+          {/* ACTIONS */}
+          <div
+            className="
+              flex flex-col sm:flex-row
+              gap-3
+              w-full lg:w-auto
+            "
+          >
+            {/* SEARCH */}
             <div className="relative w-full sm:w-64">
               <Search
                 size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                className="
+                  absolute
+                  left-3 top-1/2
+                  -translate-y-1/2
+                  text-gray-400
+                "
               />
+
               <input
                 type="text"
                 placeholder="Search homework..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-(--color-primary)/30"
+                className="
+                  w-full
+                  pl-9 pr-3 py-2
+                  text-sm
+                  border border-gray-200
+                  rounded-xl
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-orange-200
+                "
               />
             </div>
 
-            {/* Upload Button */}
+            {/* UPLOAD BUTTON */}
             <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center justify-center gap-2 bg-(--color-primary) text-white px-4 py-2 rounded-lg text-sm cursor-pointer hover:opacity-90 transition"
+              onClick={() => {
+                setSelectedHomework(null);
+                setIsModalOpen(true);
+              }}
+              className="
+                flex items-center justify-center gap-2
+                bg-orange-500
+                text-white
+                px-4 py-2
+                rounded-xl
+                text-sm
+                font-medium
+                hover:bg-orange-600
+                transition
+              "
             >
               <Plus size={16} />
               Upload Homework
@@ -78,66 +370,312 @@ const HomeworkPage = () => {
           </div>
         </div>
 
-        {/* Categories */}
+        {/* CATEGORIES */}
         <div className="flex gap-2 overflow-x-auto mb-6">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-3 py-1.5 text-sm rounded-full whitespace-nowrap cursor-pointer
-              ${
-                activeCategory === cat
-                  ? "bg-(--color-primary) text-white"
-                  : "bg-gray-100 text-gray-600"
-              }
-            `}
+              className={`
+                px-3 py-1.5
+                text-sm
+                rounded-full
+                whitespace-nowrap
+                transition
+                ${
+                  activeCategory === cat
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-100 text-gray-600"
+                }
+              `}
             >
               {cat}
             </button>
           ))}
         </div>
 
-        {/* Homework List */}
-        <div className="space-y-4">
-          {filteredHomework.length === 0 ? (
-            <p className="text-sm text-gray-400">No homework found</p>
-          ) : (
-            filteredHomework.map((hw) => (
-              <div
+        {/* LOADING */}
+        {loading && (
+          <div className="text-sm text-gray-400">Loading homework...</div>
+        )}
+
+        {/* EMPTY */}
+        {!loading && filteredHomework.length === 0 && (
+          <div
+            className="
+                bg-white
+                border border-gray-100
+                rounded-3xl
+                p-10
+                text-center
+              "
+          >
+            <FileText
+              size={40}
+              className="
+                  mx-auto
+                  text-gray-300
+                  mb-3
+                "
+            />
+
+            <h3 className="font-semibold text-gray-800">No homework found</h3>
+
+            <p className="text-sm text-gray-400 mt-1">
+              Upload your first homework
+            </p>
+          </div>
+        )}
+
+        {/* HOMEWORK GRID */}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filteredHomework.map((hw) => {
+            const submitted =
+              hw.homework_submissions?.filter(
+                (s) => s.status === "submitted" || s.status === "reviewed",
+              ).length || 0;
+
+            return (
+              <motion.div
                 key={hw.id}
-                className="bg-white rounded-xl p-4 shadow-sm flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3"
+                whileHover={{ scale: 1.01 }}
+                className="
+                  bg-white
+                  rounded-3xl
+                  p-5
+                  border border-gray-100
+                  shadow-sm
+                "
               >
-                <div>
-                  <p className="font-medium">{hw.title}</p>
+                {/* TOP */}
+                <div
+                  className="
+                    flex items-start
+                    justify-between
+                    gap-4
+                  "
+                >
+                  <div>
+                    <h3
+                      className="
+                        font-semibold
+                        text-gray-900
+                      "
+                    >
+                      {hw.title}
+                    </h3>
 
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">
-                      {hw.category}
+                    <p
+                      className="
+                        text-sm
+                        text-gray-500
+                        mt-1
+                      "
+                    >
+                      {hw.learners?.name}
+                    </p>
+                  </div>
+
+                  <span
+                    className="
+                      text-xs
+                      px-2 py-1
+                      rounded-full
+                      bg-orange-100
+                      text-orange-700
+                    "
+                  >
+                    {hw.category || "General"}
+                  </span>
+                </div>
+
+                {/* DETAILS */}
+                <div className="mt-4 space-y-3">
+                  <p
+                    className="
+                      text-sm
+                      text-gray-600
+                      line-clamp-3
+                    "
+                  >
+                    {hw.instructions || "No instructions"}
+                  </p>
+
+                  <div
+                    className="
+                      flex items-center
+                      justify-between
+                      text-xs
+                      text-gray-400
+                    "
+                  >
+                    <span>
+                      {hw.due_date ? `Due ${hw.due_date}` : "No due date"}
                     </span>
 
-                    <span className="text-xs text-gray-400">
-                      {hw.submissions.length} submissions
-                    </span>
+                    <button
+                      onClick={() => {
+                        console.log("Learner ID", hw.learners?.id);
+                        navigate(`/learners/${hw.learners?.id}?tab=homework`);
+                      }}
+                      className="
+    px-2 py-1
+    rounded-full
+    bg-green-50
+    text-green-700
+    hover:bg-green-100
+    transition
+  "
+                    >
+                      {submitted}/1 submitted
+                    </button>
                   </div>
                 </div>
 
-                <button className="flex items-center gap-2 text-sm text-blue-600 cursor-pointer hover:underline">
-                  <Download size={16} />
-                  Download
-                </button>
-              </div>
-            ))
-          )}
+                {/* ACTIONS */}
+                <div
+                  className="
+                    mt-5
+                    flex items-center
+                    justify-between
+                    gap-3
+                  "
+                >
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleEdit(hw)}
+                      className="
+                        flex items-center gap-2
+                        text-sm
+                        text-gray-600
+                        hover:text-gray-900
+                      "
+                    >
+                      <Pencil size={15} />
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={() => setHomeworkToDelete(hw)}
+                      className="
+                        flex items-center gap-2
+                        text-sm
+                        text-red-600
+                        hover:text-red-700
+                      "
+                    >
+                      <Trash2 size={15} />
+                      Delete
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => handleDownload(hw.file_url, hw.title)}
+                    className="
+                      flex items-center gap-2
+                      text-sm
+                      text-blue-600
+                      hover:underline
+                    "
+                  >
+                    <Download size={16} />
+                    Download
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </motion.div>
 
-      {/* Modal */}
+      {/* MODAL */}
       <UploadHomeworkModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
+        onUploaded={handleSaved}
+        homework={selectedHomework}
       />
+
+      {homeworkToDelete && (
+        <div
+          className="
+            fixed inset-0 z-50
+            bg-black/40
+            backdrop-blur-sm
+            flex items-center justify-center
+            px-4
+          "
+        >
+          <div
+            className="
+              max-w-md
+              bg-white
+              rounded-3xl
+              p-6
+              shadow-xl
+              border border-gray-100
+            "
+          >
+            <div className="flex items-start gap-4">
+              <div
+                className="
+                  w-11 h-11
+                  rounded-2xl
+                  bg-red-50
+                  text-red-600
+                  flex items-center justify-center
+                  shrink-0
+                "
+              >
+                <Trash2 size={20} />
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Delete homework?
+                </h2>
+
+                <p className="text-sm text-gray-500 mt-1">
+                  This will permanently remove "{homeworkToDelete.title}" and
+                  its worksheet file.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setHomeworkToDelete(null)}
+                className="
+                  px-5 py-3
+                  rounded-2xl
+                  border border-gray-200
+                  text-sm font-medium
+                  text-gray-700
+                  hover:bg-gray-50
+                "
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="
+                  px-5 py-3
+                  rounded-2xl
+                  bg-red-600
+                  text-sm font-medium
+                  text-white
+                  hover:bg-red-700
+                "
+              >
+                Delete Homework
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
-};
-
-export default HomeworkPage;
+}
