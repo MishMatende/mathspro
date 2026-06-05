@@ -1,8 +1,9 @@
 // src/components/adminModals/ChecklistBuilderModal.jsx
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "../../lib/supabase";
-import { Plus, Pencil, Trash2, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronRight, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { getCache, setCache, clearCache } from "../../lib/cache";
 import CreateTopicModal from "./CreateTopicModal";
@@ -34,7 +35,7 @@ export default function ChecklistBuilderModal({ level, onClose }) {
     }));
   };
 
-  async function loadChecklist(showLoader = true) {
+  const loadChecklist = useCallback(async (showLoader = true) => {
     try {
       if (showLoader) setLoading(true);
 
@@ -63,7 +64,7 @@ export default function ChecklistBuilderModal({ level, onClose }) {
     } finally {
       if (showLoader) setLoading(false);
     }
-  }
+  }, [CACHE_KEY, level.id]);
 
   useEffect(() => {
     const cached = getCache(CACHE_KEY);
@@ -76,7 +77,7 @@ export default function ChecklistBuilderModal({ level, onClose }) {
     } else {
       loadChecklist(true);
     }
-  }, []);
+  }, [CACHE_KEY, loadChecklist]);
 
   function refresh() {
     clearCache(CACHE_KEY);
@@ -130,36 +131,55 @@ export default function ChecklistBuilderModal({ level, onClose }) {
     }
   }
 
-  return (
+  const modal = (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex justify-center items-center p-4"
+      className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm flex justify-center items-center p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl w-[90Vw] md:-w[40Vw] max-w-5xl h-[85vh] flex flex-col overflow-hidden"
+        className="bg-white rounded-3xl w-[94vw] md:w-[72vw] max-w-5xl h-[88vh] max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden shadow-2xl"
       >
-        <div className="p-6 border-b flex justify-between items-center">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900">{level.name}</h2>
+        <div className="p-4 sm:p-6 border-b flex justify-between items-start gap-4 shrink-0">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-3xl font-bold text-gray-900 truncate">
+              {level.name}
+            </h2>
 
             <p className="text-gray-500">Checklist builder</p>
           </div>
 
-          <button
-            onClick={() => setShowCreateTopic(true)}
-            className="
-      flex items-center gap-2
-      px-5 py-3
-      rounded-2xl
-      border
-      bg-white
-      hover:bg-orange-200
-    "
-          >
-            <Plus size={18} />
-            Add topic
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowCreateTopic(true)}
+              className="
+                flex items-center gap-2
+                px-4 sm:px-5 py-3
+                rounded-2xl
+                border
+                bg-white
+                hover:bg-orange-200
+              "
+            >
+              <Plus size={18} />
+              <span className="hidden sm:inline">Add topic</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              aria-label="Close checklist builder"
+              className="
+                h-12 w-12
+                rounded-2xl
+                border
+                bg-white
+                flex items-center justify-center
+                hover:bg-gray-100
+              "
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
@@ -411,4 +431,6 @@ export default function ChecklistBuilderModal({ level, onClose }) {
       )}
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

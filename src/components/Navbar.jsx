@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 import { motion, AnimatePresence } from "framer-motion";
 
-import { Menu, X, ArrowRight, Sparkles } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -85,36 +85,11 @@ export default function Navbar() {
                 select-none
               "
             >
-              <div
-                className="
-                  w-10 h-10
-                  rounded-2xl
-                  bg-linear-to-br
-                  from-orange-500
-                  to-orange-600
-                  flex items-center justify-center
-                  shadow-lg shadow-orange-500/20
-                "
-              >
-                <Sparkles size={18} className="text-white" />
-              </div>
-
-              <div>
-                <h1
-                  className="
-                    text-lg sm:text-xl
-                    font-black
-                    tracking-[-0.03em]
-                    text-gray-900
-                  "
-                >
-                  Maths<span className="text-orange-500">Pro</span>
-                </h1>
-
-                <p className="text-[10px] text-gray-400 -mt-1 hidden sm:block">
-                  Learn with confidence
-                </p>
-              </div>
+              <img
+                src="/logo.svg"
+                alt="MathsPro"
+                className="h-12 w-32 sm:w-36 object-contain object-left"
+              />
             </motion.div>
 
             {/* DESKTOP NAV */}

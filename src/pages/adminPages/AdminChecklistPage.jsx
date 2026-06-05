@@ -17,7 +17,7 @@ import EditChecklistModal from "../../components/adminModals/EditChecklistModal"
 import DeleteChecklistModal from "../../components/adminModals/DeleteChecklistModal";
 import ChecklistBuilderModal from "../../components/adminModals/ChecklistBuilderModal";
 
-const CACHE_KEY = "checklist_levels";
+const CACHE_KEY = "checklist_level_templates";
 
 export default function AdminChecklistPage() {
   const [levels, setLevels] = useState([]);
@@ -44,6 +44,7 @@ export default function AdminChecklistPage() {
           )
         `,
         )
+        .is("learner_id", null)
         .order("sort_order");
 
       if (error) throw error;

@@ -1,8 +1,7 @@
 // src/components/Footer.jsx
 import { Link } from "react-router-dom";
 import { SiFacebook, SiInstagram, SiX } from "@icons-pack/react-simple-icons";
-import { Mail, Phone, MapPin, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
+import { Mail, Phone, MapPin } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -11,51 +10,24 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand */}
           <div>
-            <motion.div
-              whileHover={{
-                scale: 1.04,
-              }}
-              whileTap={{
-                scale: 0.97,
-              }}
-              onClick={() => handleNav("/")}
+            <div
               className="
                 flex items-center gap-2
                 cursor-pointer
                 select-none
+                mb-4
               "
             >
-              <div
-                className="
-                  w-10 h-10
-                  rounded-2xl
-                  bg-linear-to-br
-                  from-orange-500
-                  to-orange-600
-                  flex items-center justify-center
-                  shadow-lg shadow-orange-500/20
-                "
-              >
-                <Sparkles size={18} className="text-white" />
-              </div>
-
-              <div>
-                <h1
-                  className="
-                    text-lg sm:text-xl
-                    font-black
-                    tracking-[-0.03em]
-                    text-white-900
-                  "
-                >
-                  Maths<span className="text-orange-500">Pro</span>
-                </h1>
-
-                <p className="text-[10px] text-gray-400 -mt-1 hidden sm:block">
-                  Learn with confidence
-                </p>
-              </div>
-            </motion.div>
+              <Link to="/" aria-label="MathsPro home">
+                <span className="inline-flex rounded-xl bg-white px-3 py-2">
+                  <img
+                    src="/logo.svg"
+                    alt="MathsPro"
+                    className="h-12 w-36 object-contain object-left"
+                  />
+                </span>
+              </Link>
+            </div>
 
             <p className="text-gray-300 leading-relaxed text-sm">
               Personalized math learning built around every learner’s pace,

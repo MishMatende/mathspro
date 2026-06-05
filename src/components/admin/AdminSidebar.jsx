@@ -43,11 +43,11 @@ export default function AdminSidebar({ open, setOpen }) {
       icon: ClipboardList,
       path: "/admin-tests",
     },
-    {
-      label: "Checklist",
-      icon: ListChecks,
-      path: "/admin-checklist",
-    },
+    // {
+    //   label: "Checklist",
+    //   icon: ListChecks,
+    //   path: "/admin-checklist",
+    // },
   ];
 
   const handleLogout = async () => {
@@ -75,9 +75,11 @@ export default function AdminSidebar({ open, setOpen }) {
       >
         {/* Logo */}
         <div className="mb-10">
-          <h1 className="text-2xl font-bold text-(--color-primary)">
-            MathsPro
-          </h1>
+          <img
+            src="/logo.svg"
+            alt="MathsPro"
+            className="h-14 w-36 object-contain object-left"
+          />
 
           <p className="text-xs text-gray-400 mt-1">Admin Panel</p>
         </div>

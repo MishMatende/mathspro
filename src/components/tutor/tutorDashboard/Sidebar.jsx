@@ -48,9 +48,11 @@ export default function Sidebar({ open, setOpen }) {
       >
         {/* Logo */}
         <div className="mb-10">
-          <h1 className="text-2xl font-bold text-(--color-primary)">
-            MathsPro
-          </h1>
+          <img
+            src="/logo.svg"
+            alt="MathsPro"
+            className="h-14 w-36 object-contain object-left"
+          />
 
           <p className="text-xs text-gray-400 mt-1">Tutor Panel</p>
         </div>

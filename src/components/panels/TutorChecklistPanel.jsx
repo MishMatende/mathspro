@@ -1,6 +1,6 @@
 // src/components/tutor/TutorChecklistPanel.jsx
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
 import {
@@ -25,7 +25,7 @@ export default function TutorChecklistPanel({ learner }) {
 
   const CHECKLIST_CACHE_KEY = `learner_checklist_panel_${learner?.id}`;
 
-  async function loadChecklist(showLoader = true) {
+  const loadChecklist = useCallback(async (showLoader = true) => {
     if (!learner?.id) return;
 
     try {
@@ -49,7 +49,22 @@ export default function TutorChecklistPanel({ learner }) {
 
       if (assignmentError) throw assignmentError;
 
-      if (!assignment?.level_id) {
+      let levelId = assignment?.level_id || "";
+
+      if (!levelId) {
+        const { data: personalChecklist, error: personalChecklistError } =
+          await supabase
+            .from("checklist_levels")
+            .select("id")
+            .eq("learner_id", learner.id)
+            .maybeSingle();
+
+        if (personalChecklistError) throw personalChecklistError;
+
+        levelId = personalChecklist?.id || "";
+      }
+
+      if (!levelId) {
         setTopics([]);
         setProgressMap({});
 
@@ -71,7 +86,7 @@ export default function TutorChecklistPanel({ learner }) {
             )
           `,
         )
-        .eq("level_id", assignment.level_id)
+        .eq("level_id", levelId)
         .order("sort_order");
 
       if (topicsError) throw topicsError;
@@ -104,7 +119,7 @@ export default function TutorChecklistPanel({ learner }) {
         setLoading(false);
       }
     }
-  }
+  }, [CHECKLIST_CACHE_KEY, learner?.id]);
 
   useEffect(() => {
     if (!learner?.id) return;
@@ -119,7 +134,7 @@ export default function TutorChecklistPanel({ learner }) {
     }
 
     loadChecklist();
-  }, [learner?.id]);
+  }, [CHECKLIST_CACHE_KEY, learner?.id, loadChecklist]);
 
   useEffect(() => {
     const initial = {};

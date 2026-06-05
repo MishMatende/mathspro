@@ -90,6 +90,12 @@ const Login = () => {
                     <ArrowLeft size={14} />
                     Back to Home
                   </button>
+                  <img
+                    src="/logo.svg"
+                    alt="MathsPro"
+                    className="login-brand-logo"
+                  />
+
                   <p className="role-heading">Welcome Back</p>
 
                   <p className="role-sub">How are you logging in today?</p>
@@ -137,6 +143,12 @@ const Login = () => {
                   <button className="back-btn" onClick={() => setStep("role")}>
                     ← Back
                   </button>
+
+                  <img
+                    src="/logo.svg"
+                    alt="MathsPro"
+                    className="login-brand-logo"
+                  />
 
                  <div className="role-badge-wrapper">
                     <span className="role-badge">

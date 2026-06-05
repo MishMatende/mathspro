@@ -42,6 +42,15 @@
     max-width: 340px;
 }
 
+.login-brand-logo {
+    width: 160px;
+    height: 64px;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+    margin: 0 auto 22px;
+}
+
 .step-enter {
     animation: stepIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }

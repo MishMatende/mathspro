@@ -2,9 +2,14 @@ import { useState, useEffect } from "react";
 import BottomSheetModal from "../tutorModals/BottomSheetModal";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import { getOrCreateLearnerChecklist } from "../../lib/learnerChecklist";
+import ChecklistBuilderModal from "./ChecklistBuilderModal";
 
 export default function EditLearnerModal({ learner, onClose, onUpdated }) {
   const [saving, setSaving] = useState(false);
+  const [openingChecklist, setOpeningChecklist] = useState(false);
+  const [personalChecklist, setPersonalChecklist] = useState(null);
+  const [hasPersonalChecklist, setHasPersonalChecklist] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -18,6 +23,9 @@ export default function EditLearnerModal({ learner, onClose, onUpdated }) {
   useEffect(() => {
     if (!learner) return;
 
+    setPersonalChecklist(null);
+    setHasPersonalChecklist(false);
+
     setFormData({
       name: learner.name || "",
       curriculum: learner.curriculum || "",
@@ -26,6 +34,28 @@ export default function EditLearnerModal({ learner, onClose, onUpdated }) {
       parent_email_1: learner.parent_email_1 || "",
       parent_email_2: learner.parent_email_2 || "",
     });
+  }, [learner]);
+
+  useEffect(() => {
+    async function loadPersonalChecklist() {
+      if (!learner?.id) return;
+
+      const { data, error } = await supabase
+        .from("checklist_levels")
+        .select("id")
+        .eq("learner_id", learner.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error(error);
+        setHasPersonalChecklist(false);
+        return;
+      }
+
+      setHasPersonalChecklist(!!data?.id);
+    }
+
+    loadPersonalChecklist();
   }, [learner]);
 
   if (!learner) return null;
@@ -68,6 +98,25 @@ export default function EditLearnerModal({ learner, onClose, onUpdated }) {
       toast.error("Failed to update learner");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleChecklist = async () => {
+    try {
+      setOpeningChecklist(true);
+
+      const checklist = await getOrCreateLearnerChecklist({
+        ...learner,
+        ...formData,
+      });
+
+      setPersonalChecklist(checklist);
+      setHasPersonalChecklist(true);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to open learner checklist");
+    } finally {
+      setOpeningChecklist(false);
     }
   };
 
@@ -180,23 +229,44 @@ export default function EditLearnerModal({ learner, onClose, onUpdated }) {
         </div>
 
         {/* BUTTONS */}
-        <div className="flex gap-3 mt-6">
+        <div className="mt-6 space-y-3">
           <button
-            onClick={onClose}
-            className="flex-1 py-3 rounded-2xl border border-slate-200 font-medium hover:bg-slate-50"
+            onClick={handleChecklist}
+            disabled={openingChecklist}
+            className="w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-medium disabled:opacity-50"
           >
-            Cancel
+            {openingChecklist
+              ? "Opening Checklist..."
+              : hasPersonalChecklist
+                ? "Edit Learner Checklist"
+                : "Create Learner Checklist"}
           </button>
 
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-medium disabled:opacity-50"
-          >
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 rounded-2xl border border-slate-200 font-medium hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-medium disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
         </div>
       </div>
+
+      {personalChecklist && (
+        <ChecklistBuilderModal
+          level={personalChecklist}
+          onClose={() => setPersonalChecklist(null)}
+        />
+      )}
     </BottomSheetModal>
   );
 }

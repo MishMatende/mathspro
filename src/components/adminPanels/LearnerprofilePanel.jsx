@@ -4,6 +4,12 @@ import toast from "react-hot-toast";
 import { clearCache, getCache, setCache } from "../../lib/cache";
 import { useAuth } from "../../context/AuthContext";
 import { Mail, Loader2 } from "lucide-react";
+import {
+  clearLearnerChecklistCache,
+  fetchLearnerChecklist,
+  getOrCreateLearnerChecklist,
+} from "../../lib/learnerChecklist";
+import ChecklistBuilderModal from "../adminModals/ChecklistBuilderModal";
 
 export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
   const [tutors, setTutors] = useState([]);
@@ -14,9 +20,15 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
   const [checklists, setChecklists] = useState([]);
   const [selectedChecklistId, setSelectedChecklistId] = useState("");
   const [assigningChecklist, setAssigningChecklist] = useState(false);
+  const [personalChecklist, setPersonalChecklist] = useState(null);
+  const [openingChecklist, setOpeningChecklist] = useState(false);
+  const [hasPersonalChecklist, setHasPersonalChecklist] = useState(false);
 
   // 🔥 Sync assigned tutor from learner
   useEffect(() => {
+    setPersonalChecklist(null);
+    setHasPersonalChecklist(false);
+
     if (learner?.tutor_id) {
       setSelectedTutorId(learner.tutor_id);
     } else {
@@ -59,7 +71,7 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
 
   // Fetch CheckList
   async function fetchChecklists() {
-    const cached = getCache("checklist_levels");
+    const cached = getCache("checklist_level_templates");
 
     if (cached) {
       setChecklists(cached);
@@ -69,6 +81,7 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
     const { data, error } = await supabase
       .from("checklist_levels")
       .select("*")
+      .is("learner_id", null)
       .order("sort_order");
 
     if (error) {
@@ -78,7 +91,7 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
 
     setChecklists(data || []);
 
-    setCache("checklist_levels", data || []);
+    setCache("checklist_level_templates", data || []);
   }
 
   // 🔥 Assign tutor
@@ -196,8 +209,7 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
         if (error) throw error;
 
         setSelectedChecklistId("");
-        clearCache(`learner_checklist_${learner.id}`);
-        clearCache(`learner_checklist_panel_${learner.id}`);
+        clearLearnerChecklistCache(learner.id);
 
         toast.success("Checklist removed");
 
@@ -218,6 +230,7 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
 
       setSelectedChecklistId(levelId);
       setCache(`learner_checklist_${learner.id}`, levelId);
+      clearCache(`learner_checklist_panel_${learner.id}`);
 
       toast.success("Checklist assigned");
     } catch (error) {
@@ -262,6 +275,43 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
 
     loadChecklistAssignment();
   }, [learner]);
+
+  useEffect(() => {
+    async function loadPersonalChecklist() {
+      if (!learner?.id) return;
+
+      try {
+        const checklist = await fetchLearnerChecklist(learner.id);
+
+        setHasPersonalChecklist(!!checklist);
+      } catch (error) {
+        console.error(error);
+        setHasPersonalChecklist(false);
+      }
+    }
+
+    loadPersonalChecklist();
+  }, [learner]);
+
+  async function openLearnerChecklist() {
+    if (!learner?.id) return;
+
+    try {
+      setOpeningChecklist(true);
+
+      const checklist = await getOrCreateLearnerChecklist(learner);
+
+      setPersonalChecklist(checklist);
+      setHasPersonalChecklist(true);
+      setSelectedChecklistId(checklist.id);
+      setCache(`learner_checklist_${learner.id}`, checklist.id);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to open learner checklist");
+    } finally {
+      setOpeningChecklist(false);
+    }
+  }
 
   if (!learner) return null;
 
@@ -437,12 +487,44 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
             >
               <option value="">Select Checklist</option>
 
+              {selectedChecklistId &&
+                !checklists.some(
+                  (checklist) => checklist.id === selectedChecklistId,
+                ) && (
+                  <option value={selectedChecklistId}>
+                    Personal learner checklist
+                  </option>
+                )}
+
               {checklists.map((checklist) => (
                 <option key={checklist.id} value={checklist.id}>
                   {checklist.name}
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="mt-4">
+            <button
+              onClick={openLearnerChecklist}
+              disabled={openingChecklist}
+              className="
+                w-full h-12
+                rounded-2xl
+                bg-orange-500
+                hover:bg-orange-600
+                text-white
+                font-medium text-sm
+                transition
+                disabled:opacity-50
+              "
+            >
+              {openingChecklist
+                ? "Opening Checklist..."
+                : hasPersonalChecklist
+                  ? "Edit Learner Checklist"
+                  : "Create Learner Checklist"}
+            </button>
           </div>
         </div>
         {/* FOOTER ACTIONS */}
@@ -491,6 +573,15 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
           </p>
         </div>
       </div>
+      {personalChecklist && (
+        <ChecklistBuilderModal
+          level={personalChecklist}
+          onClose={() => {
+            clearLearnerChecklistCache(learner.id);
+            setPersonalChecklist(null);
+          }}
+        />
+      )}
     </div>
   );
 }

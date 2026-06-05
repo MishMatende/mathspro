@@ -76,9 +76,11 @@ export default function AdminLogin() {
 
           {/* logo */}
           <div className="mb-8">
-            <h1 className="text-[28px] sm:text-[30px] font-black tracking-[-0.04em] text-[#ff6a2b]">
-              MathsPro
-            </h1>
+            <img
+              src="/logo.svg"
+              alt="MathsPro"
+              className="h-16 w-44 object-contain object-left"
+            />
           </div>
 
           {/* card */}

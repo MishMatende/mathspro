@@ -8,59 +8,47 @@ import TutorLessonCalendar from "../../components/tutor/TutorLessonCalendar";
 import LessonReviewModal from "../../components/tutorModals/LessonReviewModal";
 import toast from "react-hot-toast";
 import CreateTutorLessonModal from "../../components/tutorModals/CreateTutorLessonModal";
+import { getCache, setCache, clearCache } from "../../lib/cache";
+import { useAuth } from "../../context/AuthContext";
 
 export default function TutorSchedulePage() {
+  const { user } = useAuth();
+
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [tutor, setTutor] = useState(null);
-  const [userId, setUserId] = useState(null);
 
   const getCacheKey = (userId) => `tutor_lessons_cache_${userId}`;
 
   // 🔥 Load cached lessons immediately
   useEffect(() => {
-    const loadCachedLessons = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    if (!user) return;
 
-      if (!user) return;
+    const cached = getCache(getCacheKey(user.id));
 
-      const cacheKey = getCacheKey(user.id);
+    if (cached) {
+      setLessons(cached);
+      setLoading(false);
 
-      try {
-        const cached = localStorage.getItem(cacheKey);
-
-        if (cached) {
-          setLessons(JSON.parse(cached));
-        }
-      } catch (err) {
-        console.log("Cache read error:", err);
-      }
-    };
-
-    loadCachedLessons();
-  }, []);
+      // background refresh
+      fetchLessons(false);
+    } else {
+      fetchLessons(true);
+    }
+  }, [user]);
 
   const fetchTutor = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
     if (!user) return null;
 
     const cacheKey = `tutor_profile_${user.id}`;
 
-    const cached = localStorage.getItem(cacheKey);
+    const cached = getCache(cacheKey);
 
     if (cached) {
-      const tutorData = JSON.parse(cached);
-
-      setTutor(tutorData);
-
-      return tutorData;
+      setTutor(cached);
+      return cached;
     }
 
     const { data, error } = await supabase
@@ -71,7 +59,7 @@ export default function TutorSchedulePage() {
 
     if (error) throw error;
 
-    localStorage.setItem(cacheKey, JSON.stringify(data));
+    setCache(cacheKey, data);
 
     setTutor(data);
 
@@ -79,71 +67,52 @@ export default function TutorSchedulePage() {
   };
 
   // 🔥 Fetch tutor lessons
-  const fetchLessons = async () => {
-    setLoading(true);
+  const fetchLessons = async (showLoader = true) => {
+    if (!user) return;
 
-    if (!userId) {
-      setLoading(false);
-
-      return;
+    if (showLoader) {
+      setLoading(true);
     }
 
     const cacheKey = getCacheKey(user.id);
 
     const tutorData = tutor || (await fetchTutor());
 
-    if (!tutorData) return;
-
-    if (tutorError || !tutorData) {
-      console.log(tutorError);
-
-      toast.error("Tutor profile not found");
-
+    if (!tutorData) {
       setLoading(false);
-
+      toast.error("Tutor profile not found");
       return;
     }
 
-    // 🔥 Fetch tutor lessons
     const { data, error } = await supabase
       .from("lessons")
       .select(
         `
-        *,
-        learners (
-          id,
-          name
-        )
-      `,
+      *,
+      learners (
+        id,
+        name
+      )
+    `,
       )
       .eq("tutor_id", tutorData.id)
       .order("lesson_date", {
         ascending: true,
       });
 
-    setLoading(false);
-
     if (error) {
-      console.log(error);
-
+      setLoading(false);
       toast.error("Failed to fetch lessons");
-
       return;
     }
 
     setLessons(data || []);
+    setCache(cacheKey, data || []);
 
-    try {
-      localStorage.setItem(cacheKey, JSON.stringify(data || []));
-    } catch (err) {
-      console.log("Cache write error:", err);
+    if (showLoader) {
+      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchLessons();
-    fetchTutor();
-  }, []);
 
   return (
     <>
@@ -210,11 +179,13 @@ export default function TutorSchedulePage() {
 
             <button
               onClick={async () => {
-                if (userId) {
-                  localStorage.removeItem(getCacheKey(userId));
-                }
+                if (!user) return;
 
-                fetchLessons();
+                clearCache(getCacheKey(user.id));
+
+                await fetchLessons();
+
+                toast.success("Schedule refreshed");
               }}
               disabled={loading}
               className="
@@ -270,15 +241,13 @@ export default function TutorSchedulePage() {
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreated={async () => {
-          const {
-            data: { user },
-          } = await supabase.auth.getUser();
+          if (!user) return;
 
-          if (user) {
-            localStorage.removeItem(getCacheKey(user.id));
-          }
+          clearCache(getCacheKey(user.id));
 
-          fetchLessons();
+          await fetchLessons();
+
+          setShowCreateModal(false);
         }}
       />
     </>

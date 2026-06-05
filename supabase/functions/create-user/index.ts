@@ -137,6 +137,38 @@ serve(async (req) => {
       );
     }
 
+    if (role === "student") {
+      const { data: checklist, error: checklistError } = await supabase
+        .from("checklist_levels")
+        .insert({
+          learner_id: userId,
+          name: name ? `${name} Checklist` : "Learner Checklist",
+          sort_order: 0,
+        })
+        .select("id")
+        .single();
+
+      if (checklistError) {
+        console.log("CHECKLIST ERROR:", checklistError);
+      } else if (checklist?.id) {
+        const { error: assignmentError } = await supabase
+          .from("learner_checklists")
+          .upsert(
+            {
+              learner_id: userId,
+              level_id: checklist.id,
+            },
+            {
+              onConflict: "learner_id",
+            },
+          );
+
+        if (assignmentError) {
+          console.log("CHECKLIST ASSIGNMENT ERROR:", assignmentError);
+        }
+      }
+    }
+
     console.log("SUCCESS");
 
     return new Response(

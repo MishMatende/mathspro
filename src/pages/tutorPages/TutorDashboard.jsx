@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-
+import { getCache, setCache, clearCache } from "../../lib/cache";
 import {
   Users,
   BookOpen,
@@ -19,7 +19,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 mins
 
 export default function TutorDashboard() {
   const [loading, setLoading] = useState(true);
-
+  const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     totalLearners: 0,
     weeklyUpcomingLessons: 0,
@@ -29,12 +29,14 @@ export default function TutorDashboard() {
   });
 
   useEffect(() => {
-    loadDashboard();
+    loadDashboard(false, true);
   }, []);
 
-  const loadDashboard = async (forceRefresh = false) => {
+  const loadDashboard = async (forceRefresh = false, showLoader = true) => {
     try {
-      setLoading(true);
+      if (showLoader) {
+        setLoading(true);
+      }
 
       const {
         data: { user },
@@ -52,18 +54,12 @@ export default function TutorDashboard() {
       // -------------------------
 
       if (!forceRefresh) {
-        const cached = sessionStorage.getItem(cacheKey);
+        const cached = getCache(cacheKey);
 
         if (cached) {
-          const parsed = JSON.parse(cached);
-
-          const isValid = Date.now() - parsed.timestamp < CACHE_DURATION;
-
-          if (isValid) {
-            setDashboardData(parsed.data);
-            setLoading(false);
-            return;
-          }
+          setDashboardData(cached);
+          setLoading(false);
+          return;
         }
       }
 
@@ -159,13 +155,7 @@ export default function TutorDashboard() {
       // SAVE CACHE
       // -------------------------
 
-      sessionStorage.setItem(
-        cacheKey,
-        JSON.stringify({
-          timestamp: Date.now(),
-          data,
-        }),
-      );
+      setCache(cacheKey, data);
 
       setDashboardData(data);
     } catch (error) {
@@ -175,8 +165,20 @@ export default function TutorDashboard() {
     }
   };
 
-  const refreshDashboard = () => {
-    loadDashboard(true);
+  const refreshDashboard = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    clearCache(`dashboard_${user.id}`);
+
+    setRefreshing(true);
+
+    await loadDashboard(true, false);
+
+    setRefreshing(false);
   };
 
   if (loading) {
@@ -209,9 +211,19 @@ export default function TutorDashboard() {
 
         <button
           onClick={refreshDashboard}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border hover:bg-gray-50 transition"
+          disabled={refreshing}
+          className="
+    flex items-center gap-2
+    px-3 py-2
+    text-sm
+    rounded-lg
+    border
+    hover:bg-gray-50
+    transition
+    disabled:opacity-50
+  "
         >
-          <RefreshCw size={15} />
+          <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
         </button>
       </div>
 
