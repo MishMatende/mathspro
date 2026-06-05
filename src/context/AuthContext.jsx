@@ -66,17 +66,14 @@ export const AuthProvider = ({ children }) => {
     // 🔁 Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth event:", event);
+
       if (session?.user) {
         setUser(session.user);
-
-        await fetchProfile(session.user.id);
       } else {
         setUser(null);
-
         setRole(null);
-
-        // 🔥 Clear cache on logout
         sessionStorage.removeItem("auth_profile");
       }
     });
@@ -86,27 +83,30 @@ export const AuthProvider = ({ children }) => {
 
   // 🔐 Login
   const login = async ({ email, password, expectedRole = null }) => {
-    console.log("1. Starting sign in");
+    console.log("A");
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    console.log("2. Sign in finished");
+    console.log("B", { data, error });
 
     if (error) {
+      console.log("C");
       return {
         success: false,
         error: error.message,
       };
     }
 
+    console.log("D");
+
     const user = data.user;
 
-    // 🔥 Fetch fresh profile
-    const profile = await fetchProfile(user.id, true);
+    const profile = await fetchProfile(data.user.id, true);
 
-    console.log("3. Profile fetched");
+    console.log("E", profile);
 
     if (!profile) {
       await supabase.auth.signOut();
