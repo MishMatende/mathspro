@@ -96,12 +96,7 @@ export default function CreateUserModal({
       return false;
     }
     if (role === "student") {
-      if (
-        !formData.curriculum ||
-        !formData.level ||
-        !formData.phone ||
-        !formData.parentEmail1
-      ) {
+      if (!formData.curriculum || !formData.level || !formData.parentEmail1) {
         toast.error("Please fill all student fields");
         return false;
       }
@@ -154,7 +149,7 @@ export default function CreateUserModal({
 
   return (
     <BottomSheetModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-xs">
-      <div className="mx-auto w-full max-w-[340px] flex flex-col gap-4">
+      <div className="mx-auto w-full max-w-85 flex flex-col gap-4">
         {/* HEADER */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
@@ -310,7 +305,7 @@ export default function CreateUserModal({
                 </span>
                 <input
                   name="phone"
-                  placeholder="Student phone* e.g. 254712345678"
+                  placeholder="Student phone e.g. 254712345678"
                   onChange={handleChange}
                   className={inputCls}
                 />

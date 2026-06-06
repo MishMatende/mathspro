@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth event:", event);
+      // console.log("Auth event:", event);
 
       if (session?.user) {
         setUser(session.user);
@@ -86,30 +86,30 @@ export const AuthProvider = ({ children }) => {
 
   // 🔐 Login
   const login = async ({ email, password, expectedRole = null }) => {
-    console.log("A");
+    // console.log("A");
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    console.log("B", { data, error });
+    // console.log("B", { data, error });
 
     if (error) {
-      console.log("C");
+      // console.log("C");
       return {
         success: false,
         error: error.message,
       };
     }
 
-    console.log("D");
+    // console.log("D");
 
     const user = data.user;
 
     const profile = await fetchProfile(data.user.id, true);
 
-    console.log("E", profile);
+    // console.log("E", profile);
 
     if (!profile) {
       await supabase.auth.signOut();
