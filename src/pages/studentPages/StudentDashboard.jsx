@@ -322,7 +322,7 @@ export default function StudentDashboard() {
   return (
     <div className="p-4 lg:p-6 space-y-6">
       {/* HEADER */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
             Welcome back
@@ -355,6 +355,29 @@ export default function StudentDashboard() {
         >
           <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
         </button>
+      </div>
+      <div
+        className="
+        w-full
+    inline-flex
+    items-start
+    gap-2
+    rounded-2xl
+    border
+    border-orange-200
+    bg-orange-50
+    px-3
+    py-2
+    max-w-lg
+    mb-3
+  "
+      >
+        <AlertCircle size={14} className="text-orange-600 mt-0.5 shrink-0" />
+
+        <p className="text-xs text-orange-700 leading-relaxed">
+          New! Tap your Progress card below to view your learning checklist,
+          completed topics, and overall mastery progress.
+        </p>
       </div>
 
       {/* LOADING */}
