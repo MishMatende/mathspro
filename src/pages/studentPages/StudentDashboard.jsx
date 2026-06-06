@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Loader,
 } from "lucide-react";
+import StudentChecklistModal from "../../components/studentModals/StudentChecklistModal";
 
 const CACHE_DURATION = 5 * 60 * 1000;
 
@@ -25,6 +26,7 @@ export default function StudentDashboard() {
   const [completedLessons, setCompletedLessons] = useState([]);
   const [pendingHomework, setPendingHomework] = useState(0);
   const [pendingTests, setPendingTests] = useState(0);
+  const [showChecklist, setShowChecklist] = useState(false);
   const [checklistProgress, setChecklistProgress] = useState({
     completed: 0,
     total: 0,
@@ -489,7 +491,10 @@ export default function StudentDashboard() {
             </div>
 
             {/* CHECKLIST PROGRESS */}
-            <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm min-h-38 flex flex-col justify-between">
+            <div
+              className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm min-h-38 flex flex-col justify-between cursor-pointer"
+              onClick={() => setShowChecklist(true)}
+            >
               <div className="flex items-start justify-between gap-3">
                 <p className="text-sm text-gray-400">Progress</p>
 
@@ -711,6 +716,12 @@ export default function StudentDashboard() {
           </div>
         </>
       )}
+
+      <StudentChecklistModal
+        learnerId={user.id}
+        isOpen={showChecklist}
+        onClose={() => setShowChecklist(false)}
+      />
     </div>
   );
 }
