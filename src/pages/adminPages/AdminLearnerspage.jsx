@@ -7,6 +7,7 @@ import {
   Trash2,
   RefreshCw,
   User,
+  Pencil,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
@@ -17,7 +18,7 @@ import CreateUserModal from "../../components/adminModals/CreateUserModal";
 
 import { getCache, setCache, clearCache } from "../../lib/cache";
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 10;
 
 export default function AdminLearnersPage() {
   const [learners, setLearners] = useState([]);
@@ -130,7 +131,7 @@ export default function AdminLearnersPage() {
             <h1 className="text-lg font-semibold">Learners</h1>
           </div>
 
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-3 flex-wrap justify-between">
             {/* Search */}
             <div className="relative sm:w-64">
               <Search
@@ -145,87 +146,81 @@ export default function AdminLearnersPage() {
                 className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
               />
             </div>
-            <button
-              onClick={() => {
-                clearCache(`admin_learners_page_${page}`);
-                fetchLearners(true);
-              }}
-              className="flex items-center justify-center h-10 w-10 border border-slate-200 rounded-xl hover:bg-slate-50 transition"
-            >
-              <RefreshCw size={16} />
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  clearCache(`admin_learners_page_${page}`);
+                  fetchLearners(true);
+                }}
+                className="flex items-center justify-center h-10 w-10 border border-slate-200 rounded-xl hover:bg-slate-50 transition"
+              >
+                <RefreshCw size={16} />
+              </button>
 
-            {/* Create */}
-            <button
-              onClick={() => setIsCreateOpen(true)}
-              className="flex items-center gap-2 bg-(--color-primary) text-white px-4 py-2 rounded-lg text-sm"
-            >
-              <Plus size={16} />
-            </button>
+              {/* Create */}
+              <button
+                onClick={() => setIsCreateOpen(true)}
+                className="flex items-center gap-2 bg-(--color-primary) text-white px-4 py-2 rounded-lg text-sm"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
           </div>
         </div>
 
         {/* GRID */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-3">
           {filtered.map((learner) => (
             <motion.div
               key={learner.id}
               onClick={() => setProfileLearner(learner)}
-              whileHover={{
-                y: -3,
-              }}
-              className="group cursor-pointer bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-lg transition-all overflow-hidden"
+              whileHover={{ y: -1 }}
+              className="group cursor-pointer bg-white rounded-2xl border border-slate-200 px-4 py-3 hover:shadow-md transition"
             >
-              {/* TOP */}
-              <div className="bg-linear-to-r from-orange-50 via-amber-50 to-white px-4 py-4 border-b border-orange-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-3 items-center">
-                    <div className="h-11 w-11 rounded-2xl bg-orange-100 flex items-center justify-center">
-                      <User size={20} className="text-orange-600" />
-                    </div>
+              <div className="flex items-center justify-between">
+                {/* LEFT */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-11 w-11 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                    <User size={18} className="text-orange-600" />
+                  </div>
 
-                    <div>
-                      <h3 className="font-semibold text-slate-900">
-                        {learner.name}
-                      </h3>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-slate-900 truncate">
+                      {learner.name}
+                    </h3>
 
-                      <p className="text-xs text-slate-500">Learner Profile</p>
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                      <span>{learner.curriculum}</span>
+
+                      <span className="text-slate-300">•</span>
+
+                      <span>{learner.level}</span>
                     </div>
                   </div>
+                </div>
+
+                {/* RIGHT */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedLearner(learner);
+                    }}
+                    className="h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-50"
+                  >
+                    <Pencil size={16} />
+                  </button>
 
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       deleteLearner(learner.id);
                     }}
-                    className="h-9 w-9 rounded-xl flex items-center justify-center text-red-500 hover:bg-red-50 transition"
+                    className="h-9 w-9 rounded-xl border border-red-200 text-red-500 flex items-center justify-center hover:bg-red-50"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
-              </div>
-
-              {/* BODY */}
-              <div className="p-4">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-medium">
-                    {learner.curriculum}
-                  </span>
-
-                  <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
-                    {learner.level}
-                  </span>
-                </div>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedLearner(learner);
-                  }}
-                  className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition text-sm font-medium"
-                >
-                  Edit Learner
-                </button>
               </div>
             </motion.div>
           ))}
@@ -241,7 +236,9 @@ export default function AdminLearnersPage() {
             Prev
           </button>
 
-          <span className="text-sm text-slate-500">Page {page + 1}</span>
+          <div className="text-sm text-slate-500">
+            Showing {filtered.length} learners
+          </div>
 
           <button
             onClick={() => setPage((p) => p + 1)}
