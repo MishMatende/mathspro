@@ -602,6 +602,8 @@ export default function LessonReviewModal({
           toast.success("Lesson updated");
 
           onSaved?.();
+
+          onClose();
         }}
       />
     </AnimatePresence>

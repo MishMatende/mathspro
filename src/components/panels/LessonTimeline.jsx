@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import LessonReviewModal from "../tutorModals/LessonReviewModal";
 import { motion } from "framer-motion";
-import { CheckCircle, AlertCircle, Info, RefreshCw } from "lucide-react";
+import { CheckCircle, AlertCircle, Info, RefreshCw, Plus } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import { getCache, setCache, clearCache } from "../../lib/cache";
+import CreateTutorLessonModal from "../tutorModals/CreateTutorLessonModal";
 
 const LessonTimeline = ({ learnerId }) => {
   const { user } = useAuth();
@@ -14,8 +15,9 @@ const LessonTimeline = ({ learnerId }) => {
   const [loading, setLoading] = useState(true);
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const LESSONS_CACHE_KEY = `tutor_lessons_${learnerId}_${user?.id}`;
+  const getCacheKey = () => `tutor_lessons_${learnerId}_${user?.id}`;
 
   const statusConfig = {
     scheduled: {
@@ -40,21 +42,8 @@ const LessonTimeline = ({ learnerId }) => {
     },
   };
 
-  const fetchLessons = async ({
-    forceRefresh = false,
-    showLoader = true,
-  } = {}) => {
+  const fetchLessons = async (showLoader = true) => {
     if (!learnerId || !user?.id) return;
-
-    if (!forceRefresh) {
-      const cached = getCache(LESSONS_CACHE_KEY);
-
-      if (cached) {
-        setLessons(cached);
-        setLoading(false);
-        return;
-      }
-    }
 
     if (showLoader) {
       setLoading(true);
@@ -68,34 +57,46 @@ const LessonTimeline = ({ learnerId }) => {
       .order("lesson_date", { ascending: false })
       .order("start_time", { ascending: false });
 
-    if (showLoader) {
-      setLoading(false);
-    }
-
     if (error) {
+      if (showLoader) {
+        setLoading(false);
+      }
+
       console.log(error);
       toast.error("Failed to load lessons");
       return;
     }
 
     setLessons(data || []);
+    setCache(getCacheKey(), data || []);
 
-    setCache(LESSONS_CACHE_KEY, data || []);
+    if (showLoader) {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchLessons();
+    if (!learnerId || !user?.id) return;
+
+    const cached = getCache(getCacheKey());
+
+    if (cached) {
+      setLessons(cached);
+      setLoading(false);
+
+      // background refresh
+      fetchLessons(false);
+    } else {
+      fetchLessons(true);
+    }
   }, [learnerId, user?.id]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
 
-    clearCache(LESSONS_CACHE_KEY);
+    clearCache(getCacheKey());
 
-    await fetchLessons({
-      forceRefresh: true,
-      showLoader: false,
-    });
+    await fetchLessons(false);
 
     setRefreshing(false);
 
@@ -134,10 +135,27 @@ const LessonTimeline = ({ learnerId }) => {
             </p>
           </div>
 
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="
+                flex items-center gap-2
+                px-4 py-2
+                rounded-xl
+                bg-orange-500
+                text-white
+                hover:bg-orange-600
+                transition
+                cursor-pointer
+              "
+            >
+              <Plus size={16} />
+            </button>
+
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="
       flex items-center gap-2
       px-4 py-2
       rounded-xl
@@ -147,9 +165,13 @@ const LessonTimeline = ({ learnerId }) => {
       transition
       disabled:opacity-50
     "
-          >
-            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
-          </button>
+            >
+              <RefreshCw
+                size={16}
+                className={refreshing ? "animate-spin" : ""}
+              />
+            </button>
+          </div>
         </div>
 
         {/* ✅ INFO BANNER */}
@@ -267,6 +289,20 @@ const LessonTimeline = ({ learnerId }) => {
             forceRefresh: true,
             showLoader: false,
           });
+        }}
+      />
+
+      <CreateTutorLessonModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={async () => {
+          if (!user) return;
+
+          clearCache(getCacheKey());
+
+          await fetchLessons();
+
+          setShowCreateModal(false);
         }}
       />
     </>

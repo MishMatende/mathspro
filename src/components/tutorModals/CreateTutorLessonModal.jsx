@@ -97,6 +97,27 @@ export default function CreateTutorLessonModal({ open, onClose, onCreated }) {
 
     setLoading(true);
 
+    if (formData.start_time >= formData.end_time) {
+      toast.error("End time must be after start time");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.is_recurring && !formData.recurring_until) {
+      toast.error("Please select a repeat until date");
+      setLoading(false);
+      return;
+    }
+
+    if (
+      formData.is_recurring &&
+      formData.recurring_until < formData.lesson_date
+    ) {
+      toast.error("Repeat until date must be after lesson date");
+      setLoading(false);
+      return;
+    }
+
     try {
       const lessonsToInsert = [];
 
@@ -207,7 +228,7 @@ export default function CreateTutorLessonModal({ open, onClose, onCreated }) {
     >
       <div
         className="
-          w-full sm:w-[600px]
+          w-full sm:w-150
           bg-white
           rounded-t-3xl sm:rounded-3xl
           p-5 sm:p-6
