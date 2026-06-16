@@ -87,7 +87,7 @@ export default function UploadHomeworkModal({
       return;
     }
 
-    if (file.type !== "application/pdf") {
+    if (file?.type && file.type !== "application/pdf") {
       toast.error("Please upload a PDF file");
       return;
     }

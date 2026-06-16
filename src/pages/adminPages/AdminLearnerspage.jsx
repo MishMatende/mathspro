@@ -11,10 +11,10 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-
 import EditLearnerModal from "../../components/adminModals/EditLearnerModal";
 import LearnerProfilePanel from "../../components/adminPanels/LearnerprofilePanel";
 import CreateUserModal from "../../components/adminModals/CreateUserModal";
+import DeleteUserModal from "../../components/adminModals/DeleteUserModal";
 
 import { getCache, setCache, clearCache } from "../../lib/cache";
 
@@ -26,7 +26,8 @@ export default function AdminLearnersPage() {
   const [selectedLearner, setSelectedLearner] = useState(null);
   const [profileLearner, setProfileLearner] = useState(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(0);
 
   const fetchLearners = async (forceRefresh = false) => {
@@ -93,25 +94,36 @@ export default function AdminLearnersPage() {
   };
 
   // 🔥 DELETE
-  const deleteLearner = async (id) => {
-    const confirmDelete = confirm("Delete this learner?");
-    if (!confirmDelete) return;
+  const deleteUser = async () => {
+    if (!userToDelete) return;
 
-    const loading = toast.loading("Deleting...");
+    setDeleting(true);
 
-    const { error } = await supabase.from("profiles").delete().eq("id", id);
+    try {
+      const { error } = await supabase.functions.invoke("delete-user", {
+        body: {
+          userId: userToDelete.id,
+        },
+      });
 
-    toast.dismiss(loading);
+      if (error) {
+        toast.error(error.message || "Delete failed");
+        return;
+      }
 
-    if (error) {
-      toast.error("Failed to delete");
-    } else {
       toast.success("Learner deleted");
 
-      // 🔥 Clear current page cache
+      setUserToDelete(null);
+
       clearCache(`admin_learners_page_${page}`);
 
       fetchLearners(true);
+    } catch (err) {
+      console.error(err);
+
+      toast.error("Failed to delete learner");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -214,7 +226,7 @@ export default function AdminLearnersPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      deleteLearner(learner.id);
+                      setUserToDelete(learner);
                     }}
                     className="h-9 w-9 rounded-xl border border-red-200 text-red-500 flex items-center justify-center hover:bg-red-50"
                   >
@@ -275,6 +287,14 @@ export default function AdminLearnersPage() {
         learner={profileLearner}
         onClose={() => setProfileLearner(null)}
         onUpdated={handleLearnerUpdated}
+      />
+
+      <DeleteUserModal
+        isOpen={Boolean(userToDelete)}
+        user={userToDelete}
+        loading={deleting}
+        onClose={() => !deleting && setUserToDelete(null)}
+        onConfirm={deleteUser}
       />
     </>
   );

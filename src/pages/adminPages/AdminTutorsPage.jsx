@@ -7,6 +7,7 @@ import CreateUserModal from "../../components/adminModals/CreateUserModal";
 import EditTutorModal from "../../components/adminModals/EditTutormodal";
 import { getCache, setCache, clearCache } from "../../lib/cache";
 import TutorProfilePanel from "../../components/adminPanels/TutorProfilePanel";
+import DeleteUserModal from "../../components/adminModals/DeleteUserModal";
 
 export default function AdminTutorsPage() {
   const [tutors, setTutors] = useState([]);
@@ -14,6 +15,8 @@ export default function AdminTutorsPage() {
   const [selectedTutor, setSelectedTutor] = useState(null);
   const [profileTutor, setProfileTutor] = useState(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchTutors = async (forceRefresh = false) => {
     // 🔥 Use cache unless force refresh
@@ -53,23 +56,36 @@ export default function AdminTutorsPage() {
   );
 
   // 🔥 DELETE
-  const deleteTutor = async (id) => {
-    const confirmDelete = confirm("Delete this tutor?");
-    if (!confirmDelete) return;
+  const deleteUser = async () => {
+    if (!userToDelete) return;
 
-    const loading = toast.loading("Deleting...");
+    setDeleting(true);
 
-    const { error } = await supabase.from("profiles").delete().eq("id", id);
+    try {
+      const { error } = await supabase.functions.invoke("delete-user", {
+        body: {
+          userId: userToDelete.id,
+        },
+      });
 
-    toast.dismiss(loading);
+      if (error) {
+        toast.error(error.message || "Failed to delete tutor");
+        return;
+      }
 
-    if (error) toast.error("Failed to delete");
-    else {
       toast.success("Tutor deleted");
+
+      setUserToDelete(null);
 
       clearCache("admin_tutors");
 
-      fetchTutors();
+      fetchTutors(true);
+    } catch (err) {
+      console.error(err);
+
+      toast.error("Failed to delete tutor");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -134,7 +150,7 @@ export default function AdminTutorsPage() {
               className="group cursor-pointer bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-lg transition-all overflow-hidden"
             >
               {/* HEADER */}
-              <div className="bg-gradient-to-r from-orange-50 via-amber-50 to-white px-4 py-4 border-b border-orange-100">
+              <div className="bg-linear-to-r from-orange-50 via-amber-50 to-white px-4 py-4 border-b border-orange-100">
                 <div className="flex items-center justify-between">
                   <div className="flex gap-3 items-center">
                     <div className="h-11 w-11 rounded-2xl bg-orange-100 flex items-center justify-center">
@@ -153,7 +169,7 @@ export default function AdminTutorsPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      deleteTutor(tutor.id);
+                      setUserToDelete(tutor);
                     }}
                     className="h-9 w-9 rounded-xl flex items-center justify-center text-red-500 hover:bg-red-50 transition"
                   >
@@ -223,6 +239,14 @@ export default function AdminTutorsPage() {
       <TutorProfilePanel
         tutor={profileTutor}
         onClose={() => setProfileTutor(null)}
+      />
+
+      <DeleteUserModal
+        isOpen={Boolean(userToDelete)}
+        user={userToDelete}
+        loading={deleting}
+        onClose={() => !deleting && setUserToDelete(null)}
+        onConfirm={deleteUser}
       />
     </>
   );

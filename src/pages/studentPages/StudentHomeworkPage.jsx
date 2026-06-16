@@ -10,13 +10,9 @@ import {
   Clock3,
   RefreshCw,
 } from "lucide-react";
-
 import { supabase } from "../../lib/supabase";
-
 import { useAuth } from "../../context/AuthContext";
-
 import toast from "react-hot-toast";
-
 import { clearCache, getCache, setCache } from "../../lib/cache";
 
 const getDownloadName = (title, filePath, suffix = "") => {
@@ -384,7 +380,9 @@ export default function StudentHomeworkPage() {
           const submission = hw.homework_submissions?.[0];
 
           const isPastDue = hw.due_date && new Date(hw.due_date) < new Date();
-          const canSubmit = !isPastDue && submission?.status !== "reviewed";
+
+          // Allow submit/resubmit unless already reviewed
+          const canSubmit = submission?.status !== "reviewed";
 
           return (
             <motion.div
@@ -440,9 +438,14 @@ export default function StudentHomeworkPage() {
                     </p>
                   )}
 
-                <div className="flex items-center gap-2 text-xs text-gray-400">
+                <div
+                  className={`flex items-center gap-2 text-xs ${
+                    isPastDue ? "text-red-500" : "text-gray-400"
+                  }`}
+                >
                   <Clock3 size={14} />
                   Due: {formatDate(hw.due_date)}
+                  {isPastDue && <span>(Overdue)</span>}
                 </div>
 
                 {/* SCORE */}
@@ -549,11 +552,6 @@ export default function StudentHomeworkPage() {
                       }}
                     />
                   </label>
-                )}
-                {isPastDue && submission?.status !== "reviewed" && (
-                  <span className="text-sm text-red-500">
-                    Submission closed
-                  </span>
                 )}
                 {submission?.marked_file_url && (
                   <button
