@@ -130,7 +130,7 @@ export default function Footer() {
             <div className="flex flex-col gap-4 text-sm text-gray-300">
               <div className="flex items-start gap-3">
                 <Mail size={18} className="text-orange-400 mt-0.5" />
-                <span>support@mathspro.com</span>
+                <span>support@mathspro.academy</span>
               </div>
 
               <div className="flex items-start gap-3">
