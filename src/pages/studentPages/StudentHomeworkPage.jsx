@@ -155,16 +155,24 @@ export default function StudentHomeworkPage() {
     try {
       const { data, error } = await supabase.storage
         .from("homework-files")
-        .createSignedUrl(filePath, 60, {
-          download: getDownloadName(title, filePath, suffix),
-        });
+        .download(filePath);
 
       if (error) {
         toast.error(error.message);
         return;
       }
 
-      window.location.href = data.signedUrl;
+      // Force octet-stream so browser doesn't open it inline as a PDF
+      const blob = new Blob([data], { type: "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = getDownloadName(title, filePath, suffix);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
       toast.error("Failed to download file");
