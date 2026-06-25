@@ -155,24 +155,16 @@ export default function StudentHomeworkPage() {
     try {
       const { data, error } = await supabase.storage
         .from("homework-files")
-        .download(filePath);
+        .createSignedUrl(filePath, 60, {
+          download: getDownloadName(title, filePath, suffix),
+        });
 
       if (error) {
         toast.error(error.message);
         return;
       }
 
-      const url = URL.createObjectURL(data);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = getDownloadName(title, filePath, suffix);
-
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      URL.revokeObjectURL(url);
+      window.location.href = data.signedUrl;
     } catch (err) {
       console.error(err);
       toast.error("Failed to download file");
