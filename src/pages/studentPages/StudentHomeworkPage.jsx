@@ -152,19 +152,32 @@ export default function StudentHomeworkPage() {
       return;
     }
 
-    const { data, error } = await supabase.storage
-      .from("homework-files")
-      .createSignedUrl(filePath, 60, {
-        download: getDownloadName(title, filePath, suffix),
-      });
+    try {
+      const { data, error } = await supabase.storage
+        .from("homework-files")
+        .createSignedUrl(filePath, 60, {
+          download: getDownloadName(title, filePath, suffix),
+        });
 
-    if (error) {
-      toast.error(error.message || "Failed to download");
+      if (error) {
+        toast.error(error.message || "Failed to download");
+        return;
+      }
 
-      return;
+      // Create a temporary link and trigger a click
+      const link = document.createElement("a");
+      link.href = data.signedUrl;
+      link.download = getDownloadName(title, filePath, suffix);
+      link.target = "_self";
+      link.rel = "noopener noreferrer";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to download file");
     }
-
-    window.open(data.signedUrl, "_blank");
   };
 
   // 🔥 Upload submission
@@ -499,6 +512,7 @@ export default function StudentHomeworkPage() {
       text-sm
       text-blue-600
       hover:underline
+      cursor-pointer
     "
                     >
                       <Download size={16} />
@@ -520,6 +534,7 @@ export default function StudentHomeworkPage() {
                       text-sm
                       text-gray-600
                       hover:underline
+                      cursor-pointer
                     "
                   >
                     <Download size={16} />
