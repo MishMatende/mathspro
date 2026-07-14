@@ -43,7 +43,6 @@ const ForgotPassword = () => {
 
   return (
     <>
-     
       <div className="fp-page">
         {/* LEFT: Form */}
         <div className="fp-left">
@@ -91,8 +90,7 @@ const ForgotPassword = () => {
 
                 <h1 className="fp-heading">Check your email</h1>
                 <p className="fp-sub">
-                  We sent a reset link to <span>{email}</span>. It expires in 15
-                  minutes.
+                  We sent a reset link to <span>{email}</span>.
                 </p>
 
                 <ul className="fp-check-list">

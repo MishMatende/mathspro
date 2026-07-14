@@ -69,16 +69,22 @@ export const AuthProvider = ({ children }) => {
     // 🔁 Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      // console.log("Auth event:", event);
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth event:", event);
 
       if (session?.user) {
         setUser(session.user);
+
+        if (event !== "PASSWORD_RECOVERY") {
+          await fetchProfile(session.user.id, true);
+        }
       } else {
         setUser(null);
         setRole(null);
         sessionStorage.removeItem("auth_profile");
       }
+
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

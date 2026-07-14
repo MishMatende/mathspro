@@ -1,21 +1,35 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-
 import { useAuth } from "../context/AuthContext";
 
 export default function UpdatePassword() {
   const navigate = useNavigate();
-
   const { updatePassword } = useAuth();
-
   const [password, setPassword] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
-
   const [loading, setLoading] = useState(false);
-
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Recovery event:", event);
+
+      if (event === "PASSWORD_RECOVERY") {
+        return;
+      }
+
+      if (event === "SIGNED_OUT") {
+        toast.error("Password reset link has expired.");
+        navigate("/forgot-password");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
