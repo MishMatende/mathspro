@@ -45,6 +45,14 @@ export default function StudentHomeworkPage() {
     });
   };
 
+  const capitalize = (value, fallback = "") => {
+    if (typeof value !== "string" || value.trim() === "") {
+      return fallback;
+    }
+
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  };
+
   // 🔥 Fetch homework
   const fetchHomework = async (forceRefresh = false) => {
     if (!user) return;
@@ -412,11 +420,11 @@ export default function StudentHomeworkPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-semibold text-gray-900">
-                    {hw.title.charAt(0).toUpperCase() + hw.title.slice(1)}
+                    {capitalize(hw.title, "Untitled Homework")}
                   </h3>
 
                   <p className="text-sm text-gray-500 mt-1">
-                    {hw.category.charAt(0).toUpperCase() + hw.category.slice(1)}
+                    {capitalize(hw.category, "Uncategorized")}
                   </p>
                 </div>
 
@@ -435,8 +443,7 @@ export default function StudentHomeworkPage() {
                   `}
                 >
                   {submission?.status
-                    ? submission.status.charAt(0).toUpperCase() +
-                      submission.status.slice(1)
+                    ? capitalize(submission.status)
                     : "Pending"}
                 </span>
               </div>
@@ -461,7 +468,7 @@ export default function StudentHomeworkPage() {
                 </div>
 
                 {/* SCORE */}
-                {submission?.score && (
+                {submission?.score != null && (
                   <div
                     className="
                       text-sm
@@ -479,16 +486,15 @@ export default function StudentHomeworkPage() {
                 {submission?.remarks && (
                   <div
                     className="
-                      text-sm
-                      bg-gray-50
-                      border border-gray-100
-                      rounded-2xl
-                      p-3
-                      whitespace-pre-line
-                    "
+      text-sm
+      bg-gray-50
+      border border-gray-100
+      rounded-2xl
+      p-3
+      whitespace-pre-line
+    "
                   >
-                    {submission.remarks.charAt(0).toUpperCase() +
-                      submission.remarks.slice(1)}
+                    {capitalize(submission.remarks)}
                   </div>
                 )}
 
