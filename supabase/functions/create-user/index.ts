@@ -1,5 +1,3 @@
-// supabase/functions/create-user/index.ts
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -10,7 +8,10 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // ✅ CORS
+  // ========================================
+  // CORS
+  // ========================================
+
   if (req.method === "OPTIONS") {
     return new Response("ok", {
       headers: corsHeaders,
@@ -20,12 +21,17 @@ serve(async (req) => {
   try {
     console.log("FUNCTION STARTED");
 
-    // ✅ Parse safely
+    // ========================================
+    // PARSE REQUEST
+    // ========================================
+
     let body;
 
     try {
       body = await req.json();
     } catch (e) {
+      console.error("INVALID JSON:", e);
+
       return new Response(
         JSON.stringify({
           error: "Invalid JSON body",
@@ -36,7 +42,7 @@ serve(async (req) => {
             ...corsHeaders,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
 
@@ -59,12 +65,19 @@ serve(async (req) => {
       teachingAreas,
     } = body;
 
+    // ========================================
+    // SUPABASE ADMIN CLIENT
+    // ========================================
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    // ✅ Create auth user
+    // ========================================
+    // CREATE AUTH USER
+    // ========================================
+
     const { data: authData, error: authError } =
       await supabase.auth.admin.createUser({
         email,
@@ -78,7 +91,7 @@ serve(async (req) => {
     console.log("AUTH RESPONSE:", authData);
 
     if (authError) {
-      console.log(authError);
+      console.error("AUTH CREATION ERROR:", authError);
 
       return new Response(
         JSON.stringify({
@@ -90,38 +103,59 @@ serve(async (req) => {
             ...corsHeaders,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
 
     const userId = authData.user.id;
 
-    // ✅ Insert profile
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .insert([
-        {
-          id: userId,
-          role,
-          name,
-          email,
+    console.log("AUTH USER CREATED:", userId);
 
-          curriculum,
-          level,
-          phone,
+    // ========================================
+    // INSERT PROFILE
+    // ========================================
 
-          parent_email_1: parentEmail1,
-          parent_email_2: parentEmail2,
+    const { error: profileError } = await supabase.from("profiles").insert([
+      {
+        id: userId,
+        role,
+        name,
+        email,
 
-          tsc_number: tscNumber,
-          phone_1: phone1,
-          phone_2: phone2,
-          teaching_areas: teachingAreas,
-        },
-      ]);
+        curriculum,
+        level,
+        phone,
+
+        parent_email_1: parentEmail1,
+        parent_email_2: parentEmail2,
+
+        tsc_number: tscNumber,
+        phone_1: phone1,
+        phone_2: phone2,
+        teaching_areas: teachingAreas,
+      },
+    ]);
+
+    // ========================================
+    // PROFILE FAILED → ROLLBACK AUTH USER
+    // ========================================
 
     if (profileError) {
-      console.log(profileError);
+      console.error("PROFILE CREATION FAILED:", profileError);
+
+      console.log(`Rolling back auth user ${userId}...`);
+
+      const { error: deleteUserError } =
+        await supabase.auth.admin.deleteUser(userId);
+
+      if (deleteUserError) {
+        console.error(
+          "CRITICAL: FAILED TO ROLLBACK AUTH USER:",
+          deleteUserError,
+        );
+      } else {
+        console.log(`Auth user ${userId} successfully rolled back.`);
+      }
 
       return new Response(
         JSON.stringify({
@@ -133,9 +167,15 @@ serve(async (req) => {
             ...corsHeaders,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
+
+    console.log("PROFILE CREATED:", userId);
+
+    // ========================================
+    // STUDENT CHECKLIST
+    // ========================================
 
     if (role === "student") {
       const { data: checklist, error: checklistError } = await supabase
@@ -149,8 +189,50 @@ serve(async (req) => {
         .single();
 
       if (checklistError) {
-        console.log("CHECKLIST ERROR:", checklistError);
-      } else if (checklist?.id) {
+        console.error("CHECKLIST CREATION ERROR:", checklistError);
+
+        // ----------------------------------------
+        // Roll back profile + auth user
+        // ----------------------------------------
+
+        const { error: deleteProfileError } = await supabase
+          .from("profiles")
+          .delete()
+          .eq("id", userId);
+
+        if (deleteProfileError) {
+          console.error("FAILED TO ROLLBACK PROFILE:", deleteProfileError);
+        }
+
+        const { error: deleteUserError } =
+          await supabase.auth.admin.deleteUser(userId);
+
+        if (deleteUserError) {
+          console.error(
+            "CRITICAL: FAILED TO ROLLBACK AUTH USER:",
+            deleteUserError,
+          );
+        }
+
+        return new Response(
+          JSON.stringify({
+            error: checklistError.message,
+          }),
+          {
+            status: 400,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+      }
+
+      // ----------------------------------------
+      // Assign checklist to learner
+      // ----------------------------------------
+
+      if (checklist?.id) {
         const { error: assignmentError } = await supabase
           .from("learner_checklists")
           .upsert(
@@ -164,16 +246,77 @@ serve(async (req) => {
           );
 
         if (assignmentError) {
-          console.log("CHECKLIST ASSIGNMENT ERROR:", assignmentError);
+          console.error("CHECKLIST ASSIGNMENT ERROR:", assignmentError);
+
+          // ----------------------------------------
+          // Roll back checklist
+          // ----------------------------------------
+
+          const { error: deleteChecklistError } = await supabase
+            .from("checklist_levels")
+            .delete()
+            .eq("id", checklist.id);
+
+          if (deleteChecklistError) {
+            console.error(
+              "FAILED TO ROLLBACK CHECKLIST:",
+              deleteChecklistError,
+            );
+          }
+
+          // ----------------------------------------
+          // Roll back profile
+          // ----------------------------------------
+
+          const { error: deleteProfileError } = await supabase
+            .from("profiles")
+            .delete()
+            .eq("id", userId);
+
+          if (deleteProfileError) {
+            console.error("FAILED TO ROLLBACK PROFILE:", deleteProfileError);
+          }
+
+          // ----------------------------------------
+          // Roll back auth user
+          // ----------------------------------------
+
+          const { error: deleteUserError } =
+            await supabase.auth.admin.deleteUser(userId);
+
+          if (deleteUserError) {
+            console.error(
+              "CRITICAL: FAILED TO ROLLBACK AUTH USER:",
+              deleteUserError,
+            );
+          }
+
+          return new Response(
+            JSON.stringify({
+              error: assignmentError.message,
+            }),
+            {
+              status: 400,
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+              },
+            },
+          );
         }
       }
     }
 
-    console.log("SUCCESS");
+    // ========================================
+    // SUCCESS
+    // ========================================
+
+    console.log("SUCCESS:", userId);
 
     return new Response(
       JSON.stringify({
         success: true,
+        userId,
       }),
       {
         status: 200,
@@ -181,14 +324,14 @@ serve(async (req) => {
           ...corsHeaders,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   } catch (err) {
-    console.log("FATAL ERROR:", err);
+    console.error("FATAL ERROR:", err);
 
     return new Response(
       JSON.stringify({
-        error: String(err),
+        error: err instanceof Error ? err.message : String(err),
       }),
       {
         status: 500,
@@ -196,7 +339,7 @@ serve(async (req) => {
           ...corsHeaders,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 });

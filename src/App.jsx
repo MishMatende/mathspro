@@ -15,6 +15,7 @@ import AdminLearnerspage from "./pages/adminPages/AdminLearnerspage";
 import AdminTutorsPage from "./pages/adminPages/AdminTutorsPage";
 import AdminLogin from "./pages/adminPages/AdminLogin";
 import AdminProtectedRoute from "./components/wrappers/AdminProtectedRoute";
+import StudentProtectedRoute from "./components/wrappers/StudentProtectedRoute";
 import DiagnosticsPage from "./pages/DiagnosticsPage";
 import TutorProtectedRoute from "./components/wrappers/TutorProtectedRoute";
 import AdminLessonsPage from "./pages/adminPages/AdminLessonsPage";
@@ -57,12 +58,14 @@ function App() {
         </Route>
       </Route>
 
-      <Route element={<StudentDashboardLayout />}>
-        <Route path="/student-dashboard" element={<StudentDashboard />} />
-        <Route path="/student-schedule" element={<LearnerSchedule />} />
-        <Route path="/student-homework" element={<StudentHomeworkPage />} />
-        <Route path="/student-test" element={<StudentTestPage />} />
-        <Route path="/student-files" element={<StudentFilesPage />} />
+      <Route element={<StudentProtectedRoute />}>
+        <Route element={<StudentDashboardLayout />}>
+          <Route path="/student-dashboard" element={<StudentDashboard />} />
+          <Route path="/student-schedule" element={<LearnerSchedule />} />
+          <Route path="/student-homework" element={<StudentHomeworkPage />} />
+          <Route path="/student-test" element={<StudentTestPage />} />
+          <Route path="/student-files" element={<StudentFilesPage />} />
+        </Route>
       </Route>
 
       {/* Admin Dashboard layout — navbar + sidenav */}

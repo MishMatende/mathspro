@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import LessonReviewModal from "../tutorModals/LessonReviewModal";
 import { motion } from "framer-motion";
-import { CheckCircle, AlertCircle, Info, RefreshCw, Plus } from "lucide-react";
+import { CheckCircle, AlertCircle, RefreshCw, Plus } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
@@ -17,7 +17,15 @@ const LessonTimeline = ({ learnerId }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // --------------------------------------------------
+  // CACHE KEY
+  // --------------------------------------------------
+
   const getCacheKey = () => `tutor_lessons_${learnerId}_${user?.id}`;
+
+  // --------------------------------------------------
+  // STATUS CONFIG
+  // --------------------------------------------------
 
   const statusConfig = {
     scheduled: {
@@ -42,6 +50,10 @@ const LessonTimeline = ({ learnerId }) => {
     },
   };
 
+  // --------------------------------------------------
+  // FETCH LESSONS FROM SUPABASE
+  // --------------------------------------------------
+
   const fetchLessons = async (showLoader = true) => {
     if (!learnerId || !user?.id) return;
 
@@ -62,40 +74,60 @@ const LessonTimeline = ({ learnerId }) => {
         setLoading(false);
       }
 
-      console.log(error);
+      console.error("Failed to fetch lessons:", error);
       toast.error("Failed to load lessons");
       return;
     }
 
-    setLessons(data || []);
-    setCache(getCacheKey(), data || []);
+    const freshLessons = data || [];
+
+    // Update UI
+    setLessons(freshLessons);
+
+    // Save fresh data to cache
+    setCache(getCacheKey(), freshLessons);
 
     if (showLoader) {
       setLoading(false);
     }
   };
 
+  // --------------------------------------------------
+  // INITIAL LOAD
+  // --------------------------------------------------
+
   useEffect(() => {
     if (!learnerId || !user?.id) return;
 
-    const cached = getCache(getCacheKey());
+    const cacheKey = getCacheKey();
+    const cachedLessons = getCache(cacheKey);
 
-    if (cached) {
-      setLessons(cached);
+    if (cachedLessons) {
+      // Show cached lessons immediately
+      setLessons(cachedLessons);
       setLoading(false);
 
-      // background refresh
+      // Refresh from Supabase in the background
       fetchLessons(false);
     } else {
+      // No valid cache — fetch normally
       fetchLessons(true);
     }
   }, [learnerId, user?.id]);
 
+  // --------------------------------------------------
+  // MANUAL REFRESH
+  // --------------------------------------------------
+
   const handleRefresh = async () => {
+    if (!learnerId || !user?.id) return;
+
     setRefreshing(true);
 
+    // Remove cached data
     clearCache(getCacheKey());
 
+    // Fetch fresh data
     await fetchLessons(false);
 
     setRefreshing(false);
@@ -103,8 +135,13 @@ const LessonTimeline = ({ learnerId }) => {
     toast.success("Lessons refreshed");
   };
 
+  // --------------------------------------------------
+  // RENDER
+  // --------------------------------------------------
+
   return (
     <>
+      {/* MAIN TIMELINE */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{
@@ -123,9 +160,7 @@ const LessonTimeline = ({ learnerId }) => {
           pointerEvents: selectedLesson ? "none" : "auto",
         }}
       >
-        {/* Header */}
         {/* HEADER */}
-
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Lessons</h2>
@@ -136,6 +171,7 @@ const LessonTimeline = ({ learnerId }) => {
           </div>
 
           <div className="flex gap-2">
+            {/* CREATE LESSON */}
             <button
               onClick={() => setShowCreateModal(true)}
               className="
@@ -152,6 +188,7 @@ const LessonTimeline = ({ learnerId }) => {
               <Plus size={16} />
             </button>
 
+            {/* REFRESH */}
             <button
               onClick={handleRefresh}
               disabled={refreshing}
@@ -174,7 +211,7 @@ const LessonTimeline = ({ learnerId }) => {
           </div>
         </div>
 
-        {/* ✅ INFO BANNER */}
+        {/* INFO BANNER */}
         <div
           className="
     flex items-start gap-3
@@ -186,84 +223,189 @@ const LessonTimeline = ({ learnerId }) => {
     mb-6
   "
         >
-          <Info size={18} className="mt-0.5 shrink-0" />
-          <p>Tap on a lesson to add feedback and track student progress.</p>
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+
+          <p className="text-sm">
+            Tap on a lesson to add feedback and track student progress.
+          </p>
         </div>
 
-        {/* Timeline */}
+        {/* TIMELINE */}
         <div className="relative">
+          {/* LOADING */}
           {loading && (
             <div className="text-sm text-gray-400">Loading lessons...</div>
           )}
 
+          {/* EMPTY STATE */}
           {!loading && lessons.length === 0 && (
-            <div className="bg-white rounded-xl p-8 text-center text-sm text-gray-400 border border-gray-100">
+            <div
+              className="
+                bg-white
+                rounded-xl
+                p-8
+                text-center
+                text-sm
+                text-gray-400
+                border border-gray-100
+              "
+            >
               No lessons found for this learner
             </div>
           )}
 
-          {/* Vertical line */}
+          {/* VERTICAL LINE */}
           {lessons.length > 0 && (
-            <div className="absolute left-4 sm:left-5 top-0 bottom-0 w-0.5 bg-gray-200" />
+            <div
+              className="
+                absolute
+                left-4 sm:left-5
+                top-0
+                bottom-0
+                w-0.5
+                bg-gray-200
+              "
+            />
           )}
 
+          {/* LESSONS */}
           <div className="space-y-4 sm:space-y-6">
             {lessons.map((lesson) => {
               const status = lesson.status || "pending";
+
               const config = statusConfig[status] || statusConfig.pending;
 
               return (
                 <div key={lesson.id} className="relative pl-8 sm:pl-10">
-                  {/* Dot */}
+                  {/* TIMELINE DOT */}
                   <div
-                    className={`absolute left-0 top-2 w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center ${config.dot}`}
+                    className={`
+                      absolute
+                      left-0
+                      top-2
+                      w-6 h-6
+                      sm:w-8 sm:h-8
+                      rounded-full
+                      flex items-center justify-center
+                      ${config.dot}
+                    `}
                   >
                     {status === "completed" && <CheckCircle size={14} />}
+
                     {status === "needs_attention" && <AlertCircle size={14} />}
+
                     {status === "pending" && <span className="text-xs">•</span>}
+
+                    {status === "scheduled" && (
+                      <span className="text-xs">•</span>
+                    )}
                   </div>
 
-                  {/* ✅ CLICKABLE CARD */}
+                  {/* LESSON CARD */}
                   <div
                     onClick={() => setSelectedLesson(lesson)}
-                    className="bg-white rounded-xl p-3 sm:p-5 shadow-sm w-full cursor-pointer transition hover:shadow-md hover:scale-[1.01] active:scale-[0.98]"
+                    className="
+                      bg-white
+                      rounded-xl
+                      p-3 sm:p-5
+                      shadow-sm
+                      w-full
+                      cursor-pointer
+                      transition
+                      hover:shadow-md
+                      hover:scale-[1.01]
+                      active:scale-[0.98]
+                    "
                   >
-                    {/* Top row */}
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                    {/* TOP ROW */}
+                    <div
+                      className="
+                        flex
+                        flex-col
+                        sm:flex-row
+                        sm:justify-between
+                        sm:items-start
+                        gap-2
+                        mb-2
+                      "
+                    >
                       <div>
-                        <p className="font-semibold text-gray-800 text-sm sm:text-base">
+                        <p
+                          className="
+                            font-semibold
+                            text-gray-800
+                            text-sm
+                            sm:text-base
+                          "
+                        >
                           {lesson.objective}
                         </p>
 
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p
+                          className="
+                            text-xs
+                            text-gray-400
+                            mt-1
+                          "
+                        >
                           {lesson.lesson_date} •{" "}
                           {lesson.start_time?.slice(0, 5)}
                         </p>
                       </div>
 
-                      {/* Status */}
+                      {/* STATUS */}
                       <span
-                        className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full w-fit ${config.color}`}
+                        className={`
+                          text-[10px]
+                          sm:text-xs
+                          px-2
+                          py-0.5
+                          rounded-full
+                          w-fit
+                          ${config.color}
+                        `}
                       >
                         {config.label}
                       </span>
                     </div>
 
-                    {/* Content */}
-                    <div className="mt-2 sm:mt-3 space-y-2 text-xs sm:text-sm">
+                    {/* CONTENT */}
+                    <div
+                      className="
+                        mt-2
+                        sm:mt-3
+                        space-y-2
+                        text-xs
+                        sm:text-sm
+                      "
+                    >
+                      {/* STRUGGLES */}
                       <div>
-                        <span className="text-gray-500 font-medium">
+                        <span
+                          className="
+                            text-gray-500
+                            font-medium
+                          "
+                        >
                           Struggles:
                         </span>
+
                         <p className="text-gray-700">
                           {lesson.struggles || "Not recorded"}
                         </p>
                       </div>
 
+                      {/* NEXT STEP */}
                       <div>
-                        <span className="text-gray-500 font-medium">
+                        <span
+                          className="
+                            text-gray-500
+                            font-medium
+                          "
+                        >
                           Next Step:
                         </span>
+
                         <p className="text-gray-700">
                           {lesson.next_action || "Not recorded"}
                         </p>
@@ -277,20 +419,29 @@ const LessonTimeline = ({ learnerId }) => {
         </div>
       </motion.div>
 
-      {/* ✅ REVIEW MODAL */}
+      {/* --------------------------------------------------
+          LESSON REVIEW MODAL
+      -------------------------------------------------- */}
+
       <LessonReviewModal
         isOpen={!!selectedLesson}
         onClose={() => setSelectedLesson(null)}
         lesson={selectedLesson}
         onSaved={async () => {
-          clearCache(LESSONS_CACHE_KEY);
+          // Clear old cached lesson data
+          clearCache(getCacheKey());
 
-          await fetchLessons({
-            forceRefresh: true,
-            showLoader: false,
-          });
+          // Fetch updated lesson data
+          await fetchLessons(false);
+
+          // Close modal
+          setSelectedLesson(null);
         }}
       />
+
+      {/* --------------------------------------------------
+          CREATE LESSON MODAL
+      -------------------------------------------------- */}
 
       <CreateTutorLessonModal
         open={showCreateModal}
@@ -298,10 +449,13 @@ const LessonTimeline = ({ learnerId }) => {
         onCreated={async () => {
           if (!user) return;
 
+          // Clear old cache
           clearCache(getCacheKey());
 
-          await fetchLessons();
+          // Fetch newly created lesson
+          await fetchLessons(false);
 
+          // Close modal
           setShowCreateModal(false);
         }}
       />

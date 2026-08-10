@@ -1,10 +1,35 @@
 import { Resend } from "resend";
 
+// ========================================
+// HTML ESCAPING
+// ========================================
+
+const escapeHtml = (value) => {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
+// ========================================
+// EMAIL VALIDATION
+// ========================================
+
+const isValidEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
 
     const { name, email, whatsapp, message } = await request.json();
+
+    // ========================================
+    // BASIC VALIDATION
+    // ========================================
 
     if (!name || !email || !whatsapp || !message) {
       return Response.json(
@@ -16,6 +41,68 @@ export async function onRequestPost(context) {
       );
     }
 
+    if (!isValidEmail(email)) {
+      return Response.json(
+        {
+          success: false,
+          message: "Please provide a valid email address",
+        },
+        { status: 400 },
+      );
+    }
+
+    // ========================================
+    // NORMALIZE INPUT
+    // ========================================
+
+    const cleanName = String(name).trim();
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanWhatsapp = String(whatsapp).trim();
+    const cleanMessage = String(message).trim();
+
+    // ========================================
+    // OPTIONAL LENGTH LIMITS
+    // ========================================
+
+    if (cleanName.length > 100) {
+      return Response.json(
+        {
+          success: false,
+          message: "Name is too long",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (cleanWhatsapp.length > 30) {
+      return Response.json(
+        {
+          success: false,
+          message: "WhatsApp number is too long",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (cleanMessage.length > 5000) {
+      return Response.json(
+        {
+          success: false,
+          message: "Message is too long",
+        },
+        { status: 400 },
+      );
+    }
+
+    // ========================================
+    // ESCAPE USER INPUT FOR HTML
+    // ========================================
+
+    const safeName = escapeHtml(cleanName);
+    const safeEmail = escapeHtml(cleanEmail);
+    const safeWhatsapp = escapeHtml(cleanWhatsapp);
+    const safeMessage = escapeHtml(cleanMessage).replace(/\r?\n/g, "<br>");
+
     const resend = new Resend(env.RESEND_API_KEY);
 
     // ========================================
@@ -25,8 +112,14 @@ export async function onRequestPost(context) {
     const adminEmail = await resend.emails.send({
       from: "MathsPro <info@mathspro.academy>",
       to: ["mishaelmatende@gmail.com"],
-      replyTo: email,
-      subject: `📩 New Contact Form Submission - ${name}`,
+
+      // User's email is validated before being used here.
+      replyTo: cleanEmail,
+
+      // Keep subject fixed rather than interpolating
+      // untrusted user input into it.
+      subject: "📩 New Contact Form Submission",
+
       html: `
       <div style="
         font-family: Inter, Arial, sans-serif;
@@ -95,7 +188,7 @@ export async function onRequestPost(context) {
                   padding:12px 0;
                   color:#0f172a;
                 ">
-                  ${name}
+                    ${safeName}
                 </td>
               </tr>
 
@@ -111,8 +204,8 @@ export async function onRequestPost(context) {
                 <td style="
                   padding:12px 0;
                 ">
-                  <a href="mailto:${email}">
-                    ${email}
+                    <a href="mailto:${safeEmail}">
+                      ${safeEmail}
                   </a>
                 </td>
               </tr>
@@ -129,7 +222,7 @@ export async function onRequestPost(context) {
                 <td style="
                   padding:12px 0;
                 ">
-                  ${whatsapp}
+                    ${safeWhatsapp}
                 </td>
               </tr>
             </table>
@@ -152,7 +245,7 @@ export async function onRequestPost(context) {
                 color:#334155;
                 line-height:1.8;
               ">
-                ${message.replace(/\n/g, "<br>")}
+                  ${safeMessage}
               </div>
             </div>
 
@@ -161,7 +254,7 @@ export async function onRequestPost(context) {
               text-align:center;
             ">
               <a
-                href="mailto:${email}"
+                  href="mailto:${safeEmail}"
                 style="
                   display:inline-block;
                   background:#f97316;
@@ -172,9 +265,10 @@ export async function onRequestPost(context) {
                   font-weight:600;
                 "
               >
-                Reply to ${name}
+                  Reply to ${safeName}
               </a>
             </div>
+
           </div>
 
           <div style="
@@ -198,8 +292,10 @@ export async function onRequestPost(context) {
 
     const userEmail = await resend.emails.send({
       from: "MathsPro <info@mathspro.academy>",
-      to: email,
+      to: cleanEmail,
+
       subject: "We've received your message",
+
       html: `
       <div style="
         font-family: Inter, Arial, sans-serif;
@@ -239,7 +335,7 @@ export async function onRequestPost(context) {
               color:#0f172a;
               margin-top:0;
             ">
-              Hi ${name},
+                Hi ${safeName},
             </h2>
 
             <p style="
@@ -270,7 +366,7 @@ export async function onRequestPost(context) {
                 color:#475569;
                 line-height:1.8;
               ">
-                ${message.replace(/\n/g, "<br>")}
+                  ${safeMessage}
               </p>
             </div>
 
@@ -306,13 +402,17 @@ export async function onRequestPost(context) {
       `,
     });
 
+    // ========================================
+    // SUCCESS
+    // ========================================
+
     return Response.json({
       success: true,
       adminEmail,
       userEmail,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Contact form error:", error);
 
     return Response.json(
       {
