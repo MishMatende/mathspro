@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Info,
   RefreshCw,
+  CheckCircle2,
 } from "lucide-react";
 
 import Card from "../../components/Card";
@@ -25,6 +26,7 @@ export default function TutorDashboard() {
     weeklyUpcomingLessons: 0,
     unmarkedHomework: 0,
     pendingTests: 0,
+    monthlyCompletedLessons: 0,
     learners: [],
   });
 
@@ -73,6 +75,13 @@ export default function TutorDashboard() {
 
       const formatDate = (date) => date.toISOString().split("T")[0];
 
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const startOfNextMonth = new Date(
+        today.getFullYear(),
+        today.getMonth() + 1,
+        1,
+      );
+
       // -------------------------
       // FETCH EVERYTHING IN PARALLEL
       // -------------------------
@@ -83,6 +92,7 @@ export default function TutorDashboard() {
         lessonsCountResult,
         homeworkResult,
         testsResult,
+        completedLessonsResult,
       ] = await Promise.all([
         supabase
           .from("learners")
@@ -126,6 +136,14 @@ export default function TutorDashboard() {
           })
           .eq("tutor_id", user.id)
           .eq("status", "submitted"),
+
+        supabase
+          .from("lessons")
+          .select("lesson_date,end_time")
+          .eq("tutor_id", user.id)
+          .eq("status", "completed")
+          .gte("lesson_date", formatDate(startOfMonth))
+          .lt("lesson_date", formatDate(startOfNextMonth)),
       ]);
 
       if (learnersCountResult.error) throw learnersCountResult.error;
@@ -133,6 +151,7 @@ export default function TutorDashboard() {
       if (lessonsCountResult.error) throw lessonsCountResult.error;
       if (homeworkResult.error) throw homeworkResult.error;
       if (testsResult.error) throw testsResult.error;
+      if (completedLessonsResult.error) throw completedLessonsResult.error;
 
       const weeklyUpcomingLessons =
         lessonsCountResult.data?.filter((lesson) => {
@@ -143,11 +162,21 @@ export default function TutorDashboard() {
           return lessonDateTime > new Date();
         }).length || 0;
 
+      const monthlyCompletedLessons =
+        completedLessonsResult.data?.filter((lesson) => {
+          const lessonEnd = new Date(
+            `${lesson.lesson_date}T${String(lesson.end_time).slice(0, 8)}`,
+          );
+
+          return !Number.isNaN(lessonEnd.getTime()) && lessonEnd < today;
+        }).length || 0;
+
       const data = {
         totalLearners: learnersCountResult.count || 0,
         weeklyUpcomingLessons,
         unmarkedHomework: homeworkResult.data?.length || 0,
         pendingTests: testsResult.count || 0,
+        monthlyCompletedLessons,
         learners: learnersListResult.data || [],
       };
 
@@ -195,6 +224,7 @@ export default function TutorDashboard() {
     unmarkedHomework,
     learners,
     pendingTests,
+    monthlyCompletedLessons,
   } = dashboardData;
 
   return (
@@ -253,6 +283,11 @@ export default function TutorDashboard() {
           value={pendingTests}
         />
       </div>
+      <Card
+        icon={<CheckCircle2 size={18} />}
+        title="Lessons Taught This Month"
+        value={monthlyCompletedLessons}
+      />
 
       {/* SECOND ROW */}
       <div className="grid lg:grid-cols-2 gap-6">

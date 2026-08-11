@@ -7,6 +7,10 @@ import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import { getCache, setCache, clearCache } from "../../lib/cache";
 import CreateTutorLessonModal from "../tutorModals/CreateTutorLessonModal";
+import {
+  canReviewLesson,
+  getLessonReviewDelayMessage,
+} from "../../lib/lessonReview";
 
 const LessonTimeline = ({ learnerId }) => {
   const { user } = useAuth();
@@ -303,7 +307,14 @@ const LessonTimeline = ({ learnerId }) => {
 
                   {/* LESSON CARD */}
                   <div
-                    onClick={() => setSelectedLesson(lesson)}
+                    onClick={() => {
+                      if (!canReviewLesson(lesson)) {
+                        toast.error(getLessonReviewDelayMessage(lesson));
+                        return;
+                      }
+
+                      setSelectedLesson(lesson);
+                    }}
                     className="
                       bg-white
                       rounded-xl

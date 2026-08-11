@@ -235,6 +235,13 @@ export default function TutorSchedulePage() {
         isOpen={!!selectedLesson}
         onClose={() => setSelectedLesson(null)}
         lesson={selectedLesson}
+        onSaved={async () => {
+          if (!user) return;
+
+          clearCache(getCacheKey(user.id));
+          await fetchLessons(false);
+          setSelectedLesson(null);
+        }}
       />
 
       <CreateTutorLessonModal

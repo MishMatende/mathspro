@@ -15,6 +15,11 @@ import {
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
 import EditTutorLessonModal from "./EditTutorLessonModal";
+import {
+  canReviewLesson,
+  clearLessonCaches,
+  getLessonReviewDelayMessage,
+} from "../../lib/lessonReview";
 
 export default function LessonReviewModal({
   isOpen,
@@ -58,6 +63,11 @@ export default function LessonReviewModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!canReviewLesson(lesson)) {
+      toast.error(getLessonReviewDelayMessage(lesson));
+      return;
+    }
+
     setLoading(true);
 
     let status = "pending";
@@ -91,6 +101,7 @@ export default function LessonReviewModal({
     }
 
     toast.success("Lesson review saved");
+    clearLessonCaches(lesson);
     onSaved?.();
     onClose();
   };

@@ -7,6 +7,11 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import toast from "react-hot-toast";
+import {
+  canReviewLesson,
+  getLessonReviewDelayMessage,
+} from "../../lib/lessonReview";
 
 export default function TutorLessonCalendar({ schedule, setSelectedLesson }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -123,6 +128,11 @@ export default function TutorLessonCalendar({ schedule, setSelectedLesson }) {
           const lesson = info.event.extendedProps.lesson;
 
           if (lesson) {
+            if (!canReviewLesson(lesson)) {
+              toast.error(getLessonReviewDelayMessage(lesson));
+              return;
+            }
+
             setSelectedLesson(lesson);
           }
         }}
