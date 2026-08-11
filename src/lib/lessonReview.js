@@ -33,6 +33,7 @@ export const clearLessonCaches = (lesson) => {
 
   clearCache(`dashboard_${lesson.tutor_id}`);
   clearCache(`tutor_lessons_cache_${lesson.tutor_id}`);
+  clearCache("admin_dashboard_data");
 
   if (lesson.learner_id) {
     clearCache(`tutor_lessons_${lesson.learner_id}_${lesson.tutor_id}`);

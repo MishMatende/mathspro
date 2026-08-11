@@ -8,6 +8,7 @@ import {
   RefreshCw,
   User,
   Pencil,
+  ClipboardList,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
@@ -17,6 +18,8 @@ import CreateUserModal from "../../components/adminModals/CreateUserModal";
 import DeleteUserModal from "../../components/adminModals/DeleteUserModal";
 
 import { getCache, setCache, clearCache } from "../../lib/cache";
+import { getOrCreateLearnerChecklist } from "../../lib/learnerChecklist";
+import ChecklistBuilderModal from "../../components/adminModals/ChecklistBuilderModal";
 
 const PAGE_SIZE = 10;
 
@@ -29,6 +32,8 @@ export default function AdminLearnersPage() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(0);
+  const [personalChecklist, setPersonalChecklist] = useState(null);
+  const [openingChecklistFor, setOpeningChecklistFor] = useState(null);
 
   const fetchLearners = async (forceRefresh = false) => {
     const cacheKey = `admin_learners_page_${page}`;
@@ -91,6 +96,19 @@ export default function AdminLearnersPage() {
 
     setProfileLearner(mergedLearner);
     clearCache(`admin_learners_page_${page}`);
+  };
+
+  const openLearnerChecklist = async (learner) => {
+    try {
+      setOpeningChecklistFor(learner.id);
+      const checklist = await getOrCreateLearnerChecklist(learner);
+      setPersonalChecklist(checklist);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to open learner checklist");
+    } finally {
+      setOpeningChecklistFor(null);
+    }
   };
 
   // 🔥 DELETE
@@ -226,6 +244,19 @@ export default function AdminLearnersPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      openLearnerChecklist(learner);
+                    }}
+                    disabled={openingChecklistFor === learner.id}
+                    aria-label={`Open ${learner.name}'s checklist`}
+                    title="Open learner checklist"
+                    className="h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <ClipboardList size={16} />
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setUserToDelete(learner);
                     }}
                     className="h-9 w-9 rounded-xl border border-red-200 text-red-500 flex items-center justify-center hover:bg-red-50"
@@ -296,6 +327,13 @@ export default function AdminLearnersPage() {
         onClose={() => !deleting && setUserToDelete(null)}
         onConfirm={deleteUser}
       />
+
+      {personalChecklist && (
+        <ChecklistBuilderModal
+          level={personalChecklist}
+          onClose={() => setPersonalChecklist(null)}
+        />
+      )}
     </>
   );
 }

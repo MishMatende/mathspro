@@ -347,6 +347,7 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
         text-gray-500
         hover:text-black
         transition
+        cursor-pointer
       "
           >
             Close
@@ -462,7 +463,7 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
               ))}
             </select>
           </div>
-          <div className="mt-8">
+          {/* <div className="mt-8">
             <label className="block text-sm font-semibold text-gray-800 mb-3">
               Assign Checklist
             </label>
@@ -525,8 +526,9 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
                   ? "Edit Learner Checklist"
                   : "Create Learner Checklist"}
             </button>
-          </div>
+          </div> */}
         </div>
+
         {/* FOOTER ACTIONS */}
         <div
           className="

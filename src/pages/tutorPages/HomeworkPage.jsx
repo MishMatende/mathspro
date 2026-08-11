@@ -18,6 +18,19 @@ import { clearCache, getCache, setCache } from "../../lib/cache";
 
 const defaultCategories = ["All", "Algebra", "Geometry", "Fractions"];
 
+const isPastDue = (dueDate) => {
+  if (!dueDate) return false;
+
+  const today = new Date();
+  const startOfToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+
+  return new Date(`${dueDate}T00:00:00`) < startOfToday;
+};
+
 const getDownloadName = (title, filePath) => {
   const extension = filePath?.split(".").pop();
   const safeTitle = (title || "homework")
@@ -33,6 +46,9 @@ export default function HomeworkPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [learnerFilter, setLearnerFilter] = useState("all");
+  const [dueDateFilter, setDueDateFilter] = useState("today");
+  const [submissionFilter, setSubmissionFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedHomework, setSelectedHomework] = useState(null);
   const [homeworkToDelete, setHomeworkToDelete] = useState(null);
@@ -128,6 +144,15 @@ export default function HomeworkPage() {
 
   // 🔥 Filter homework
   const filteredHomework = useMemo(() => {
+    const today = new Date();
+    const startOfToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
+    const endOfWeek = new Date(startOfToday);
+    endOfWeek.setDate(startOfToday.getDate() + 7);
+
     return homework.filter((hw) => {
       const searchValue = search.toLowerCase();
 
@@ -138,9 +163,50 @@ export default function HomeworkPage() {
       const matchesCategory =
         activeCategory === "All" || hw.category === activeCategory;
 
-      return matchesSearch && matchesCategory;
+      const matchesLearner =
+        learnerFilter === "all" || hw.learner_id === learnerFilter;
+
+      const hasSubmission = hw.homework_submissions?.some(
+        (submission) =>
+          submission.status === "submitted" || submission.status === "reviewed",
+      );
+
+      const matchesSubmission =
+        submissionFilter === "all" ||
+        (submissionFilter === "submitted" && hasSubmission) ||
+        (submissionFilter === "notSubmitted" && !hasSubmission) ||
+        (submissionFilter === "reviewed" &&
+          hw.homework_submissions?.some(
+            (submission) => submission.status === "reviewed",
+          ));
+
+      const dueDate = hw.due_date ? new Date(`${hw.due_date}T00:00:00`) : null;
+      const matchesDueDate =
+        dueDateFilter === "all" ||
+        (dueDateFilter === "noDueDate" && !dueDate) ||
+        (dueDateFilter === "overdue" && isPastDue(hw.due_date)) ||
+        (dueDateFilter === "today" &&
+          dueDate?.getTime() === startOfToday.getTime()) ||
+        (dueDateFilter === "nextWeek" &&
+          dueDate >= startOfToday &&
+          dueDate <= endOfWeek);
+
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesLearner &&
+        matchesSubmission &&
+        matchesDueDate
+      );
     });
-  }, [homework, search, activeCategory]);
+  }, [
+    homework,
+    search,
+    activeCategory,
+    learnerFilter,
+    dueDateFilter,
+    submissionFilter,
+  ]);
 
   // 🔥 Download file
   const handleDownload = async (filePath, title) => {
@@ -188,6 +254,11 @@ export default function HomeworkPage() {
   };
 
   const handleEdit = (hw) => {
+    if (isPastDue(hw.due_date)) {
+      toast.error("Past-due homework can no longer be edited");
+      return;
+    }
+
     setSelectedHomework(hw);
     setIsModalOpen(true);
   };
@@ -362,6 +433,7 @@ export default function HomeworkPage() {
                 font-medium
                 hover:bg-orange-600
                 transition
+                cursor-pointer
               "
             >
               <Plus size={16} />
@@ -370,28 +442,75 @@ export default function HomeworkPage() {
           </div>
         </div>
 
-        {/* CATEGORIES */}
-        <div className="flex gap-2 overflow-x-auto mb-6">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`
-                px-3 py-1.5
-                text-sm
-                rounded-full
-                whitespace-nowrap
-                transition
-                ${
-                  activeCategory === cat
-                    ? "bg-orange-500 text-white"
-                    : "bg-gray-100 text-gray-600"
-                }
-              `}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* FILTERS */}
+        <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <label className="text-xs font-medium text-gray-500">
+              Topic
+              <select
+                value={activeCategory}
+                onChange={(event) => setActiveCategory(event.target.value)}
+                className="mt-1 block w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 cursor-pointer"
+              >
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category === "All" ? "All topics" : category}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-xs font-medium text-gray-500">
+              Learner
+              <select
+                value={learnerFilter}
+                onChange={(event) => setLearnerFilter(event.target.value)}
+                className="mt-1 block w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 cursor-pointer"
+              >
+                <option value="all">All learners</option>
+                {[
+                  ...new Map(
+                    homework.map((hw) => [hw.learner_id, hw.learners]),
+                  ).values(),
+                ]
+                  .filter(Boolean)
+                  .map((learner) => (
+                    <option key={learner.id} value={learner.id}>
+                      {learner.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+
+            <label className="text-xs font-medium text-gray-500">
+              Due date
+              <select
+                value={dueDateFilter}
+                onChange={(event) => setDueDateFilter(event.target.value)}
+                className="mt-1 block w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 cursor-pointer"
+              >
+                <option value="all">Any due date</option>
+                <option value="overdue">Past due</option>
+                <option value="today">Due today</option>
+                <option value="nextWeek">Due in the next week</option>
+                <option value="noDueDate">No due date</option>
+              </select>
+            </label>
+
+            <label className="text-xs font-medium text-gray-500">
+              Submission
+              <select
+                value={submissionFilter}
+                onChange={(event) => setSubmissionFilter(event.target.value)}
+                className="mt-1 block w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 cursor-pointer"
+              >
+                <option value="all">All submissions</option>
+                <option value="submitted">Submitted</option>
+                <option value="notSubmitted">Not submitted</option>
+                <option value="reviewed">Reviewed</option>
+              </select>
+            </label>
+          </div>
         </div>
 
         {/* LOADING */}
@@ -525,6 +644,7 @@ export default function HomeworkPage() {
     text-green-700
     hover:bg-green-100
     transition
+    cursor-pointer
   "
                     >
                       {submitted}/1 submitted
@@ -544,11 +664,20 @@ export default function HomeworkPage() {
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => handleEdit(hw)}
+                      disabled={isPastDue(hw.due_date)}
+                      title={
+                        isPastDue(hw.due_date)
+                          ? "Past-due homework cannot be edited"
+                          : "Edit homework"
+                      }
                       className="
                         flex items-center gap-2
                         text-sm
                         text-gray-600
                         hover:text-gray-900
+                        disabled:cursor-not-allowed
+                        disabled:opacity-40
+                        cursor-pointer
                       "
                     >
                       <Pencil size={15} />
@@ -562,6 +691,7 @@ export default function HomeworkPage() {
                         text-sm
                         text-red-600
                         hover:text-red-700
+                        cursor-pointer
                       "
                     >
                       <Trash2 size={15} />
@@ -576,6 +706,7 @@ export default function HomeworkPage() {
                       text-sm
                       text-blue-600
                       hover:underline
+                      cursor-pointer
                     "
                   >
                     <Download size={16} />
@@ -653,6 +784,7 @@ export default function HomeworkPage() {
                   text-sm font-medium
                   text-gray-700
                   hover:bg-gray-50
+                  cursor-pointer
                 "
               >
                 Cancel
@@ -668,6 +800,7 @@ export default function HomeworkPage() {
                   text-sm font-medium
                   text-white
                   hover:bg-red-700
+                  cursor-pointer
                 "
               >
                 Delete Homework

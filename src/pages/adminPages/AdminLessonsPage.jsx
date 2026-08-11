@@ -1,17 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { getCache, setCache, clearCache } from "../../lib/cache";
-import {
-  CalendarDays,
-  Plus,
-  Clock3,
-  UserRound,
-  GraduationCap,
-  Pencil,
-  Filter,
-  RefreshCw,
-} from "lucide-react";
-import { motion } from "framer-motion";
+import { CalendarDays, Plus, Pencil, Filter, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import CreateLessonModal from "../../components/adminModals/CreateLessonModal";
 import EditLessonModal from "../../components/adminModals/EditLessonModal";
@@ -123,6 +113,11 @@ export default function AdminLessonsPage() {
   };
 
   const today = new Date();
+  const startOfToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
 
   const filteredLessons = lessons.filter((lesson) => {
     // ✅ Tutor filter
@@ -130,24 +125,40 @@ export default function AdminLessonsPage() {
       tutorFilter === "all" || String(lesson.tutor_id) === String(tutorFilter);
 
     // ✅ Date filter
-    const lessonDate = new Date(lesson.lesson_date);
+    const lessonDate = new Date(`${lesson.lesson_date}T00:00:00`);
 
     let dateMatch = true;
 
     if (dateFilter === "weekly") {
-      const nextWeek = new Date();
+      const nextWeek = new Date(startOfToday);
 
-      nextWeek.setDate(today.getDate() + 7);
+      nextWeek.setDate(startOfToday.getDate() + 7);
 
-      dateMatch = lessonDate >= today && lessonDate <= nextWeek;
+      dateMatch = lessonDate >= startOfToday && lessonDate <= nextWeek;
     }
 
     if (dateFilter === "monthly") {
-      const nextMonth = new Date();
+      const nextMonth = new Date(startOfToday);
 
-      nextMonth.setMonth(today.getMonth() + 1);
+      nextMonth.setMonth(startOfToday.getMonth() + 1);
 
-      dateMatch = lessonDate >= today && lessonDate <= nextMonth;
+      dateMatch = lessonDate >= startOfToday && lessonDate <= nextMonth;
+    }
+
+    if (dateFilter === "twoWeeks") {
+      const twoWeeks = new Date(startOfToday);
+
+      twoWeeks.setDate(startOfToday.getDate() + 14);
+
+      dateMatch = lessonDate >= startOfToday && lessonDate <= twoWeeks;
+    }
+
+    if (dateFilter === "twoMonths") {
+      const twoMonths = new Date(startOfToday);
+
+      twoMonths.setMonth(startOfToday.getMonth() + 2);
+
+      dateMatch = lessonDate >= startOfToday && lessonDate <= twoMonths;
     }
 
     return tutorMatch && dateMatch;
@@ -280,6 +291,10 @@ export default function AdminLessonsPage() {
               <option value="weekly">This Week</option>
 
               <option value="monthly">This Month</option>
+
+              <option value="twoWeeks">Two Weeks</option>
+
+              <option value="twoMonths">Two Months</option>
             </select>
 
             {/* TUTOR FILTER */}
@@ -313,106 +328,78 @@ export default function AdminLessonsPage() {
           </div>
         </div>
 
-        {/* GRID */}
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 mt-2">
-          {filteredLessons.map((lesson) => (
-            <motion.div
-              key={lesson.id}
-              whileHover={{ scale: 1.01 }}
-              className="
-                bg-white
-                border border-gray-100
-                rounded-3xl
-                p-5
-                shadow-sm
-              "
-            >
-              {/* TOP */}
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-semibold text-gray-900">
-                    {lesson.title || "Lesson"}
-                  </h3>
-                </div>
-
-                <span
-                  className="
-                    text-xs
-                    px-2 py-1
-                    rounded-full
-                    bg-orange-100
-                    text-orange-700
-                    whitespace-nowrap
-                  "
-                >
-                  {lesson.status}
-                </span>
-              </div>
-
-              {/* META */}
-              <div className="mt-5 space-y-3">
-                {/* Learner */}
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <GraduationCap size={15} className="text-indigo-500" />
-
-                  <span>{lesson.learners?.name}</span>
-                </div>
-
-                {/* Tutor */}
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <UserRound size={15} className="text-orange-500" />
-
-                  <span>{lesson.tutors?.name}</span>
-                </div>
-
-                {/* Time */}
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Clock3 size={15} />
-
-                  <span>
-                    {lesson.lesson_date} • {lesson.start_time.slice(0, 5)}
-                    {" - "}
-                    {lesson.end_time.slice(0, 5)}
-                  </span>
-                </div>
-              </div>
-
-              {/* FOOTER */}
-              <div className="mt-5 flex items-center justify-between">
-                <div className="text-xs text-gray-400">
-                  {lesson.is_recurring ? "Repeats weekly" : "One-time"}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {/* EDIT */}
-                  <button
-                    onClick={() => setSelectedLesson(lesson)}
-                    className="
-                      flex items-center gap-1
-                      text-sm
-                      text-blue-600
-                      hover:text-blue-700
-                    "
+        {/* TABLE */}
+        <div className="mt-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <table className="w-full min-w-230 text-left text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Lesson</th>
+                <th className="px-4 py-3 font-semibold">Learner</th>
+                <th className="px-4 py-3 font-semibold">Tutor</th>
+                <th className="px-4 py-3 font-semibold">Date & Time</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Schedule</th>
+                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredLessons.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-4 py-8 text-center text-slate-400"
                   >
-                    <Pencil size={15} />
-                    Edit
-                  </button>
-
-                  {/* DELETE */}
-                  <button
-                    onClick={() => deleteLesson(lesson.id)}
-                    className="
-                      text-sm
-                      text-red-500
-                      hover:text-red-600
-                    "
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+                    No upcoming lessons match these filters.
+                  </td>
+                </tr>
+              ) : (
+                filteredLessons.map((lesson) => (
+                  <tr key={lesson.id} className="hover:bg-slate-50/70">
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {lesson.title || "Lesson"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {lesson.learners?.name || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {lesson.tutors?.name || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {lesson.lesson_date} · {lesson.start_time?.slice(0, 5)}–
+                      {lesson.end_time?.slice(0, 5)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700">
+                        {lesson.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500">
+                      {lesson.is_recurring ? "Repeats weekly" : "One-time"}
+                    </td>
+                    {lesson.status != "completed" && (
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-3">
+                          <button
+                            onClick={() => setSelectedLesson(lesson)}
+                            className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
+                          >
+                            <Pencil size={15} />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteLesson(lesson.id)}
+                            className="text-sm text-red-500 hover:text-red-600"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
