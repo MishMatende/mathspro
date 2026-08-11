@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -6,30 +6,54 @@ import { useAuth } from "../context/AuthContext";
 
 export default function UpdatePassword() {
   const navigate = useNavigate();
-  const { updatePassword } = useAuth();
+  const { logout, updatePassword } = useAuth();
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [hasRecoverySession, setHasRecoverySession] = useState(false);
+  const completedRef = useRef(false);
 
   useEffect(() => {
+    let isActive = true;
+
+    const checkRecoverySession = async () => {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (!isActive) return;
+
+      setHasRecoverySession(Boolean(session) && !error);
+      setCheckingSession(false);
+    };
+
+    void checkRecoverySession();
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Recovery event:", event);
-
-      if (event === "PASSWORD_RECOVERY") {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+        if (!isActive) return;
+        setHasRecoverySession(Boolean(session));
+        setCheckingSession(false);
         return;
       }
 
-      if (event === "SIGNED_OUT") {
-        toast.error("Password reset link has expired.");
-        navigate("/forgot-password");
+      if (event === "SIGNED_OUT" && !completedRef.current && isActive) {
+        setHasRecoverySession(false);
+        setCheckingSession(false);
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    return () => {
+      isActive = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,6 +61,11 @@ export default function UpdatePassword() {
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters");
 
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
 
@@ -55,7 +84,9 @@ export default function UpdatePassword() {
 
       toast.success("Password updated successfully");
 
+      completedRef.current = true;
       setSuccess(true);
+      await logout();
 
       setTimeout(() => {
         navigate("/login");
@@ -582,7 +613,28 @@ export default function UpdatePassword() {
         {/* LEFT */}
         <div className="up-left">
           <div className="up-inner">
-            {!success ? (
+            {checkingSession ? (
+              <div className="up-enter text-center">
+                <div className="up-icon-ring">⌛</div>
+                <h1 className="up-heading">Verifying reset link</h1>
+                <p className="up-sub">Please wait a moment.</p>
+              </div>
+            ) : !hasRecoverySession ? (
+              <div className="up-enter text-center">
+                <div className="up-icon-ring">⚠️</div>
+                <h1 className="up-heading">Reset link unavailable</h1>
+                <p className="up-sub">
+                  This password reset link is invalid or has expired. Request a
+                  new one to continue.
+                </p>
+                <button
+                  className="up-btn"
+                  onClick={() => navigate("/forgot-password")}
+                >
+                  Request a New Link
+                </button>
+              </div>
+            ) : !success ? (
               <div className="up-enter">
                 <button className="back-btn" onClick={() => navigate("/login")}>
                   ← Back to Login
@@ -615,6 +667,17 @@ export default function UpdatePassword() {
                     >
                       {showPassword ? "Hide" : "Show"}
                     </button>
+                  </div>
+
+                  <div className="up-password-wrap">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Confirm new password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="up-input"
+                      required
+                    />
                   </div>
 
                   <div className="up-hint">

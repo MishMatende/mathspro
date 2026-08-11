@@ -1,251 +1,211 @@
-import { createContext, useContext, useEffect, useState } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import { supabase } from "../lib/supabase";
 
-const AuthContext = createContext();
+const AuthContext = createContext(undefined);
+
+const getErrorMessage = (error, fallback) => error?.message || fallback;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-
   const [role, setRole] = useState(null);
-
   const [loading, setLoading] = useState(true);
+  const mountedRef = useRef(true);
+  const profileRequestRef = useRef(0);
+  const sessionSyncRef = useRef(0);
 
-  // 🔥 Fetch profile with cache
-  const fetchProfile = async (userId, forceRefresh = false) => {
-    // 🔥 Check cache first
-    if (!forceRefresh) {
-      const cachedProfile = sessionStorage.getItem("auth_profile");
-
-      if (cachedProfile) {
-        const parsed = JSON.parse(cachedProfile);
-
-        setRole(parsed.role);
-
-        return parsed;
-      }
-    }
-
-    // 🔥 Fetch from DB
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
-    if (!error && data) {
-      setRole(data.role);
-
-      // 🔥 Cache profile
-      sessionStorage.setItem("auth_profile", JSON.stringify(data));
-
-      return data;
-    }
-
-    return null;
+  const clearAuthState = () => {
+    profileRequestRef.current += 1;
+    sessionSyncRef.current += 1;
+    setUser(null);
+    setRole(null);
   };
 
-  // 🔄 Check session on load
-  useEffect(() => {
-    const init = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+  const loadProfile = async (userId) => {
+    const requestId = ++profileRequestRef.current;
 
-      try {
-        if (session?.user) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, name, role")
+      .eq("id", userId)
+      .maybeSingle();
+
+    // Ignore an older request after a sign-out or account change.
+    if (!mountedRef.current || requestId !== profileRequestRef.current) {
+      return null;
+    }
+
+    if (error) {
+      console.error("Unable to load the user profile:", error);
+      setRole(null);
+      return null;
+    }
+
+    setRole(data?.role ?? null);
+    return data;
+  };
+
+  useEffect(() => {
+    mountedRef.current = true;
+    let isActive = true;
+
+    const syncSession = (session) => {
+      if (!session?.user) {
+        clearAuthState();
+        if (mountedRef.current) setLoading(false);
+        return;
       }
+
+      const syncId = ++sessionSyncRef.current;
+      setUser(session.user);
+      setRole(null);
+
+      // Do not await queries inside Supabase's auth-state callback. It can hold
+      // the auth client's lock and leave later auth calls waiting indefinitely.
+      void loadProfile(session.user.id).finally(() => {
+        // getSession and INITIAL_SESSION can both run during a reload. Only the
+        // most recent sync may finish the loading state.
+        if (
+          mountedRef.current &&
+          isActive &&
+          syncId === sessionSyncRef.current
+        ) {
+          setLoading(false);
+        }
+      });
     };
 
-    init();
+    const initialize = async () => {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
 
-    // 🔁 Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth event:", event);
-
-      if (session?.user) {
-        setUser(session.user);
-
-        if (event !== "PASSWORD_RECOVERY") {
-          await fetchProfile(session.user.id, true);
-        }
-      } else {
-        setUser(null);
-        setRole(null);
-        sessionStorage.removeItem("auth_profile");
+      if (error) {
+        if (!isActive) return;
+        console.error("Unable to restore the session:", error);
+        clearAuthState();
+        if (mountedRef.current) setLoading(false);
+        return;
       }
 
-      setLoading(false);
+      if (isActive) syncSession(session);
+    };
+
+    void initialize();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isActive) syncSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isActive = false;
+      mountedRef.current = false;
+      profileRequestRef.current += 1;
+      sessionSyncRef.current += 1;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // 🔐 Login
   const login = async ({ email, password, expectedRole = null }) => {
-    // console.log("A");
-
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    // console.log("B", { data, error });
-
-    if (error) {
-      // console.log("C");
-      return {
-        success: false,
-        error: error.message,
-      };
+    if (error || !data.user) {
+      return { success: false, error: getErrorMessage(error, "Login failed") };
     }
 
-    // console.log("D");
-
-    const user = data.user;
-
-    const profile = await fetchProfile(data.user.id, true);
-
-    // console.log("E", profile);
+    setUser(data.user);
+    setRole(null);
+    const profile = await loadProfile(data.user.id);
 
     if (!profile) {
       await supabase.auth.signOut();
-
-      return {
-        success: false,
-        error: "Profile not found",
-      };
+      return { success: false, error: "Profile not found" };
     }
 
-    // 🔥 Role protection
-    if (expectedRole) {
-      const allowed =
-        // Tutor portal
-        (expectedRole === "tutor" &&
-          (profile.role === "tutor" || profile.role === "admin")) ||
-        // Student portal
-        (expectedRole === "student" && profile.role === "student") ||
-        // Admin portal
-        (expectedRole === "admin" && profile.role === "admin");
+    const allowed =
+      !expectedRole ||
+      (expectedRole === "tutor" &&
+        (profile.role === "tutor" || profile.role === "admin")) ||
+      (expectedRole === "student" && profile.role === "student") ||
+      (expectedRole === "admin" && profile.role === "admin");
 
-      if (!allowed) {
-        await supabase.auth.signOut();
-
-        return {
-          success: false,
-          error: "Unauthorized access",
-        };
-      }
+    if (!allowed) {
+      await supabase.auth.signOut();
+      return { success: false, error: "Unauthorized access" };
     }
 
-    // 🔥 Admin logging through tutor portal behaves as tutor
-    let finalRole = profile.role;
-
-    if (expectedRole === "tutor" && profile.role === "admin") {
-      finalRole = "tutor";
-    }
-
-    setUser(user);
+    // An admin using the tutor portal gets the tutor-facing landing page.
+    const finalRole =
+      expectedRole === "tutor" && profile.role === "admin"
+        ? "tutor"
+        : profile.role;
 
     setRole(finalRole);
-
-    return {
-      success: true,
-      role: finalRole,
-    };
+    return { success: true, role: finalRole };
   };
 
-  // 🔑 Update Password
   const updatePassword = async (password) => {
-    const { error } = await supabase.auth.updateUser({
-      password,
-    });
-
-    if (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-
-    return {
-      success: true,
-    };
+    const { error } = await supabase.auth.updateUser({ password });
+    return error
+      ? { success: false, error: error.message }
+      : { success: true };
   };
 
-  // 🔑 Send password reset email
   const resetPassword = async (email) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/update-password`,
     });
 
+    return error
+      ? { success: false, error: error.message }
+      : { success: true };
+  };
+
+  const signup = async ({ email, password, name, role: signupRole }) => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+
     if (error) {
+      return { success: false, error: error.message };
+    }
+
+    // With email confirmation enabled Supabase may not return a session, but it
+    // still returns the created user. Avoid creating an invalid profile row.
+    if (!data.user) {
       return {
         success: false,
-        error: error.message,
+        error: "Account creation did not return a user. Please try again.",
       };
     }
 
-    return {
-      success: true,
-    };
-  };
-
-  // 🆕 Signup
-  const signup = async ({ email, password, name, role }) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
+    const { error: profileError } = await supabase.from("profiles").insert({
+      id: data.user.id,
+      name,
+      role: signupRole,
     });
 
-    if (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-
-    const user = data.user;
-
-    const { error: profileError } = await supabase.from("profiles").insert([
-      {
-        id: user.id,
-        name,
-        role,
-      },
-    ]);
-
     if (profileError) {
-      return {
-        success: false,
-        error: profileError.message,
-      };
+      return { success: false, error: profileError.message };
     }
 
-    return {
-      success: true,
-    };
+    return { success: true };
   };
 
-  // 🚪 Logout
   const logout = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
 
-    setUser(null);
+    if (error) {
+      return { success: false, error: error.message };
+    }
 
-    setRole(null);
-
-    // 🔥 Clear cache
-    sessionStorage.removeItem("auth_profile");
+    clearAuthState();
+    return { success: true };
   };
 
   return (
@@ -259,7 +219,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         updatePassword,
         resetPassword,
-        isAuthenticated: !!user,
+        isAuthenticated: Boolean(user),
       }}
     >
       {children}
@@ -267,4 +227,12 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+
+  return context;
+};
