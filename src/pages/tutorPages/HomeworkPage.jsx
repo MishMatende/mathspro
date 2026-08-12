@@ -15,6 +15,7 @@ import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import UploadHomeworkModal from "../../components/tutorModals/UploadHomeworkModal";
 import { clearCache, getCache, setCache } from "../../lib/cache";
+import { downloadStorageFile } from "../../lib/downloadStorageFile";
 
 const defaultCategories = ["All", "Algebra", "Geometry", "Fractions"];
 
@@ -216,23 +217,11 @@ export default function HomeworkPage() {
     }
 
     try {
-      const { data, error } = await supabase.storage
-        .from("homework-files")
-        .createSignedUrl(filePath, 60, {
-          download: getDownloadName(title, filePath),
-        });
-
-      if (error) {
-        console.log(error);
-
-        toast.error("Failed to generate file link");
-
-        return;
-      }
-
-      if (data?.signedUrl) {
-        window.open(data.signedUrl, "_blank");
-      }
+      await downloadStorageFile({
+        bucket: "homework-files",
+        path: filePath,
+        fileName: getDownloadName(title, filePath),
+      });
     } catch (err) {
       console.log(err);
 

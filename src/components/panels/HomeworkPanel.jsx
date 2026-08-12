@@ -14,6 +14,7 @@ import {
 import toast from "react-hot-toast";
 import { getCache, setCache, clearCache } from "../../lib/cache";
 import { supabase } from "../../lib/supabase";
+import { downloadStorageFile } from "../../lib/downloadStorageFile";
 import { useAuth } from "../../context/AuthContext";
 import UploadHomeworkModal from "../tutorModals/UploadHomeworkModal";
 
@@ -104,18 +105,15 @@ export default function HomeworkPanel({ studentId }) {
       return;
     }
 
-    const { data, error } = await supabase.storage
-      .from("homework-files")
-      .createSignedUrl(filePath, 60, {
-        download: getDownloadName(title, filePath, suffix),
+    try {
+      await downloadStorageFile({
+        bucket: "homework-files",
+        path: filePath,
+        fileName: getDownloadName(title, filePath, suffix),
       });
-
-    if (error) {
+    } catch (error) {
       toast.error(error.message || "Failed to download file");
-      return;
     }
-
-    window.open(data.signedUrl, "_blank");
   };
 
   const handleFeedbackChange = (submissionId, field, value) => {

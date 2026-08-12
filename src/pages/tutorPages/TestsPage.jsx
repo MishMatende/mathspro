@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import { downloadStorageFile } from "../../lib/downloadStorageFile";
 
 import {
   FileText,
@@ -139,13 +140,7 @@ export default function TestsPage() {
 
   const downloadSubmission = async (path) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("tests")
-        .createSignedUrl(path, 60);
-
-      if (error) throw error;
-
-      window.open(data.signedUrl, "_blank");
+      await downloadStorageFile({ bucket: "tests", path });
     } catch (error) {
       console.error(error);
       toast.error("Failed to download submission");
@@ -154,13 +149,7 @@ export default function TestsPage() {
 
   const downloadMarkedTest = async (path) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("tests")
-        .createSignedUrl(path, 60);
-
-      if (error) throw error;
-
-      window.open(data.signedUrl, "_blank");
+      await downloadStorageFile({ bucket: "tests", path });
     } catch (error) {
       console.error(error);
       toast.error("Failed to download marked test");

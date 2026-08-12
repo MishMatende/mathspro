@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import { downloadStorageFile } from "../../lib/downloadStorageFile";
 import { FileText, Download, RefreshCw } from "lucide-react";
 
 export default function TutorFilesPanel({ studentId }) {
@@ -57,13 +58,7 @@ export default function TutorFilesPanel({ studentId }) {
 
   const downloadFile = async (file) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("files")
-        .createSignedUrl(file.file_url, 60);
-
-      if (error) throw error;
-
-      window.open(data.signedUrl, "_blank");
+      await downloadStorageFile({ bucket: "files", path: file.file_url });
     } catch (error) {
       console.log(error);
       toast.error("Failed to download file");

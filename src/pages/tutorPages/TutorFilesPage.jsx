@@ -12,6 +12,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { getCache, setCache, clearCache } from "../../lib/cache";
+import { downloadStorageFile } from "../../lib/downloadStorageFile";
 
 export default function TutorFilesPage() {
   const { user } = useAuth();
@@ -104,13 +105,7 @@ export default function TutorFilesPage() {
 
   const downloadFile = async (file) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("files")
-        .createSignedUrl(file.file_url, 60);
-
-      if (error) throw error;
-
-      window.open(data.signedUrl, "_blank");
+      await downloadStorageFile({ bucket: "files", path: file.file_url });
     } catch (error) {
       console.log(error);
 

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
-import TutorFilesPage from "../../pages/tutorPages/TutorFilesPage";
+import TutorFilesPanel from "./TutorFilesPanel";
 import TutorTestsPanel from "./TutorTestsPanel";
 import TutorChecklistPanel from "./TutorChecklistPanel";
 
@@ -164,7 +164,7 @@ export default function LearnerProfile({ learner }) {
         {activeTab === "checklist" && <TutorChecklistPanel learner={learner} />}
         {activeTab === "lessons" && <LessonTimeline learnerId={learner.id} />}
         {activeTab === "homework" && <HomeworkPanel studentId={learner.id} />}
-        {activeTab === "files" && <TutorFilesPage studentId={learner.id} />}
+        {activeTab === "files" && <TutorFilesPanel studentId={learner.id} />}
         {activeTab === "tests" && <TutorTestsPanel studentId={learner.id} />}
       </div>
     </motion.div>

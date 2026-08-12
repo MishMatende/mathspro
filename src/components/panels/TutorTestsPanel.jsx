@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import { downloadStorageFile } from "../../lib/downloadStorageFile";
 import {
   FileText,
   Download,
@@ -139,13 +140,7 @@ export default function TutorTestsPanel({ studentId }) {
     if (!filePath) return;
 
     try {
-      const { data, error } = await supabase.storage
-        .from("tests")
-        .createSignedUrl(filePath, 60);
-
-      if (error) throw error;
-
-      window.open(data.signedUrl, "_blank");
+      await downloadStorageFile({ bucket: "tests", path: filePath });
     } catch (error) {
       console.log(error);
       toast.error("Failed to download file");
