@@ -539,7 +539,7 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
     p-5
   "
         >
-          <button
+          {/* <button
             onClick={handleSendReset}
             disabled={sendingReset}
             className="
@@ -568,7 +568,8 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
                 Send Password Reset Email
               </>
             )}
-          </button>
+          </button> */}
+          <p className="text-red-500">I'm working on this feature</p>
 
           <p className="text-xs text-gray-400 text-center mt-3 leading-relaxed">
             Sends a secure password reset link to the user's email.
