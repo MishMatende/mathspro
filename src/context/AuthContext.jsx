@@ -14,10 +14,12 @@ export const AuthProvider = ({ children }) => {
   const mountedRef = useRef(true);
   const profileRequestRef = useRef(0);
   const sessionSyncRef = useRef(0);
+  const activeUserIdRef = useRef(null);
 
   const clearAuthState = () => {
     profileRequestRef.current += 1;
     sessionSyncRef.current += 1;
+    activeUserIdRef.current = null;
     setUser(null);
     setRole(null);
   };
@@ -50,16 +52,29 @@ export const AuthProvider = ({ children }) => {
     mountedRef.current = true;
     let isActive = true;
 
-    const syncSession = (session) => {
+    const syncSession = (session, { refreshProfile = true } = {}) => {
       if (!session?.user) {
         clearAuthState();
         if (mountedRef.current) setLoading(false);
         return;
       }
 
+      const isDifferentUser = activeUserIdRef.current !== session.user.id;
+      activeUserIdRef.current = session.user.id;
       const syncId = ++sessionSyncRef.current;
       setUser(session.user);
+
+      // TOKEN_REFRESHED is emitted when returning to a background tab. The
+      // previous code cleared the role before its profile request completed,
+      // so protected routes treated a valid session as unauthorized and
+      // redirected the user. A refresh keeps the already verified role.
+      if (!isDifferentUser && !refreshProfile) {
+        if (mountedRef.current) setLoading(false);
+        return;
+      }
+
       setRole(null);
+      setLoading(true);
 
       // Do not await queries inside Supabase's auth-state callback. It can hold
       // the auth client's lock and leave later auth calls waiting indefinitely.
@@ -97,8 +112,14 @@ export const AuthProvider = ({ children }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (isActive) syncSession(session);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isActive) return;
+
+      syncSession(session, {
+        // Refreshing an access token must never temporarily revoke the role
+        // that the current protected route relies on.
+        refreshProfile: event !== "TOKEN_REFRESHED",
+      });
     });
 
     return () => {
