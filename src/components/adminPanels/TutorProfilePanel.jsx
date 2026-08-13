@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 
 export default function TutorProfilePanel({ tutor, onClose }) {
   const [students, setStudents] = useState([]);
-  const { resetPassword } = useAuth();
+  const { sendAdminPasswordResetLink } = useAuth();
   const [sendingReset, setSendingReset] = useState(false);
 
   const fetchStudents = async () => {
@@ -52,7 +52,7 @@ export default function TutorProfilePanel({ tutor, onClose }) {
 
     setSendingReset(true);
 
-    const result = await resetPassword(tutor.email);
+    const result = await sendAdminPasswordResetLink(tutor.email);
 
     setSendingReset(false);
 

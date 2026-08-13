@@ -179,13 +179,42 @@ export const AuthProvider = ({ children }) => {
       : { success: true };
   };
 
-  const resetPassword = async (email) => {
+  const requestPasswordResetOtp = async (email) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/update-password`,
     });
 
     return error
       ? { success: false, error: error.message }
+      : { success: true };
+  };
+
+  const sendAdminPasswordResetLink = async (email) => {
+    const { data, error } = await supabase.functions.invoke(
+      "admin-send-password-reset-link",
+      { body: { email, redirectTo: `${window.location.origin}/update-password` } },
+    );
+
+    return error || !data?.success
+      ? {
+          success: false,
+          error: getErrorMessage(error, data?.error || "Failed to send reset link"),
+        }
+      : { success: true };
+  };
+
+  const verifyPasswordResetOtp = async ({ email, token }) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: "recovery",
+    });
+
+    return error || !data.session
+      ? {
+          success: false,
+          error: getErrorMessage(error, "That verification code is invalid or has expired"),
+        }
       : { success: true };
   };
 
@@ -239,7 +268,9 @@ export const AuthProvider = ({ children }) => {
         signup,
         logout,
         updatePassword,
-        resetPassword,
+        requestPasswordResetOtp,
+        sendAdminPasswordResetLink,
+        verifyPasswordResetOtp,
         isAuthenticated: Boolean(user),
       }}
     >

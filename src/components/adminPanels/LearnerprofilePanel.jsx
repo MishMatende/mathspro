@@ -15,7 +15,7 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
   const [tutors, setTutors] = useState([]);
   const [selectedTutorId, setSelectedTutorId] = useState("");
   const [assigning, setAssigning] = useState(false);
-  const { resetPassword } = useAuth();
+  const { sendAdminPasswordResetLink } = useAuth();
   const [sendingReset, setSendingReset] = useState(false);
   const [checklists, setChecklists] = useState([]);
   const [selectedChecklistId, setSelectedChecklistId] = useState("");
@@ -181,7 +181,7 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
 
     setSendingReset(true);
 
-    const result = await resetPassword(learner.email);
+    const result = await sendAdminPasswordResetLink(learner.email);
 
     setSendingReset(false);
 

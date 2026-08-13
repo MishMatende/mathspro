@@ -8,8 +8,9 @@ const ForgotPassword = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState("email"); // "email" | "sent"
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const { resetPassword } = useAuth();
+  const { requestPasswordResetOtp, verifyPasswordResetOtp } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,7 +18,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     try {
-      const result = await resetPassword(email);
+      const result = await requestPasswordResetOtp(email);
 
       if (!result.success) {
         toast.error(result.error || "Failed to send reset email");
@@ -27,7 +28,7 @@ const ForgotPassword = () => {
         return;
       }
 
-      toast.success("Reset email sent");
+      toast.success("Verification code sent");
 
       setStep("sent");
 
@@ -39,6 +40,29 @@ const ForgotPassword = () => {
 
       setLoading(false);
     }
+  };
+
+  const handleCodeSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!/^\d{6,8}$/.test(code.trim())) {
+      toast.error("Enter the verification code from your email");
+      return;
+    }
+
+    setLoading(true);
+    const result = await verifyPasswordResetOtp({
+      email,
+      token: code.trim(),
+    });
+    setLoading(false);
+
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+
+    navigate("/update-password");
   };
 
   return (
@@ -58,8 +82,8 @@ const ForgotPassword = () => {
 
                 <h1 className="fp-heading">Forgot Password?</h1>
                 <p className="fp-sub">
-                  No worries — enter your email and we'll send you a reset link
-                  right away.
+                  No worries — enter your email and we'll send you a one-time
+                  verification code.
                 </p>
 
                 <form onSubmit={handleSubmit}>
@@ -72,7 +96,7 @@ const ForgotPassword = () => {
                     required
                   />
                   <button className="fp-btn" type="submit" disabled={loading}>
-                    {loading ? "Sending..." : "Send Reset Link"}
+                    {loading ? "Sending..." : "Send Verification Code"}
                   </button>
                 </form>
 
@@ -88,26 +112,33 @@ const ForgotPassword = () => {
               <div className="step-enter">
                 <div className="fp-success-ring">📬</div>
 
-                <h1 className="fp-heading">Check your email</h1>
+                <h1 className="fp-heading">Enter your reset code</h1>
                 <p className="fp-sub">
-                  We sent a reset link to <span>{email}</span>.
+                  We sent a one-time code to <span>{email}</span>.
                 </p>
 
-                <ul className="fp-check-list">
-                  <li>Check your inbox for the reset email</li>
-                  <li>Click the link inside to reset your password</li>
-                  <li>Check spam if you don't see it</li>
-                </ul>
-
-                <button className="fp-btn" onClick={() => navigate("/login")}>
-                  Back to Login
-                </button>
+                <form onSubmit={handleCodeSubmit}>
+                  <input
+                    className="fp-input"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="Enter verification code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                    required
+                  />
+                  <button className="fp-btn" type="submit" disabled={loading}>
+                    {loading ? "Verifying..." : "Verify Code"}
+                  </button>
+                </form>
 
                 <p className="resend-row">
                   Didn't receive it?{" "}
                   <span
                     onClick={() => {
                       setStep("email");
+                      setCode("");
                       setEmail("");
                     }}
                   >
@@ -136,10 +167,10 @@ const ForgotPassword = () => {
             <div className="fp-illus-heading">
               Password reset
               <br />
-              is just one click away
+              with a secure code
             </div>
             <div className="fp-illus-sub">
-              We'll send a secure link straight
+              We'll send a one-time code straight
               <br />
               to your inbox
             </div>
