@@ -456,7 +456,7 @@ export default function HomeworkPage() {
                 onChange={(event) => setLearnerFilter(event.target.value)}
                 className="mt-1 block w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 cursor-pointer"
               >
-                <option value="all">All learners</option>
+                <option value="all">All</option>
                 {[
                   ...new Map(
                     homework.map((hw) => [hw.learner_id, hw.learners]),
@@ -478,7 +478,7 @@ export default function HomeworkPage() {
                 onChange={(event) => setDueDateFilter(event.target.value)}
                 className="mt-1 block w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 cursor-pointer"
               >
-                <option value="all">Any due date</option>
+                <option value="all">All</option>
                 <option value="overdue">Past due</option>
                 <option value="today">Due today</option>
                 <option value="nextWeek">Due in the next week</option>
@@ -493,7 +493,7 @@ export default function HomeworkPage() {
                 onChange={(event) => setSubmissionFilter(event.target.value)}
                 className="mt-1 block w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 cursor-pointer"
               >
-                <option value="all">All submissions</option>
+                <option value="all">All</option>
                 <option value="submitted">Submitted</option>
                 <option value="notSubmitted">Not submitted</option>
                 <option value="reviewed">Reviewed</option>
