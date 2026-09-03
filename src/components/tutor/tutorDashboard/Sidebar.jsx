@@ -29,6 +29,8 @@ export default function Sidebar({ open, setOpen }) {
     navigate("/");
   };
 
+  console.log(user);
+
   return (
     <>
       {/* Backdrop */}
@@ -107,7 +109,7 @@ export default function Sidebar({ open, setOpen }) {
               <p className="text-xs text-gray-400">Tutor access</p>
 
               <p className="text-sm font-medium text-gray-800 truncate">
-                {user?.user_metadata?.name || user?.email || "Admin"}
+                {user?.user_metadata?.full_name || user?.email || "Admin"}
               </p>
             </div>
 
@@ -124,12 +126,22 @@ export default function Sidebar({ open, setOpen }) {
                 hover:text-red-500
                 hover:border-red-200
                 transition
+                cursor-pointer
               "
             >
               <LogOut size={18} />
             </button>
           </div>
         </div>
+        <p className="text-[0.7em] italic mt-2">
+          Last Sign in:{" "}
+          {user?.last_sign_in_at &&
+            new Date(user.last_sign_in_at).toLocaleString("en-KE", {
+              timeZone: "Africa/Nairobi",
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+        </p>
       </div>
     </>
   );

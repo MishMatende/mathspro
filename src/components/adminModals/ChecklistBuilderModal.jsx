@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "../../lib/supabase";
-import { Plus, Pencil, Trash2, ChevronRight, X } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  ChevronRight,
+  X,
+  ChartNoAxesColumnIncreasing,
+  ListChecks,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { getCache, setCache, clearCache } from "../../lib/cache";
 import CreateTopicModal from "./CreateTopicModal";
@@ -13,8 +21,9 @@ import DeleteTopicModal from "./DeleteTopicModal";
 import CreateSubtopicModal from "./CreateSubtopicModal";
 import EditSubtopicModal from "./EditSubtopicModal";
 import DeleteSubtopicModal from "./DeleteSubtopicModal";
+import TutorChecklistPanel from "../panels/TutorChecklistPanel";
 
-export default function ChecklistBuilderModal({ level, onClose }) {
+export default function ChecklistBuilderModal({ level, learner, onClose }) {
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateTopic, setShowCreateTopic] = useState(false);
@@ -25,6 +34,7 @@ export default function ChecklistBuilderModal({ level, onClose }) {
   const [editingSubtopic, setEditingSubtopic] = useState(null);
   const [deletingSubtopic, setDeletingSubtopic] = useState(null);
   const [expandedTopics, setExpandedTopics] = useState({});
+  const [activeView, setActiveView] = useState(learner ? "progress" : "manage");
 
   const CACHE_KEY = `checklist_builder_${level.id}`;
 
@@ -35,36 +45,39 @@ export default function ChecklistBuilderModal({ level, onClose }) {
     }));
   };
 
-  const loadChecklist = useCallback(async (showLoader = true) => {
-    try {
-      if (showLoader) setLoading(true);
+  const loadChecklist = useCallback(
+    async (showLoader = true) => {
+      try {
+        if (showLoader) setLoading(true);
 
-      const { data, error } = await supabase
-        .from("checklist_topics")
-        .select(
-          `
+        const { data, error } = await supabase
+          .from("checklist_topics")
+          .select(
+            `
           *,
           checklist_subtopics (
             *
           )
         `,
-        )
-        .eq("level_id", level.id)
-        .order("sort_order");
+          )
+          .eq("level_id", level.id)
+          .order("sort_order");
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setTopics(data || []);
+        setTopics(data || []);
 
-      setCache(CACHE_KEY, data || []);
-    } catch (error) {
-      console.error(error);
+        setCache(CACHE_KEY, data || []);
+      } catch (error) {
+        console.error(error);
 
-      toast.error("Failed to load checklist");
-    } finally {
-      if (showLoader) setLoading(false);
-    }
-  }, [CACHE_KEY, level.id]);
+        toast.error("Failed to load checklist");
+      } finally {
+        if (showLoader) setLoading(false);
+      }
+    },
+    [CACHE_KEY, level.id],
+  );
 
   useEffect(() => {
     const cached = getCache(CACHE_KEY);
@@ -81,6 +94,10 @@ export default function ChecklistBuilderModal({ level, onClose }) {
 
   function refresh() {
     clearCache(CACHE_KEY);
+
+    if (learner?.id) {
+      clearCache(`learner_checklist_panel_${learner.id}`);
+    }
 
     loadChecklist();
   }
@@ -132,37 +149,38 @@ export default function ChecklistBuilderModal({ level, onClose }) {
   }
 
   const modal = (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm flex justify-center items-center p-4"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl w-[94vw] md:w-[72vw] max-w-5xl h-[88vh] max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden shadow-2xl"
-      >
+    <div className="fixed inset-0 z-90 bg-black/40 backdrop-blur-sm flex justify-center items-center p-4">
+      <div className="bg-white rounded-3xl w-[94vw] md:w-[72vw] max-w-5xl h-[88vh] max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden shadow-2xl">
         <div className="p-4 sm:p-6 border-b flex justify-between items-start gap-4 shrink-0">
           <div className="min-w-0">
             <h2 className="text-xl sm:text-3xl font-bold text-gray-900 truncate">
               {level.name}
             </h2>
 
-            <p className="text-gray-500">Checklist builder</p>
+            <p className="text-gray-500">
+              {learner
+                ? `Progress and checklist for ${learner.name}`
+                : "Checklist builder"}
+            </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             <button
+              type="button"
               onClick={() => setShowCreateTopic(true)}
-              className="
+              disabled={activeView !== "manage"}
+              aria-hidden={activeView !== "manage"}
+              className={`
                 flex items-center gap-2
                 px-4 sm:px-5 py-3
                 rounded-2xl
                 border
                 bg-white
                 hover:bg-orange-200
-              "
+                ${activeView === "manage" ? "visible" : "invisible pointer-events-none"}
+              `}
             >
-              <Plus size={18} />
-              <span className="hidden sm:inline">Add topic</span>
+              <span className="hidden sm:inline">Add topics</span>
             </button>
 
             <button
@@ -182,72 +200,117 @@ export default function ChecklistBuilderModal({ level, onClose }) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          {loading ? (
-            <div className="text-center py-12">Loading...</div>
-          ) : topics.length === 0 ? (
-            <div className="text-center py-12">
-              <h3 className="font-semibold text-lg mb-2">No Topics Yet</h3>
+        {learner && (
+          <div className="border-b bg-slate-50 px-4 sm:px-6 py-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveView("progress")}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition ${
+                activeView === "progress"
+                  ? "bg-white text-orange-700 shadow-sm ring-1 ring-slate-200"
+                  : "text-slate-500 hover:bg-white"
+              }`}
+            >
+              <ChartNoAxesColumnIncreasing size={17} />
+              Progress
+            </button>
 
-              <p className="text-gray-500 mb-5">
-                Create your first topic for this checklist.
-              </p>
+            <button
+              type="button"
+              onClick={() => setActiveView("manage")}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition ${
+                activeView === "manage"
+                  ? "bg-white text-orange-700 shadow-sm ring-1 ring-slate-200"
+                  : "text-slate-500 hover:bg-white"
+              }`}
+            >
+              <ListChecks size={17} />
+              Manage checklist
+            </button>
+          </div>
+        )}
 
-              <button
-                onClick={() => setShowCreateTopic(true)}
-                className="px-5 py-3 rounded-2xl bg-orange-500 text-white"
-              >
-                Create Topic
-              </button>
+        <div className="flex-1 min-h-0">
+          {learner && (
+            <div
+              className={`h-full overflow-y-auto p-4 sm:p-6 ${
+                activeView === "progress" ? "block" : "hidden"
+              }`}
+            >
+              <TutorChecklistPanel learner={learner} readOnly />
             </div>
-          ) : (
-            <div className="space-y-4">
-              {topics.map((topic) => {
-                const isExpanded = expandedTopics[topic.id];
+          )}
 
-                return (
-                  <div
-                    key={topic.id}
-                    className="
+          <div
+            className={`h-full overflow-y-auto p-4 sm:p-6 ${
+              activeView === "manage" ? "block" : "hidden"
+            }`}
+          >
+            {loading ? (
+              <div className="text-center py-12">Loading...</div>
+            ) : topics.length === 0 ? (
+              <div className="text-center py-12">
+                <h3 className="font-semibold text-lg mb-2">No Topics Yet</h3>
+
+                <p className="text-gray-500 mb-5">
+                  Create your first topic for this checklist.
+                </p>
+
+                <button
+                  onClick={() => setShowCreateTopic(true)}
+                  className="px-5 py-3 rounded-2xl bg-orange-500 text-white"
+                >
+                  Select Topics
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {topics.map((topic) => {
+                  const isExpanded = expandedTopics[topic.id];
+
+                  return (
+                    <div
+                      key={topic.id}
+                      className="
           overflow-hidden
           rounded-3xl
           border
           border-stone-300
           bg-stone-100
         "
-                  >
-                    {/* Topic Header */}
+                    >
+                      {/* Topic Header */}
 
-                    <div className="flex items-center justify-between px-5 py-4">
-                      <div
-                        className="flex items-center gap-4 cursor-pointer flex-1"
-                        onClick={() => toggleTopic(topic.id)}
-                      >
-                        <ChevronRight
-                          size={18}
-                          className={`transition-transform ${
-                            isExpanded ? "rotate-90" : ""
-                          }`}
-                        />
+                      <div className="flex items-center justify-between px-5 py-4">
+                        <div
+                          className="flex items-center gap-4 cursor-pointer flex-1"
+                          onClick={() => toggleTopic(topic.id)}
+                        >
+                          <ChevronRight
+                            size={18}
+                            className={`transition-transform ${
+                              isExpanded ? "rotate-90" : ""
+                            }`}
+                          />
 
-                        <div>
-                          <h3 className="font-semibold text-lg text-gray-900">
-                            {topic.title}
-                          </h3>
+                          <div>
+                            <h3 className="font-semibold text-lg text-gray-900">
+                              {topic.title}
+                            </h3>
 
-                          <p className="text-sm text-gray-500">
-                            {topic.checklist_subtopics?.length || 0} subtopics
-                          </p>
+                            <p className="text-sm text-gray-500">
+                              {topic.checklist_subtopics?.length || 0} subtopics
+                            </p>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedTopic(topic);
-                            setShowCreateSubtopic(true);
-                          }}
-                          className="
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedTopic(topic);
+                              setShowCreateSubtopic(true);
+                            }}
+                            className="
                 h-10 w-10
                 rounded-xl
                 border
@@ -255,13 +318,13 @@ export default function ChecklistBuilderModal({ level, onClose }) {
                 flex items-center justify-center
                 hover:bg-green-200
               "
-                        >
-                          <Plus size={16} />
-                        </button>
+                          >
+                            <Plus size={16} />
+                          </button>
 
-                        <button
-                          onClick={() => setEditingTopic(topic)}
-                          className="
+                          <button
+                            onClick={() => setEditingTopic(topic)}
+                            className="
                 h-10 w-10
                 rounded-xl
                 border
@@ -269,13 +332,13 @@ export default function ChecklistBuilderModal({ level, onClose }) {
                 flex items-center justify-center
                 hover:bg-blue-200
               "
-                        >
-                          <Pencil size={15} />
-                        </button>
+                          >
+                            <Pencil size={15} />
+                          </button>
 
-                        <button
-                          onClick={() => setDeletingTopic(topic)}
-                          className="
+                          <button
+                            onClick={() => setDeletingTopic(topic)}
+                            className="
                 h-10 w-10
                 rounded-xl
                 border
@@ -283,80 +346,82 @@ export default function ChecklistBuilderModal({ level, onClose }) {
                 flex items-center justify-center
                 hover:bg-red-200
               "
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Expanded Content */}
+                      {/* Expanded Content */}
 
-                    {isExpanded && (
-                      <div className="border-t border-stone-300 bg-white">
-                        {topic.checklist_subtopics
-                          ?.sort(
-                            (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-                          )
-                          .map((subtopic) => (
-                            <div
-                              key={subtopic.id}
-                              className="
+                      {isExpanded && (
+                        <div className="border-t border-stone-300 bg-white">
+                          {topic.checklist_subtopics
+                            ?.sort(
+                              (a, b) =>
+                                (a.sort_order ?? 0) - (b.sort_order ?? 0),
+                            )
+                            .map((subtopic) => (
+                              <div
+                                key={subtopic.id}
+                                className="
                     flex items-center justify-between
                     px-5 py-4
                     border-b border-gray-100
                     last:border-b-0
                   "
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-orange-500" />
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-2 h-2 rounded-full bg-orange-500" />
 
-                                <span className="text-gray-800">
-                                  {subtopic.title}
-                                </span>
-                              </div>
+                                  <span className="text-gray-800">
+                                    {subtopic.title}
+                                  </span>
+                                </div>
 
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => {
-                                    setSelectedTopic(topic);
-                                    setEditingSubtopic(subtopic);
-                                  }}
-                                  className="
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedTopic(topic);
+                                      setEditingSubtopic(subtopic);
+                                    }}
+                                    className="
                         h-9 w-9
                         rounded-xl
                         border
                         flex items-center justify-center
                         hover:bg-blue-200
                       "
-                                >
-                                  <Pencil size={14} />
-                                </button>
+                                  >
+                                    <Pencil size={14} />
+                                  </button>
 
-                                <button
-                                  onClick={() => {
-                                    setSelectedTopic(topic);
-                                    setDeletingSubtopic(subtopic);
-                                  }}
-                                  className="
+                                  <button
+                                    onClick={() => {
+                                      setSelectedTopic(topic);
+                                      setDeletingSubtopic(subtopic);
+                                    }}
+                                    className="
                         h-9 w-9
                         rounded-xl
                         border
                         flex items-center justify-center
                         hover:bg-red-200
                       "
-                                >
-                                  <Trash2 size={14} />
-                                </button>
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       {showCreateTopic && (
@@ -432,5 +497,5 @@ export default function ChecklistBuilderModal({ level, onClose }) {
     </div>
   );
 
-  return createPortal(modal, document.body);
+  return createPortal(modal, document.body, `checklist-${level.id}`);
 }

@@ -16,14 +16,16 @@ import {
 } from "lucide-react";
 import { getCache, setCache } from "../../lib/cache";
 
-export default function TutorChecklistPanel({ learner }) {
-  const [loading, setLoading] = useState(true);
-  const [topics, setTopics] = useState([]);
-  const [progressMap, setProgressMap] = useState({});
+export default function TutorChecklistPanel({ learner, readOnly = false }) {
+  const CHECKLIST_CACHE_KEY = `learner_checklist_panel_${learner?.id}`;
+  const [initialChecklist] = useState(() => getCache(CHECKLIST_CACHE_KEY));
+  const [loading, setLoading] = useState(!initialChecklist);
+  const [topics, setTopics] = useState(initialChecklist?.topics || []);
+  const [progressMap, setProgressMap] = useState(
+    initialChecklist?.progressMap || {},
+  );
   const [expandedTopics, setExpandedTopics] = useState({});
   const [refreshing, setRefreshing] = useState(false);
-
-  const CHECKLIST_CACHE_KEY = `learner_checklist_panel_${learner?.id}`;
 
   const loadChecklist = useCallback(async (showLoader = true) => {
     if (!learner?.id) return;
@@ -147,6 +149,8 @@ export default function TutorChecklistPanel({ learner }) {
   }, [topics]);
 
   async function toggleSubtopic(subtopicId, checked) {
+    if (readOnly) return;
+
     const previous = { ...progressMap };
 
     const optimistic = {
@@ -283,7 +287,9 @@ export default function TutorChecklistPanel({ learner }) {
           <h2 className="text-2xl font-bold text-gray-900">Checklist</h2>
 
           <p className="text-sm text-gray-500 mt-1">
-            Track learner progress across topics and subtopics.
+            {readOnly
+              ? "View learner progress across topics and subtopics."
+              : "Track learner progress across topics and subtopics."}
           </p>
         </div>
 
@@ -416,10 +422,15 @@ export default function TutorChecklistPanel({ learner }) {
                         border-gray-100
                       "
                       >
-                        <label className="flex items-center gap-3 cursor-pointer flex-1">
+                        <label
+                          className={`flex items-center gap-3 flex-1 ${
+                            readOnly ? "cursor-default" : "cursor-pointer"
+                          }`}
+                        >
                           <input
                             type="checkbox"
                             checked={!!completed}
+                            disabled={readOnly}
                             onChange={(e) =>
                               toggleSubtopic(subtopic.id, e.target.checked)
                             }
@@ -427,6 +438,8 @@ export default function TutorChecklistPanel({ learner }) {
                             w-5 h-5
                             rounded
                             accent-orange-500
+                            disabled:cursor-not-allowed
+                            disabled:opacity-70
                           "
                           />
 

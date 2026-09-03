@@ -542,6 +542,9 @@ export default function AdminLearnersPage() {
       {personalChecklist && (
         <ChecklistBuilderModal
           level={personalChecklist}
+          learner={learners.find(
+            (learner) => learner.id === personalChecklist.learner_id,
+          )}
           onClose={() => setPersonalChecklist(null)}
         />
       )}

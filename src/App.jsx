@@ -31,6 +31,7 @@ import AdminTestsPage from "./pages/adminPages/AdminTestsPage";
 import StudentFilesPage from "./pages/studentPages/StudentFilesPage";
 import NotFound from "./pages/NotFound";
 import AdminChecklistPage from "./pages/adminPages/AdminChecklistPage";
+import AdminTopicLibraryPage from "./pages/adminPages/AdminTopicLibraryPage";
 
 function App() {
   return (
@@ -77,6 +78,7 @@ function App() {
           <Route path="/admin-lessons" element={<AdminLessonsPage />} />
           <Route path="/admin-tests" element={<AdminTestsPage />} />
           <Route path="/admin-checklist" element={<AdminChecklistPage />} />
+          <Route path="/admin-topic-library" element={<AdminTopicLibraryPage />} />
         </Route>
       </Route>
 

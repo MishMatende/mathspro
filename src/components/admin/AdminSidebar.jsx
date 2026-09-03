@@ -43,11 +43,11 @@ export default function AdminSidebar({ open, setOpen }) {
       icon: ClipboardList,
       path: "/admin-tests",
     },
-    // {
-    //   label: "Checklist",
-    //   icon: ListChecks,
-    //   path: "/admin-checklist",
-    // },
+    {
+      label: "Topic Library",
+      icon: ListChecks,
+      path: "/admin-topic-library",
+    },
   ];
 
   const handleLogout = async () => {
