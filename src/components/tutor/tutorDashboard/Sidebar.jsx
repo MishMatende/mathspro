@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Calendar,
   LogOut,
+  Library,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -20,6 +21,7 @@ export default function Sidebar({ open, setOpen }) {
     { label: "Schedule", icon: Calendar, path: "/tutor-schedule" },
     { label: "Learners", icon: Users, path: "/learners" },
     { label: "Homework", icon: FileText, path: "/homework" },
+    { label: "Resources", icon: Library, path: "/tutor-resources" },
     // { label: "Tests", icon: ClipboardList, path: "/tests" },
   ];
 

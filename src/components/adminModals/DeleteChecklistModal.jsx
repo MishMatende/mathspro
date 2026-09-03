@@ -30,7 +30,7 @@ export default function DeleteChecklistModal({ level, onClose, onConfirm }) {
         </div>
 
         <div className="border-t p-4 flex justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-3 rounded-2xl border">
+          <button onClick={onClose} className="px-5 py-3 rounded-2xl border border-slate-200 text-slate-600 hover:bg-slate-50">
             Cancel
           </button>
 

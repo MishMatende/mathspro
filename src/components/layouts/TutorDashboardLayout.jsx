@@ -14,7 +14,7 @@ const TutorDashboardLayout = () => {
         <Header open={sidebarOpen} setOpen={setSidebarOpen} />
 
         {/* THIS is where pages render */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="dashboard-content flex-1 overflow-y-auto">
           <Outlet />
         </div>
       </div>

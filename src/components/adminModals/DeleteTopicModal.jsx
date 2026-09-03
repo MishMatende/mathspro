@@ -27,7 +27,7 @@ export default function DeleteTopicModal({ topic, onClose, onConfirm }) {
         </div>
 
         <div className="border-t p-4 flex justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-3 border rounded-2xl">
+          <button onClick={onClose} className="px-5 py-3 border border-slate-200 rounded-2xl text-slate-600 hover:bg-slate-50">
             Cancel
           </button>
 

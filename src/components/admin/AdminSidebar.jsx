@@ -7,6 +7,7 @@ import {
   CalendarDays,
   ClipboardList,
   ListChecks,
+  Library,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -44,9 +45,14 @@ export default function AdminSidebar({ open, setOpen }) {
       path: "/admin-tests",
     },
     {
-      label: "Topic Library",
+      label: "Checklist Library",
       icon: ListChecks,
       path: "/admin-topic-library",
+    },
+    {
+      label: "Resources",
+      icon: Library,
+      path: "/admin-resources",
     },
   ];
 

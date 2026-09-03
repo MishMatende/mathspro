@@ -1,40 +1,64 @@
 import "./App.css";
-import Home from "./pages/homePage/Home";
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
-import TutorDashboard from "./pages/tutorPages/TutorDashboard";
-import LearnerProfilePage from "./pages/tutorPages/LearnerProfilePage";
 import TutorDashboardLayout from "./components/layouts/TutorDashboardLayout";
-import LearnersPage from "./pages/tutorPages/LearnersPage";
-import HomeworkPage from "./pages/tutorPages/HomeworkPage";
-import TutorSchedulePage from "./pages/tutorPages/TutorSchedulePage";
-import Login from "./pages/Login";
-import ForgotPassword from "./pages/ForgotPassword";
-import AdminDashboard from "./pages/adminPages/AdminDashboard";
 import AdminDashboardLayout from "./components/layouts/AdminDashboardLayout";
-import AdminLearnerspage from "./pages/adminPages/AdminLearnerspage";
-import AdminTutorsPage from "./pages/adminPages/AdminTutorsPage";
-import AdminLogin from "./pages/adminPages/AdminLogin";
 import AdminProtectedRoute from "./components/wrappers/AdminProtectedRoute";
 import StudentProtectedRoute from "./components/wrappers/StudentProtectedRoute";
-import DiagnosticsPage from "./pages/DiagnosticsPage";
 import TutorProtectedRoute from "./components/wrappers/TutorProtectedRoute";
-import AdminLessonsPage from "./pages/adminPages/AdminLessonsPage";
-import LearnerSchedule from "./pages/studentPages/LearnerSchedule";
 import StudentDashboardLayout from "./components/layouts/StudentDashboardLayout";
-import UpdatePassword from "./pages/UpdatePassword";
-import StudentDashboard from "./pages/studentPages/StudentDashboard";
-import StudentHomeworkPage from "./pages/studentPages/StudentHomeworkPage";
-import ReachOutPage from "./pages/ReachOutPage";
-import HowItWorksPage from "./pages/HowItWorksPage";
-import StudentTestPage from "./pages/studentPages/StudentTestPage";
-import AdminTestsPage from "./pages/adminPages/AdminTestsPage";
-import StudentFilesPage from "./pages/studentPages/StudentFilesPage";
-import NotFound from "./pages/NotFound";
-import AdminChecklistPage from "./pages/adminPages/AdminChecklistPage";
-import AdminTopicLibraryPage from "./pages/adminPages/AdminTopicLibraryPage";
+
+const Home = lazy(() => import("./pages/homePage/Home"));
+const Login = lazy(() => import("./pages/Login"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
+const ReachOutPage = lazy(() => import("./pages/ReachOutPage"));
+const HowItWorksPage = lazy(() => import("./pages/HowItWorksPage"));
+const DiagnosticsPage = lazy(() => import("./pages/DiagnosticsPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AdminLogin = lazy(() => import("./pages/adminPages/AdminLogin"));
+const TutorDashboard = lazy(() => import("./pages/tutorPages/TutorDashboard"));
+const LearnerProfilePage = lazy(() => import("./pages/tutorPages/LearnerProfilePage"));
+const LearnersPage = lazy(() => import("./pages/tutorPages/LearnersPage"));
+const HomeworkPage = lazy(() => import("./pages/tutorPages/HomeworkPage"));
+const TutorSchedulePage = lazy(() => import("./pages/tutorPages/TutorSchedulePage"));
+const TutorResourcesPage = lazy(() => import("./pages/tutorPages/TutorResourcesPage"));
+const TutorResourceViewerPage = lazy(() => import("./pages/tutorPages/TutorResourceViewerPage"));
+const StudentDashboard = lazy(() => import("./pages/studentPages/StudentDashboard"));
+const LearnerSchedule = lazy(() => import("./pages/studentPages/LearnerSchedule"));
+const StudentHomeworkPage = lazy(() => import("./pages/studentPages/StudentHomeworkPage"));
+const StudentTestPage = lazy(() => import("./pages/studentPages/StudentTestPage"));
+const StudentFilesPage = lazy(() => import("./pages/studentPages/StudentFilesPage"));
+const AdminDashboard = lazy(() => import("./pages/adminPages/AdminDashboard"));
+const AdminLearnerspage = lazy(() => import("./pages/adminPages/AdminLearnerspage"));
+const AdminTutorsPage = lazy(() => import("./pages/adminPages/AdminTutorsPage"));
+const AdminLessonsPage = lazy(() => import("./pages/adminPages/AdminLessonsPage"));
+const AdminTestsPage = lazy(() => import("./pages/adminPages/AdminTestsPage"));
+const AdminChecklistPage = lazy(() => import("./pages/adminPages/AdminChecklistPage"));
+const AdminTopicLibraryPage = lazy(() => import("./pages/adminPages/AdminTopicLibraryPage"));
+const AdminResourcesPage = lazy(() => import("./pages/adminPages/AdminResourcesPage"));
+
+function RouteFallback() {
+  return (
+    <div
+      className="flex min-h-screen items-center justify-center"
+      role="status"
+      aria-label="Loading page"
+    >
+      <div className="logo-loader-stage">
+        <img
+          src="/logo.svg"
+          alt=""
+          className="logo-loader h-14 w-36 object-contain"
+        />
+      </div>
+    </div>
+  );
+}
 
 function App() {
   return (
+    <Suspense fallback={<RouteFallback />}>
     <Routes>
       {/* No layout */}
       <Route path="/" element={<Home />} />
@@ -56,6 +80,8 @@ function App() {
           <Route path="/homework" element={<HomeworkPage />} />
           {/* <Route path="/tests" element={<TestsPage />} /> */}
           <Route path="/tutor-schedule" element={<TutorSchedulePage />} />
+          <Route path="/tutor-resources" element={<TutorResourcesPage />} />
+          <Route path="/tutor-resources/:id" element={<TutorResourceViewerPage />} />
         </Route>
       </Route>
 
@@ -79,11 +105,13 @@ function App() {
           <Route path="/admin-tests" element={<AdminTestsPage />} />
           <Route path="/admin-checklist" element={<AdminChecklistPage />} />
           <Route path="/admin-topic-library" element={<AdminTopicLibraryPage />} />
+          <Route path="/admin-resources" element={<AdminResourcesPage />} />
         </Route>
       </Route>
 
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 }
 

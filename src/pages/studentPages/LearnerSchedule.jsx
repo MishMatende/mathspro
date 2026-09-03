@@ -229,7 +229,7 @@ export default function LearnerSchedule() {
                 className="
                   text-sm
                   text-gray-500
-                  hover:text-black
+                  hover:text-slate-900
                   transition
                 "
               >

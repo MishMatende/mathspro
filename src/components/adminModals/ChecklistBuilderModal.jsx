@@ -174,7 +174,7 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
                 flex items-center gap-2
                 px-4 sm:px-5 py-3
                 rounded-2xl
-                border
+                border border-slate-200
                 bg-white
                 hover:bg-orange-200
                 ${activeView === "manage" ? "visible" : "invisible pointer-events-none"}
@@ -189,7 +189,7 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
               className="
                 h-12 w-12
                 rounded-2xl
-                border
+                border border-slate-200
                 bg-white
                 flex items-center justify-center
                 hover:bg-gray-100
@@ -274,7 +274,7 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
                       className="
           overflow-hidden
           rounded-3xl
-          border
+          border border-slate-200
           border-stone-300
           bg-stone-100
         "
@@ -313,7 +313,7 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
                             className="
                 h-10 w-10
                 rounded-xl
-                border
+                border border-slate-200
                 bg-white
                 flex items-center justify-center
                 hover:bg-green-200
@@ -327,7 +327,7 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
                             className="
                 h-10 w-10
                 rounded-xl
-                border
+                border border-slate-200
                 bg-white
                 flex items-center justify-center
                 hover:bg-blue-200
@@ -341,7 +341,7 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
                             className="
                 h-10 w-10
                 rounded-xl
-                border
+                border border-slate-200
                 bg-white
                 flex items-center justify-center
                 hover:bg-red-200
@@ -388,7 +388,7 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
                                     className="
                         h-9 w-9
                         rounded-xl
-                        border
+                        border border-slate-200
                         flex items-center justify-center
                         hover:bg-blue-200
                       "
@@ -404,7 +404,7 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
                                     className="
                         h-9 w-9
                         rounded-xl
-                        border
+                        border border-slate-200
                         flex items-center justify-center
                         hover:bg-red-200
                       "

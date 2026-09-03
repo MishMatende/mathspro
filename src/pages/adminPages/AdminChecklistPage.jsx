@@ -102,10 +102,10 @@ export default function AdminChecklistPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="min-h-full bg-linear-to-br from-slate-50 via-white to-orange-50/40 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Learning Checklists</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Learning Checklists</h1>
 
           <p className="text-gray-500">Manage checklist templates by level.</p>
         </div>
@@ -123,7 +123,7 @@ export default function AdminChecklistPage() {
               clearCache(CACHE_KEY);
               fetchLevels();
             }}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl border"
+            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
           >
             <RefreshCw size={18} />
           </button>
@@ -150,7 +150,7 @@ export default function AdminChecklistPage() {
           </button>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           {levels.map((level) => {
             const topicCount = level.checklist_topics?.length || 0;
 
@@ -168,13 +168,13 @@ export default function AdminChecklistPage() {
                 className="
     overflow-hidden
     rounded-[28px]
-    border border-zinc-700
+    border border-slate-200
     bg-white
-    text-black
+    text-slate-900
     cursor-pointer
     transition-all
     hover:-translate-y-1
-    hover:shadow-xl
+    shadow-sm hover:border-orange-200 hover:shadow-[0_18px_45px_rgba(249,115,22,0.12)]
   "
               >
                 {/* Header */}
@@ -218,13 +218,13 @@ export default function AdminChecklistPage() {
                           <Layers size={18} className="text-orange-500" />
                         </div>
 
-                        <span className="text-black">Topics</span>
+                        <span className="text-slate-700">Topics</span>
                       </div>
 
                       <span className="font-semibold">{topicCount}</span>
                     </div>
 
-                    <div className="border-t border-zinc-700" />
+                    <div className="border-t border-slate-100" />
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -239,7 +239,7 @@ export default function AdminChecklistPage() {
                           <BookOpen size={18} className="text-orange-500" />
                         </div>
 
-                        <span className="text-black">Subtopics</span>
+                        <span className="text-slate-700">Subtopics</span>
                       </div>
 
                       <span className="font-semibold">{subtopicCount}</span>
@@ -257,10 +257,11 @@ export default function AdminChecklistPage() {
           flex items-center justify-center gap-2
           h-12
           rounded-xl
-          border border-zinc-600
-          text-black
-          hover:bg-zinc-700
-          hover:text-white
+          border border-slate-200
+          text-slate-700
+          hover:border-orange-200
+          hover:bg-orange-50
+          hover:text-orange-700
           transition
         "
                     >
@@ -277,7 +278,7 @@ export default function AdminChecklistPage() {
           flex items-center justify-center gap-2
           h-12
           rounded-xl
-          border border-zinc-600
+          border border-red-100
           text-red-500
           hover:bg-red-500/10
           transition

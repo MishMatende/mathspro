@@ -31,3 +31,58 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Neutral fallback for older dashboard screens that use a bare border class. */
+.dashboard-content .border,
+.dashboard-content .border-t,
+.dashboard-content .border-b,
+.dashboard-content .border-l,
+.dashboard-content .border-r {
+  border-color: #e2e8f0;
+}
+
+.dashboard-content input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+.dashboard-content select,
+.dashboard-content textarea {
+  border-color: #e2e8f0;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.dashboard-content input:focus,
+.dashboard-content select:focus,
+.dashboard-content textarea:focus {
+  border-color: #fdba74;
+  box-shadow: 0 0 0 4px rgb(255 237 213 / 0.75);
+  outline: none;
+}
+
+.logo-loader-stage {
+  perspective: 700px;
+}
+
+.logo-loader {
+  transform-origin: center;
+  animation: mathspro-logo-orbit 1.15s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes mathspro-logo-orbit {
+  0% {
+    transform: rotateY(0deg) scale(0.96);
+    opacity: 0.72;
+  }
+  50% {
+    transform: rotateY(180deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotateY(360deg) scale(0.96);
+    opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-loader {
+    animation: none;
+  }
+}

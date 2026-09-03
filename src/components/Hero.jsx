@@ -40,7 +40,7 @@ export default function Hero() {
 
           <button
             onClick={() => navigate("/login")}
-            className="w-full sm:w-auto border border-black-200 text-gray-700 px-7 py-3.5 rounded-full font-medium cursor-pointer transition hover:border-orange-300 hover:text-orange-500 active:scale-[0.98]"
+            className="w-full sm:w-auto border border-slate-200 bg-white text-gray-700 px-7 py-3.5 rounded-full font-medium cursor-pointer transition hover:border-orange-300 hover:text-orange-500 active:scale-[0.98]"
           >
             Login
           </button>

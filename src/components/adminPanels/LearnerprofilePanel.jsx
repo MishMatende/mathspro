@@ -345,7 +345,7 @@ export default function LearnerProfilePanel({ learner, onClose, onUpdated }) {
             className="
         text-sm font-medium
         text-gray-500
-        hover:text-black
+        hover:text-slate-900
         transition
         cursor-pointer
       "
