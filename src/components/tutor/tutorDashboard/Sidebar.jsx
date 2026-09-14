@@ -31,8 +31,6 @@ export default function Sidebar({ open, setOpen }) {
     navigate("/");
   };
 
-  console.log(user);
-
   return (
     <>
       {/* Backdrop */}

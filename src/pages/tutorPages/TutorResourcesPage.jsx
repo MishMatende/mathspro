@@ -11,8 +11,9 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { supabase } from "../../lib/supabase";
 
-export default function TutorResourcesPage() {
+export default function TutorResourcesPage({ audience = "tutor" }) {
   const navigate = useNavigate();
+  const isStudent = audience === "student";
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -56,10 +57,12 @@ export default function TutorResourcesPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-              Tutor Resources
+              {isStudent ? "Learning Resources" : "Tutor Resources"}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              Private teaching materials assigned to you.
+              {isStudent
+                ? "Learning materials selected for you."
+                : "Private teaching materials assigned to you."}
             </p>
           </div>
         </div>
@@ -126,10 +129,14 @@ export default function TutorResourcesPage() {
                   Added {new Date(resource.created_at).toLocaleDateString()}
                 </span>
                 <button
-                  onClick={() => navigate(`/tutor-resources/${resource.id}`)}
+                  onClick={() =>
+                    navigate(
+                      `${isStudent ? "/student-resources" : "/tutor-resources"}/${resource.id}`,
+                    )
+                  }
                   className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600"
                 >
-                  Open workspace
+                  {isStudent ? "Read resource" : "Open workspace"}
                 </button>
               </div>
             </article>

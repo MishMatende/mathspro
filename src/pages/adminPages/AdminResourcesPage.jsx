@@ -24,12 +24,15 @@ const emptyForm = {
   level: "",
   access_scope: "all_tutors",
   tutor_ids: [],
+  learner_access_scope: "none",
+  learner_ids: [],
 };
 
 export default function AdminResourcesPage() {
   const { user } = useAuth();
   const [resources, setResources] = useState([]);
   const [tutors, setTutors] = useState([]);
+  const [learners, setLearners] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -42,22 +45,27 @@ export default function AdminResourcesPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [resourceResult, tutorResult, logResult] = await Promise.all([
-      supabase
-        .from("tutor_resources")
-        .select("*, tutor_resource_assignments(tutor_id)")
-        .order("created_at", { ascending: false }),
-      supabase.from("tutors").select("id, name, email").order("name"),
-      supabase
-        .from("tutor_resource_access_logs")
-        .select("resource_id, action, accessed_at, user_id")
-        .order("accessed_at", { ascending: false })
-        .limit(500),
-    ]);
+    const [resourceResult, tutorResult, learnerResult, logResult] =
+      await Promise.all([
+        supabase
+          .from("tutor_resources")
+          .select(
+            "*, tutor_resource_assignments(tutor_id), tutor_resource_learner_assignments(learner_id)",
+          )
+          .order("created_at", { ascending: false }),
+        supabase.from("tutors").select("id, name, email").order("name"),
+        supabase.from("learners").select("id, name, email").order("name"),
+        supabase
+          .from("tutor_resource_access_logs")
+          .select("resource_id, action, accessed_at, user_id")
+          .order("accessed_at", { ascending: false })
+          .limit(500),
+      ]);
     setLoading(false);
     if (resourceResult.error) return toast.error("Failed to load resources");
     setResources(resourceResult.data || []);
     setTutors(tutorResult.data || []);
+    setLearners(learnerResult.data || []);
     setLogs(logResult.data || []);
   }, []);
 
@@ -95,6 +103,11 @@ export default function AdminResourcesPage() {
       access_scope: resource.access_scope,
       tutor_ids:
         resource.tutor_resource_assignments?.map((item) => item.tutor_id) || [],
+      learner_access_scope: resource.learner_access_scope || "none",
+      learner_ids:
+        resource.tutor_resource_learner_assignments?.map(
+          (item) => item.learner_id,
+        ) || [],
     });
     setFile(null);
     setProgress(0);
@@ -113,6 +126,27 @@ export default function AdminResourcesPage() {
           form.tutor_ids.map((tutorId) => ({
             resource_id: resourceId,
             tutor_id: tutorId,
+          })),
+        );
+      if (error) throw error;
+    }
+
+    const { error: learnerDeleteError } = await supabase
+      .from("tutor_resource_learner_assignments")
+      .delete()
+      .eq("resource_id", resourceId);
+    if (learnerDeleteError) throw learnerDeleteError;
+
+    if (
+      form.learner_access_scope === "specific_learners" &&
+      form.learner_ids.length
+    ) {
+      const { error } = await supabase
+        .from("tutor_resource_learner_assignments")
+        .insert(
+          form.learner_ids.map((learnerId) => ({
+            resource_id: resourceId,
+            learner_id: learnerId,
           })),
         );
       if (error) throw error;
@@ -140,8 +174,12 @@ export default function AdminResourcesPage() {
           .from("tutor_resources")
           .insert({
             id,
-            ...form,
-            tutor_ids: undefined,
+            title: form.title,
+            description: form.description,
+            subject: form.subject,
+            level: form.level || null,
+            access_scope: form.access_scope,
+            learner_access_scope: form.learner_access_scope,
             storage_path: storagePath,
             file_size: file.size,
             created_by: user.id,
@@ -169,6 +207,7 @@ export default function AdminResourcesPage() {
             subject: form.subject,
             level: form.level || null,
             access_scope: form.access_scope,
+            learner_access_scope: form.learner_access_scope,
             ...(file ? { file_size: file.size } : {}),
           })
           .eq("id", resource.id);
@@ -318,6 +357,13 @@ export default function AdminResourcesPage() {
                       ? "All tutors"
                       : `${resource.tutor_resource_assignments?.length || 0} tutors`}
                   </span>
+                  <span>
+                    {resource.learner_access_scope === "all_learners"
+                      ? "All learners"
+                      : resource.learner_access_scope === "specific_learners"
+                        ? `${resource.tutor_resource_learner_assignments?.length || 0} learners`
+                        : "No learners"}
+                  </span>
                   <span className="flex items-center gap-1">
                     <Eye size={13} />{" "}
                     {resourceLogs.filter((log) => log.action === "view").length}{" "}
@@ -355,7 +401,7 @@ export default function AdminResourcesPage() {
 
       {modal && (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
+          <div className="max-h-[90vh] max-w-xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
             <div className="sticky top-0 bg-white border-b px-6 py-5 flex justify-between">
               <div>
                 <h2 className="text-xl font-bold">
@@ -437,6 +483,52 @@ export default function AdminResourcesPage() {
                         }
                       />{" "}
                       {tutor.name || tutor.email}
+                    </label>
+                  ))}
+                </div>
+              )}
+              <div className="border-t border-slate-100 pt-4">
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  Learner access
+                </label>
+                <select
+                  value={form.learner_access_scope}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      learner_access_scope: e.target.value,
+                      learner_ids: [],
+                    })
+                  }
+                  className="w-full rounded-xl border p-3"
+                >
+                  <option value="none">No learners</option>
+                  <option value="all_learners">All learners</option>
+                  <option value="specific_learners">Specific learners</option>
+                </select>
+              </div>
+              {form.learner_access_scope === "specific_learners" && (
+                <div className="max-h-44 overflow-y-auto rounded-xl border p-2">
+                  {learners.map((learner) => (
+                    <label
+                      key={learner.id}
+                      className="flex gap-2 rounded-lg p-2 text-sm hover:bg-orange-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={form.learner_ids.includes(learner.id)}
+                        onChange={() =>
+                          setForm({
+                            ...form,
+                            learner_ids: form.learner_ids.includes(learner.id)
+                              ? form.learner_ids.filter(
+                                  (id) => id !== learner.id,
+                                )
+                              : [...form.learner_ids, learner.id],
+                          })
+                        }
+                      />
+                      {learner.name || learner.email}
                     </label>
                   ))}
                 </div>

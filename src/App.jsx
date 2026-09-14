@@ -92,6 +92,14 @@ function App() {
           <Route path="/student-homework" element={<StudentHomeworkPage />} />
           <Route path="/student-test" element={<StudentTestPage />} />
           <Route path="/student-files" element={<StudentFilesPage />} />
+          <Route
+            path="/student-resources"
+            element={<TutorResourcesPage audience="student" />}
+          />
+          <Route
+            path="/student-resources/:id"
+            element={<TutorResourceViewerPage />}
+          />
         </Route>
       </Route>
 

@@ -6,6 +6,7 @@ import {
   FileText,
   ClipboardList,
   File,
+  Library,
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
@@ -36,6 +37,11 @@ export default function StudentSidebar({ open, setOpen }) {
       label: "My Files",
       icon: File,
       path: "/student-files",
+    },
+    {
+      label: "Resources",
+      icon: Library,
+      path: "/student-resources",
     },
   ];
 
