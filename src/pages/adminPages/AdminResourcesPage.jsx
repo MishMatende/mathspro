@@ -159,11 +159,8 @@ export default function AdminResourcesPage() {
       return toast.error("Title and subject are required");
     if (modal.type === "create" && !file)
       return toast.error("Choose a PDF file");
-    if (
-      file &&
-      (file.type !== "application/pdf" || file.size > 25 * 1024 * 1024)
-    )
-      return toast.error("Choose a PDF no larger than 25 MB");
+    if (file && file.type !== "application/pdf")
+      return toast.error("Choose a PDF file");
     setSaving(true);
     try {
       if (modal.type === "create") {
@@ -538,7 +535,7 @@ export default function AdminResourcesPage() {
                 <span className="text-sm text-slate-600">
                   {file?.name ||
                     (modal.type === "create"
-                      ? "Choose PDF (max 25 MB)"
+                      ? "Choose PDF"
                       : "Replace PDF (optional)")}
                 </span>
                 <input
