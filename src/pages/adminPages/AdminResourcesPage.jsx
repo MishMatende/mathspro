@@ -318,7 +318,7 @@ export default function AdminResourcesPage() {
       {loading && resources.length === 0 ? (
         <p className="py-12 text-center text-slate-500">Loading resources...</p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="space-y-3">
           {filtered.map((resource) => {
             const resourceLogs = logs.filter(
               (log) => log.resource_id === resource.id,
@@ -326,29 +326,32 @@ export default function AdminResourcesPage() {
             return (
               <article
                 key={resource.id}
-                className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-[0_18px_45px_rgba(249,115,22,0.1)]"
+                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition duration-300 hover:border-orange-200 hover:shadow-[0_12px_30px_rgba(249,115,22,0.08)]"
               >
-                <div className="flex gap-3">
-                  <div className="h-11 w-11 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
                     <FileText size={20} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h2 className="font-semibold truncate">{resource.title}</h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="truncate font-semibold">{resource.title}</h2>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs ${resource.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}
+                    >
+                      {resource.status}
+                    </span>
+                    </div>
                     <p className="text-sm text-slate-500">
                       {resource.subject}
                       {resource.level ? ` · ${resource.level}` : ""}
                     </p>
+                    <p className="mt-1 line-clamp-1 text-sm text-slate-600">
+                      {resource.description || "No description"}
+                    </p>
                   </div>
-                  <span
-                    className={`h-fit rounded-full px-2.5 py-1 text-xs ${resource.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}
-                  >
-                    {resource.status}
-                  </span>
                 </div>
-                <p className="mt-4 line-clamp-2 min-h-10 text-sm text-slate-600">
-                  {resource.description || "No description"}
-                </p>
-                <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-500 lg:justify-end">
                   <span>
                     {resource.access_scope === "all_tutors"
                       ? "All tutors"
@@ -367,7 +370,7 @@ export default function AdminResourcesPage() {
                     views
                   </span>
                 </div>
-                <div className="mt-4 flex justify-end gap-1 border-t border-slate-100 pt-3">
+                <div className="flex justify-end gap-1 border-t border-slate-100 pt-3 lg:border-l lg:border-t-0 lg:pl-3 lg:pt-0">
                   <button
                     onClick={() => openEdit(resource)}
                     title="Edit"
@@ -389,6 +392,7 @@ export default function AdminResourcesPage() {
                   >
                     <Trash2 size={15} />
                   </button>
+                </div>
                 </div>
               </article>
             );

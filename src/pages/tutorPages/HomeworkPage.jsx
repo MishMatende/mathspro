@@ -48,7 +48,7 @@ export default function HomeworkPage() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [learnerFilter, setLearnerFilter] = useState("all");
-  const [dueDateFilter, setDueDateFilter] = useState("today");
+  const [dueDateFilter, setDueDateFilter] = useState("all");
   const [submissionFilter, setSubmissionFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedHomework, setSelectedHomework] = useState(null);

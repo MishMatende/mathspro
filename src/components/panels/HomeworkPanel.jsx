@@ -334,6 +334,7 @@ export default function HomeworkPanel({ studentId }) {
                     <th className="px-4 py-3 font-semibold">Due date</th>
                     <th className="px-4 py-3 font-semibold">Submission</th>
                     <th className="px-4 py-3 font-semibold">Score</th>
+                    <th className="px-4 py-3 font-semibold">Feedback</th>
                     <th className="px-4 py-3 text-right font-semibold">
                       Actions
                     </th>
@@ -343,7 +344,7 @@ export default function HomeworkPanel({ studentId }) {
                   {filteredHomework.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="px-4 py-8 text-center text-gray-400"
                       >
                         No homework matches these filters.
@@ -373,6 +374,26 @@ export default function HomeworkPanel({ studentId }) {
                           </td>
                           <td className="px-4 py-3 text-gray-600">
                             {submission?.score ?? "—"}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {submission?.remarks ? (
+                              <span className="group/feedback relative block max-w-48" tabIndex={0}>
+                                <span
+                                  className="block cursor-help truncate underline decoration-dotted underline-offset-2"
+                                  title={submission.remarks}
+                                >
+                                  {submission.remarks}
+                                </span>
+                                <span
+                                  role="tooltip"
+                                  className="pointer-events-none absolute bottom-full left-0 z-30 mb-2 hidden w-72 whitespace-normal rounded-xl bg-slate-900 px-3 py-2 text-xs leading-5 text-white shadow-xl group-hover/feedback:block group-focus-within/feedback:block"
+                                >
+                                  {submission.remarks}
+                                </span>
+                              </span>
+                            ) : (
+                              "—"
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex justify-end gap-3">
