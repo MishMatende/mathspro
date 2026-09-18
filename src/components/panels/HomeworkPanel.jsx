@@ -325,17 +325,17 @@ export default function HomeworkPanel({ studentId }) {
               </div>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white">
-              <table className="w-full min-w-205 text-left text-sm">
+            <div className="rounded-2xl border border-gray-200 bg-white">
+              <table className="w-full table-fixed text-left text-sm">
                 <thead className="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">Homework</th>
-                    <th className="px-4 py-3 font-semibold">Topic</th>
-                    <th className="px-4 py-3 font-semibold">Due date</th>
-                    <th className="px-4 py-3 font-semibold">Submission</th>
-                    <th className="px-4 py-3 font-semibold">Score</th>
-                    <th className="px-4 py-3 font-semibold">Feedback</th>
-                    <th className="px-4 py-3 text-right font-semibold">
+                    <th className="w-[24%] px-3 py-3 font-semibold sm:px-4">Homework</th>
+                    <th className="hidden w-[14%] px-4 py-3 font-semibold xl:table-cell">Topic</th>
+                    <th className="hidden w-[14%] px-4 py-3 font-semibold lg:table-cell">Due date</th>
+                    <th className="w-[20%] px-2 py-3 font-semibold sm:px-4">Submission</th>
+                    <th className="hidden w-[8%] px-3 py-3 font-semibold md:table-cell">Score</th>
+                    <th className="w-[36%] px-2 py-3 font-semibold sm:px-4">Feedback</th>
+                    <th className="w-16 px-2 py-3 text-right font-semibold sm:w-20 sm:px-4">
                       Actions
                     </th>
                   </tr>
@@ -356,28 +356,35 @@ export default function HomeworkPanel({ studentId }) {
                       const status = submissionStatus(submission);
                       return (
                         <tr key={item.id} className="hover:bg-gray-50/70">
-                          <td className="px-4 py-3 font-medium text-gray-800">
-                            {item.title || "Homework"}
+                          <td className="px-3 py-3 font-medium text-gray-800 sm:px-4">
+                            <span className="block truncate" title={item.title || "Homework"}>
+                              {item.title || "Homework"}
+                            </span>
                           </td>
-                          <td className="px-4 py-3 text-gray-600">
-                            {item.category || "Assignment"}
+                          <td className="hidden px-4 py-3 text-gray-600 xl:table-cell">
+                            <span className="block truncate" title={item.category || "Assignment"}>
+                              {item.category || "Assignment"}
+                            </span>
                           </td>
-                          <td className="px-4 py-3 text-gray-600">
+                          <td className="hidden whitespace-nowrap px-4 py-3 text-gray-600 lg:table-cell">
                             {item.due_date || "No due date"}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-2 py-3 sm:px-4">
                             <span
                               className={`rounded-full px-2 py-1 text-xs ${status === "reviewed" ? "bg-green-50 text-green-700" : status === "submitted" ? "bg-yellow-50 text-yellow-700" : "bg-gray-100 text-gray-600"}`}
                             >
                               {status.charAt(0).toUpperCase() + status.slice(1)}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-gray-600">
+                          <td className="hidden px-3 py-3 text-gray-600 md:table-cell">
                             {submission?.score ?? "—"}
                           </td>
-                          <td className="px-4 py-3 text-gray-600">
+                          <td className="min-w-0 px-2 py-3 text-gray-600 sm:px-4">
                             {submission?.remarks ? (
-                              <span className="group/feedback relative block max-w-48" tabIndex={0}>
+                              <span
+                                className="group/feedback relative block min-w-0"
+                                tabIndex={0}
+                              >
                                 <span
                                   className="block cursor-help truncate underline decoration-dotted underline-offset-2"
                                   title={submission.remarks}
@@ -395,8 +402,8 @@ export default function HomeworkPanel({ studentId }) {
                               "—"
                             )}
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="flex justify-end gap-3">
+                          <td className="px-2 py-3 sm:px-4">
+                            <div className="flex justify-end gap-2 sm:gap-3">
                               {item.file_url && (
                                 <button
                                   onClick={() =>
