@@ -95,18 +95,112 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Delete related data
+    const failIfError = (error: { message: string } | null, step: string) => {
+      if (error) throw new Error(`${step}: ${error.message}`);
+    };
 
-    await adminClient
-      .from("homework_submissions")
-      .delete()
-      .eq("learner_id", userId);
+    const deleteWhere = async (
+      table: string,
+      column: string,
+      value: string,
+      step: string,
+    ) => {
+      const { error } = await adminClient
+        .from(table)
+        .delete()
+        .eq(column, value);
+      failIfError(error, step);
+    };
 
-    await adminClient.from("homework").delete().eq("learner_id", userId);
+    const { data: targetProfile, error: targetProfileError } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+    failIfError(targetProfileError, "Could not identify the user being deleted");
 
-    await adminClient.from("learners").delete().eq("id", userId);
+    if (targetProfile?.role === "student") {
+      await deleteWhere(
+        "learner_subtopic_progress",
+        "learner_id",
+        userId,
+        "Could not delete checklist progress",
+      );
 
-    await adminClient.from("profiles").delete().eq("id", userId);
+      const { data: levels, error: levelsError } = await adminClient
+        .from("checklist_levels")
+        .select("id")
+        .eq("learner_id", userId);
+      failIfError(levelsError, "Could not load the learner checklist");
+
+      const levelIds = (levels ?? []).map((level) => level.id);
+      if (levelIds.length) {
+        const { data: topics, error: topicsError } = await adminClient
+          .from("checklist_topics")
+          .select("id")
+          .in("level_id", levelIds);
+        failIfError(topicsError, "Could not load checklist topics");
+
+        const topicIds = (topics ?? []).map((topic) => topic.id);
+        if (topicIds.length) {
+          const { error: subtopicsError } = await adminClient
+            .from("checklist_subtopics")
+            .delete()
+            .in("topic_id", topicIds);
+          failIfError(subtopicsError, "Could not delete checklist subtopics");
+
+          const { error: topicsDeleteError } = await adminClient
+            .from("checklist_topics")
+            .delete()
+            .in("id", topicIds);
+          failIfError(topicsDeleteError, "Could not delete checklist topics");
+        }
+      }
+
+      await deleteWhere(
+        "learner_checklists",
+        "learner_id",
+        userId,
+        "Could not delete the checklist assignment",
+      );
+      await deleteWhere(
+        "checklist_levels",
+        "learner_id",
+        userId,
+        "Could not delete the learner checklist",
+      );
+      await deleteWhere(
+        "tutor_resource_learner_assignments",
+        "learner_id",
+        userId,
+        "Could not delete resource assignments",
+      );
+      await deleteWhere(
+        "homework_submissions",
+        "learner_id",
+        userId,
+        "Could not delete homework submissions",
+      );
+      await deleteWhere(
+        "homework",
+        "learner_id",
+        userId,
+        "Could not delete homework",
+      );
+      await deleteWhere("tests", "learner_id", userId, "Could not delete tests");
+      await deleteWhere(
+        "lessons",
+        "learner_id",
+        userId,
+        "Could not delete lessons",
+      );
+      await deleteWhere("files", "learner_id", userId, "Could not delete files");
+      await deleteWhere("learners", "id", userId, "Could not delete learner");
+    } else if (targetProfile?.role === "tutor") {
+      await deleteWhere("tutors", "id", userId, "Could not delete tutor");
+    }
+
+    await deleteWhere("profiles", "id", userId, "Could not delete profile");
 
     const { error: deleteError } =
       await adminClient.auth.admin.deleteUser(userId);
