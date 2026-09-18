@@ -387,7 +387,6 @@ export default function HomeworkPanel({ studentId }) {
                               >
                                 <span
                                   className="block cursor-help truncate underline decoration-dotted underline-offset-2"
-                                  title={submission.remarks}
                                 >
                                   {submission.remarks}
                                 </span>
