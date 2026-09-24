@@ -1,3 +1,4 @@
+import { getResourceCategory } from "../../lib/resourceCategories";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
@@ -7,12 +8,14 @@ import {
   Search,
   ShieldCheck,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { supabase } from "../../lib/supabase";
 
 export default function TutorResourcesPage({ audience = "tutor" }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const category = getResourceCategory(searchParams.get("category"));
   const isStudent = audience === "student";
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,12 +43,13 @@ export default function TutorResourcesPage({ audience = "tutor" }) {
     () =>
       resources.filter(
         (item) =>
+          getResourceCategory(item.category).value === category.value &&
           `${item.title} ${item.description} ${item.subject} ${item.level || ""}`
             .toLowerCase()
             .includes(query.toLowerCase()) &&
           (subject === "all" || item.subject === subject),
       ),
-    [query, resources, subject],
+    [query, resources, subject, category.value],
   );
 
   return (
@@ -57,7 +61,7 @@ export default function TutorResourcesPage({ audience = "tutor" }) {
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-              {isStudent ? "Learning Resources" : "Tutor Resources"}
+              {category.label}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
               {isStudent
@@ -131,7 +135,7 @@ export default function TutorResourcesPage({ audience = "tutor" }) {
                 <button
                   onClick={() =>
                     navigate(
-                      `${isStudent ? "/student-resources" : "/tutor-resources"}/${resource.id}`,
+                      `${isStudent ? "/student-resources" : "/tutor-resources"}/${resource.id}?category=${category.value}`,
                     )
                   }
                   className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600"

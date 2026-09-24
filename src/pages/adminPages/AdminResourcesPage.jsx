@@ -1,3 +1,5 @@
+import { useSearchParams } from "react-router-dom";
+import { getResourceCategory, RESOURCE_CATEGORIES } from "../../lib/resourceCategories";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Archive,
@@ -18,6 +20,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 
 const emptyForm = {
+  category: "",
   title: "",
   description: "",
   subject: "",
@@ -30,6 +33,8 @@ const emptyForm = {
 
 export default function AdminResourcesPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const category = getResourceCategory(searchParams.get("category"));
   const [resources, setResources] = useState([]);
   const [tutors, setTutors] = useState([]);
   const [learners, setLearners] = useState([]);
@@ -80,11 +85,12 @@ export default function AdminResourcesPage() {
         const text =
           `${resource.title} ${resource.description} ${resource.subject} ${resource.level || ""}`.toLowerCase();
         return (
+          getResourceCategory(resource.category).value === category.value &&
           text.includes(query.toLowerCase()) &&
           (status === "all" || resource.status === status)
         );
       }),
-    [query, resources, status],
+    [query, resources, status, category.value],
   );
 
   function openCreate() {
@@ -96,6 +102,7 @@ export default function AdminResourcesPage() {
 
   function openEdit(resource) {
     setForm({
+      category: getResourceCategory(resource.category).value,
       title: resource.title,
       description: resource.description,
       subject: resource.subject,
@@ -155,6 +162,8 @@ export default function AdminResourcesPage() {
 
   async function handleSave(event) {
     event.preventDefault();
+    if (!RESOURCE_CATEGORIES.some((item) => item.value === form.category))
+      return toast.error("Choose a resource category");
     if (!form.title.trim() || !form.subject.trim())
       return toast.error("Title and subject are required");
     if (modal.type === "create" && !file)
@@ -171,6 +180,7 @@ export default function AdminResourcesPage() {
           .from("tutor_resources")
           .insert({
             id,
+            category: form.category,
             title: form.title,
             description: form.description,
             subject: form.subject,
@@ -199,6 +209,7 @@ export default function AdminResourcesPage() {
         const { error } = await supabase
           .from("tutor_resources")
           .update({
+            category: form.category,
             title: form.title,
             description: form.description,
             subject: form.subject,
@@ -270,10 +281,10 @@ export default function AdminResourcesPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-              Tutor Resources
+              Resources · {category.label}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              Securely manage teaching PDFs and tutor access.
+              Manage learning PDFs and access for tutors and learners.
             </p>
           </div>
         </div>
@@ -319,6 +330,7 @@ export default function AdminResourcesPage() {
         <p className="py-12 text-center text-slate-500">Loading resources...</p>
       ) : (
         <div className="space-y-3">
+          {!filtered.length && <p className="py-12 text-center text-slate-500">No resources found in {category.label}.</p>}
           {filtered.map((resource) => {
             const resourceLogs = logs.filter(
               (log) => log.resource_id === resource.id,
@@ -422,6 +434,20 @@ export default function AdminResourcesPage() {
               </button>
             </div>
             <form onSubmit={handleSave} className="p-6 space-y-4">
+              <label className="block text-sm font-medium text-slate-700">
+                Category *
+                <select
+                  required
+                  value={form.category}
+                  onChange={(event) => setForm({ ...form, category: event.target.value })}
+                  className="mt-2 w-full rounded-xl border p-3"
+                >
+                  <option value="" disabled>Choose a category</option>
+                  {RESOURCE_CATEGORIES.map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
+                  ))}
+                </select>
+              </label>
               <input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -443,7 +469,7 @@ export default function AdminResourcesPage() {
                   onChange={(e) =>
                     setForm({ ...form, subject: e.target.value })
                   }
-                  placeholder="Subject/category *"
+                  placeholder="Subject *"
                   className="rounded-xl border p-3"
                 />
                 <input

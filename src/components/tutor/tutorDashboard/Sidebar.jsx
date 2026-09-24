@@ -1,3 +1,4 @@
+import ResourceMenu from "../../ResourceMenu";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -60,8 +61,11 @@ export default function Sidebar({ open, setOpen }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex flex-col gap-2 text-sm">
+        <nav className="flex min-h-0 flex-col gap-2 overflow-y-auto text-sm">
           {menu.map((item) => {
+            if (item.label === "Resources") {
+              return <ResourceMenu key={item.path} path={item.path} onNavigate={() => setOpen(false)} />;
+            }
             const Icon = item.icon;
             const isActive = location.pathname.startsWith(item.path);
 
