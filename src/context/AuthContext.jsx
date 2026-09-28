@@ -11,48 +11,61 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState(null);
   const mountedRef = useRef(true);
   const profileRequestRef = useRef(0);
   const sessionSyncRef = useRef(0);
   const activeUserIdRef = useRef(null);
+  const profileLoadRef = useRef(null);
 
   const clearAuthState = () => {
     profileRequestRef.current += 1;
     sessionSyncRef.current += 1;
     activeUserIdRef.current = null;
+    profileLoadRef.current = null;
     setUser(null);
     setRole(null);
+    setProfileError(null);
   };
 
-  const loadProfile = async (userId) => {
+  const loadProfile = (userId) => {
+    if (profileLoadRef.current?.userId === userId) {
+      return profileLoadRef.current.promise;
+    }
     const requestId = ++profileRequestRef.current;
+    setProfileError(null);
+    const promise = Promise.resolve().then(async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, name, role")
+          .eq("id", userId)
+          .maybeSingle();
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, name, role")
-      .eq("id", userId)
-      .maybeSingle();
+        // Ignore an older request after a sign-out or account change.
+        if (!mountedRef.current || requestId !== profileRequestRef.current) return null;
+        if (error) throw error;
+        if (!data?.role) throw new Error("Account profile unavailable");
 
-    // Ignore an older request after a sign-out or account change.
-    if (!mountedRef.current || requestId !== profileRequestRef.current) {
-      return null;
-    }
-
-    if (error) {
-      console.error("Unable to load the user profile:", error);
-      setRole(null);
-      return null;
-    }
-
-    setRole(data?.role ?? null);
-    return data;
+        setRole(data.role);
+        return data;
+      } catch (error) {
+        if (!mountedRef.current || requestId !== profileRequestRef.current) return null;
+        console.error("Unable to load the user profile:", error);
+        setRole(null);
+        setProfileError("Unable to load your account profile. Please try again.");
+        return null;
+      }
+    });
+    profileLoadRef.current = { userId, promise };
+    return promise;
   };
 
   useEffect(() => {
     mountedRef.current = true;
     let isActive = true;
 
-    const syncSession = (session, { refreshProfile = true } = {}) => {
+    const syncSession = (session) => {
       if (!session?.user) {
         clearAuthState();
         if (mountedRef.current) setLoading(false);
@@ -61,26 +74,20 @@ export const AuthProvider = ({ children }) => {
 
       const isDifferentUser = activeUserIdRef.current !== session.user.id;
       activeUserIdRef.current = session.user.id;
-      const syncId = ++sessionSyncRef.current;
       setUser(session.user);
 
-      // TOKEN_REFRESHED is emitted when returning to a background tab. The
-      // previous code cleared the role before its profile request completed,
-      // so protected routes treated a valid session as unauthorized and
-      // redirected the user. A refresh keeps the already verified role.
-      if (!isDifferentUser && !refreshProfile) {
-        if (mountedRef.current) setLoading(false);
-        return;
-      }
+      // SIGNED_IN also fires when returning to a tab or file picker. Same-user
+      // events must preserve mounted pages and any pending initial profile load.
+      if (!isDifferentUser) return;
 
+      const syncId = ++sessionSyncRef.current;
       setRole(null);
       setLoading(true);
 
       // Do not await queries inside Supabase's auth-state callback. It can hold
       // the auth client's lock and leave later auth calls waiting indefinitely.
       void loadProfile(session.user.id).finally(() => {
-        // getSession and INITIAL_SESSION can both run during a reload. Only the
-        // most recent sync may finish the loading state.
+        // Only the current account's request may finish the loading state.
         if (
           mountedRef.current &&
           isActive &&
@@ -91,35 +98,14 @@ export const AuthProvider = ({ children }) => {
       });
     };
 
-    const initialize = async () => {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-
-      if (error) {
-        if (!isActive) return;
-        console.error("Unable to restore the session:", error);
-        clearAuthState();
-        if (mountedRef.current) setLoading(false);
-        return;
-      }
-
-      if (isActive) syncSession(session);
-    };
-
-    void initialize();
-
+    // INITIAL_SESSION restores auth. A parallel getSession could apply an old
+    // snapshot after a newer sign-in or sign-out event.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!isActive) return;
 
-      syncSession(session, {
-        // Refreshing an access token must never temporarily revoke the role
-        // that the current protected route relies on.
-        refreshProfile: event !== "TOKEN_REFRESHED",
-      });
+      syncSession(session);
     });
 
     return () => {
@@ -127,9 +113,21 @@ export const AuthProvider = ({ children }) => {
       mountedRef.current = false;
       profileRequestRef.current += 1;
       sessionSyncRef.current += 1;
+      activeUserIdRef.current = null;
+      profileLoadRef.current = null;
       subscription.unsubscribe();
     };
   }, []);
+
+  const retryProfile = async () => {
+    const userId = activeUserIdRef.current;
+    if (!userId) return;
+    const syncId = ++sessionSyncRef.current;
+    profileLoadRef.current = null;
+    setLoading(true);
+    await loadProfile(userId);
+    if (mountedRef.current && syncId === sessionSyncRef.current) setLoading(false);
+  };
 
   const login = async ({ email, password, expectedRole = null }) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -142,8 +140,11 @@ export const AuthProvider = ({ children }) => {
     }
 
     setUser(data.user);
-    setRole(null);
     const profile = await loadProfile(data.user.id);
+
+    if (!mountedRef.current || activeUserIdRef.current !== data.user.id) {
+      return { success: false, error: "The session changed. Please sign in again." };
+    }
 
     if (!profile) {
       await supabase.auth.signOut();
@@ -168,7 +169,8 @@ export const AuthProvider = ({ children }) => {
         ? "tutor"
         : profile.role;
 
-    setRole(finalRole);
+    // Keep the actual role for route authorization; finalRole selects the portal.
+    setRole(profile.role);
     return { success: true, role: finalRole };
   };
 
@@ -264,6 +266,8 @@ export const AuthProvider = ({ children }) => {
         user,
         role,
         loading,
+        profileError,
+        retryProfile,
         login,
         signup,
         logout,

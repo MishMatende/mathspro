@@ -2,7 +2,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 export default function AdminProtectedRoute() {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, profileError, retryProfile } = useAuth();
 
   // 🔥 Still checking session
   if (loading) {
@@ -16,6 +16,17 @@ export default function AdminProtectedRoute() {
   // 🔥 Not logged in
   if (!user) {
     return <Navigate to="/admin-login" replace />;
+  }
+
+  if (profileError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white">
+        <p role="alert" className="text-sm text-gray-500">{profileError}</p>
+        <button type="button" onClick={retryProfile} className="rounded-xl bg-orange-500 px-4 py-2 text-white">
+          Try again
+        </button>
+      </div>
+    );
   }
 
   // 🔥 Not admin
