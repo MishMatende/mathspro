@@ -125,16 +125,19 @@ export default function EditLessonModal({ lesson, onClose, onUpdated }) {
         bg-black/40
         backdrop-blur-sm
         flex items-end sm:items-center justify-center
+        sm:p-6
       "
     >
       <div
         className="
-          w-full sm:w-175
-          max-h-[95vh]
-          overflow-y-auto
+          w-full sm:max-w-2xl
+          max-h-[92dvh] sm:max-h-[88dvh]
+          overflow-y-auto overscroll-contain
           bg-white
           rounded-t-3xl sm:rounded-3xl
-          p-5 sm:p-6
+          px-5 pt-5 sm:p-6
+          pb-[max(1.25rem,env(safe-area-inset-bottom))]
+          shadow-2xl
         "
       >
         {/* HEADER */}

@@ -124,10 +124,10 @@ export default function EditLearnerModal({ learner, onClose, onUpdated }) {
     "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 transition";
 
   return (
-    <BottomSheetModal isOpen={!!learner} onClose={onClose}>
+    <BottomSheetModal isOpen={!!learner} onClose={onClose} maxWidth="max-w-lg">
       <div className="pb-safe">
         {/* HEADER */}
-        <div className="mb-6">
+        <div className="mb-6 sm:pr-12">
           <h2 className="text-xl font-semibold text-slate-900">Edit Learner</h2>
 
           <p className="text-sm text-slate-500 mt-1">

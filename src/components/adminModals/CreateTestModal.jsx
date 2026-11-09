@@ -105,19 +105,21 @@ export default function CreateTestModal({ onClose, onCreated }) {
       />
 
       {/* MODAL */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
         <div
           className="
-max-w-2xl
+pointer-events-auto
+flex w-full flex-col sm:max-w-2xl
+max-h-[92dvh] sm:max-h-[88dvh]
 bg-white
-rounded-3xl
+rounded-t-3xl sm:rounded-3xl
 shadow-2xl
 overflow-hidden
 "
           onClick={(e) => e.stopPropagation()}
         >
           {/* HEADER */}
-          <div className="px-6 pt-6 pb-5 border-b border-slate-100">
+          <div className="shrink-0 px-5 pt-5 pb-4 sm:px-6 sm:pt-6 sm:pb-5 border-b border-slate-100">
             <div className="flex items-start justify-between">
               <div className="flex gap-4">
                 <div
@@ -159,8 +161,8 @@ overflow-hidden
           </div>
 
           {/* FORM */}
-          <form onSubmit={handleCreate} className="space-y-5">
-            <div className="p-6 space-y-5">
+          <form onSubmit={handleCreate} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div className="p-5 sm:p-6 space-y-5">
               {/* TITLE */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
@@ -307,11 +309,10 @@ focus:bg-white
               {/* ACTIONS */}
               <div
                 className="
-    flex justify-end gap-3
+    flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3
     border-t border-slate-100
-    px-6 py-4
+    pt-4
     bg-white
-    rounded-b-3xl
   "
               >
                 <button

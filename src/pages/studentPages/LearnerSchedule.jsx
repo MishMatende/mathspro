@@ -199,17 +199,19 @@ export default function LearnerSchedule() {
             bg-black/40
             backdrop-blur-sm
             flex items-end sm:items-center justify-center
-            p-0 sm:p-4
+            p-0 sm:p-6
           "
         >
           <div
             className="
-              w-full sm:w-112.5
+              w-full sm:max-w-lg
               bg-white
               rounded-t-3xl sm:rounded-3xl
-              p-5
-              max-h-[90vh]
-              overflow-y-auto
+              px-5 pt-5 sm:p-6
+              pb-[max(1.25rem,env(safe-area-inset-bottom))]
+              max-h-[92dvh] sm:max-h-[88dvh]
+              overflow-y-auto overscroll-contain
+              shadow-2xl
             "
           >
             {/* TOP */}

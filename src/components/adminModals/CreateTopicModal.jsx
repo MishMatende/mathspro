@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, CheckCircle2, Search, X } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, Search, } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "../../lib/supabase";
+import Modal, {
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  btnPrimary,
+} from "../ui/Modal";
 
 export default function CreateTopicModal({ levelId, onClose, onCreated }) {
   const [topics, setTopics] = useState([]);
@@ -86,33 +92,24 @@ export default function CreateTopicModal({ levelId, onClose, onCreated }) {
   }
 
   return (
-    <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[86vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/60 bg-white shadow-[0_30px_100px_rgba(15,23,42,0.28)]">
-        <header className="flex items-start justify-between gap-4 border-b border-orange-100 px-5 py-5 sm:px-7">
-          <div>
-            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-orange-600">
-              <CheckCircle2 size={15} /> Checklist builder
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-              {selectedTopic ? "Choose subtopics" : "Choose a topic"}
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              {selectedTopic
-                ? `Select what to include under ${selectedTopic.title}.`
-                : "Search your topic library and select one to continue."}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-          >
-            <X size={18} />
-          </button>
-        </header>
+    <Modal onClose={onClose} size="lg" labelledBy="create-topic-title">
+      <ModalHeader
+        id="create-topic-title"
+        eyebrow={
+          <>
+            <CheckCircle2 size={15} /> Checklist builder
+          </>
+        }
+        title={selectedTopic ? "Choose subtopics" : "Choose a topic"}
+        subtitle={
+          selectedTopic
+            ? `Select what to include under ${selectedTopic.title}.`
+            : "Search your topic library and select one to continue."
+        }
+        onClose={onClose}
+      />
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7">
+        <ModalBody>
           {!selectedTopic ? (
             <>
               <div className="relative">
@@ -125,7 +122,7 @@ export default function CreateTopicModal({ levelId, onClose, onCreated }) {
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Start typing to search topics..."
                   autoFocus
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm outline-none transition focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-base sm:text-sm outline-none transition focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100"
                 />
               </div>
 
@@ -140,7 +137,7 @@ export default function CreateTopicModal({ levelId, onClose, onCreated }) {
                       key={topic.id}
                       type="button"
                       onClick={() => chooseTopic(topic)}
-                      className="group flex w-full items-center gap-4 rounded-2xl border border-slate-200 p-4 text-left transition hover:border-orange-300 hover:bg-orange-50/60"
+                      className="group flex w-full cursor-pointer items-center gap-4 rounded-2xl border border-slate-200 p-4 text-left transition hover:border-orange-300 hover:bg-orange-50/60"
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 font-semibold text-orange-700">
                         {topic.title.charAt(0).toUpperCase()}
@@ -153,7 +150,7 @@ export default function CreateTopicModal({ levelId, onClose, onCreated }) {
                           {topic.topic_library_subtopics?.length || 0} subtopics
                         </span>
                       </span>
-                      <span className="text-sm font-medium text-orange-600 opacity-0 transition group-hover:opacity-100">
+                      <span className="hidden text-sm font-medium text-orange-600 opacity-0 transition group-hover:opacity-100 sm:inline">
                         Select
                       </span>
                     </button>
@@ -170,7 +167,7 @@ export default function CreateTopicModal({ levelId, onClose, onCreated }) {
               <button
                 type="button"
                 onClick={() => setSelectedTopic(null)}
-                className="mb-4 flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-orange-600"
+                className="mb-4 flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-500 hover:text-orange-600"
               >
                 <ArrowLeft size={16} /> Choose a different topic
               </button>
@@ -192,7 +189,7 @@ export default function CreateTopicModal({ levelId, onClose, onCreated }) {
                         : subtopics.map((item) => item.id),
                     )
                   }
-                  className="text-sm font-semibold text-orange-600"
+                  className="shrink-0 cursor-pointer text-sm font-semibold text-orange-600"
                 >
                   {selectedSubtopics.length === subtopics.length
                     ? "Clear all"
@@ -207,7 +204,7 @@ export default function CreateTopicModal({ levelId, onClose, onCreated }) {
                       key={subtopic.id}
                       type="button"
                       onClick={() => toggleSubtopic(subtopic.id)}
-                      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition ${checked ? "border-orange-300 bg-orange-50/50 text-slate-900" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                      className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition ${checked ? "border-orange-300 bg-orange-50/50 text-slate-900" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
                     >
                       <span
                         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${checked ? "border-orange-500 bg-orange-500 text-white" : "border-slate-300 bg-white"}`}
@@ -221,26 +218,25 @@ export default function CreateTopicModal({ levelId, onClose, onCreated }) {
               </div>
             </>
           )}
-        </div>
+        </ModalBody>
 
         {selectedTopic && (
-          <footer className="flex items-center justify-between gap-4 border-t border-slate-100 bg-slate-50/70 px-5 py-4 sm:px-7">
-            <p className="text-sm text-slate-500">
+          <ModalFooter className="sm:justify-between">
+            <p className="hidden text-sm text-slate-500 sm:block">
               The selected items will be copied into this checklist.
             </p>
             <button
               type="button"
               onClick={handleSubmit}
               disabled={saving || selectedSubtopics.length === 0}
-              className="shrink-0 rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+              className={btnPrimary}
             >
               {saving
-                ? "Adding..."
+                ? "Adding…"
                 : `Add ${selectedSubtopics.length} subtopics`}
             </button>
-          </footer>
+          </ModalFooter>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }

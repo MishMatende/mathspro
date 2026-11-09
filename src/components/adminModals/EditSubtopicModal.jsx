@@ -3,11 +3,19 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import toast from "react-hot-toast";
+import Modal, {
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  btnPrimary,
+  btnSecondary,
+  fieldInput,
+  fieldLabel,
+} from "../ui/Modal";
 
 export default function EditSubtopicModal({ subtopic, onClose, onUpdated }) {
   const [title, setTitle] = useState(subtopic.title);
   const [sortOrder, setSortOrder] = useState(subtopic.sort_order ?? 0);
-
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
@@ -18,20 +26,15 @@ export default function EditSubtopicModal({ subtopic, onClose, onUpdated }) {
 
       const { error } = await supabase
         .from("checklist_subtopics")
-        .update({
-          title,
-          sort_order: Number(sortOrder),
-        })
+        .update({ title, sort_order: Number(sortOrder) })
         .eq("id", subtopic.id);
 
       if (error) throw error;
 
       toast.success("Subtopic updated");
-
       onUpdated();
     } catch (error) {
       console.error(error);
-
       toast.error("Failed to update subtopic");
     } finally {
       setLoading(false);
@@ -39,118 +42,55 @@ export default function EditSubtopicModal({ subtopic, onClose, onUpdated }) {
   }
 
   return (
-    <div
-      onClick={onClose}
-      className="
-        fixed inset-0 z-[70]
-        bg-black/40 backdrop-blur-sm
-        flex items-center justify-center
-        p-4
-      "
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="
-          w-[90Vw]
-          md:w-[20Vw]
-          max-w-5xl
-          bg-white
-          rounded-[28px]
-          overflow-hidden
-          shadow-2xl
-        "
-      >
-        <form onSubmit={handleSubmit}>
-          {/* Header */}
-
-          <div className="px-6 pt-6 pb-4 border-b">
-            <h2 className="text-3xl font-bold text-gray-900">Edit Subtopic</h2>
-
-            <p className="text-gray-500 mt-1">
-              Update subtopic details and sort order.
-            </p>
-          </div>
-
-          {/* Body */}
-
-          <div className="p-6 space-y-4">
+    <Modal onClose={onClose} size="md" labelledBy="edit-subtopic-title">
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <ModalHeader
+          id="edit-subtopic-title"
+          title="Edit subtopic"
+          subtitle="Renaming keeps any progress already ticked for learners."
+          onClose={onClose}
+        />
+        <ModalBody className="space-y-4">
+          <div>
+            <label htmlFor="subtopic-title" className={fieldLabel}>
+              Subtopic name
+            </label>
             <input
+              id="subtopic-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Equivalent Fractions"
+              placeholder="Equivalent fractions"
               required
-              className="
-                w-full
-                h-14
-                px-4
-                rounded-2xl
-                border
-                border-gray-300
-                bg-white
-                outline-none
-                focus:ring-2
-                focus:ring-orange-500/20
-                focus:border-orange-500
-              "
+              autoFocus
+              className={fieldInput}
             />
-
+          </div>
+          <div>
+            <label htmlFor="subtopic-order" className={fieldLabel}>
+              Position
+            </label>
             <input
+              id="subtopic-order"
               type="number"
+              inputMode="numeric"
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
-              placeholder="Sort Order"
-              className="
-                w-full
-                h-14
-                px-4
-                rounded-2xl
-                border
-                border-gray-300
-                bg-white
-                outline-none
-                focus:ring-2
-                focus:ring-orange-500/20
-                focus:border-orange-500
-              "
+              className={fieldInput}
             />
+            <p className="mt-1.5 text-xs text-slate-500">
+              Lower numbers appear first.
+            </p>
           </div>
-
-          {/* Footer */}
-
-          <div className="px-6 py-4 border-t flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="
-                px-5 py-3
-                rounded-2xl
-                border
-                border-gray-300
-                hover:bg-gray-50
-                transition
-              "
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="
-                px-5 py-3
-                rounded-2xl
-                bg-orange-500
-                text-white
-                hover:bg-orange-600
-                transition
-                disabled:opacity-50
-              "
-            >
-              {loading ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </ModalBody>
+        <ModalFooter>
+          <button type="button" onClick={onClose} className={btnSecondary}>
+            Cancel
+          </button>
+          <button type="submit" disabled={loading} className={btnPrimary}>
+            {loading ? "Saving…" : "Save changes"}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }

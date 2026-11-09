@@ -11,10 +11,7 @@ const FileUploadModal = ({ isOpen, onClose, title }) => {
   };
 
   return (
-    <BottomSheetModal isOpen={isOpen} onClose={onClose}>
-      {/* Drag Handle */}
-      <div className="w-10 h-1.5 bg-gray-300/70 rounded-full mx-auto mb-5" />
-
+    <BottomSheetModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-md">
       {/* Header */}
       <div className="flex justify-between items-center mb-5">
         <div>

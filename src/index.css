@@ -4,8 +4,33 @@
   --color-primary: #ff7832;
 }
 
-* {
-  max-width: 100%;
+/* Kept in the base layer so Tailwind max-w-* utilities can override it.
+   (Unlayered, it beat every max-w-* class and broke modal widths.) */
+@layer base {
+  * {
+    max-width: 100%;
+  }
+
+  /* Tailwind v4 no longer gives buttons a pointer cursor. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  select:not(:disabled),
+  summary,
+  label[for],
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled {
+    cursor: not-allowed;
+  }
 }
 
 html,

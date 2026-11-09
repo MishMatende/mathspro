@@ -84,24 +84,26 @@ export default function UploadFileModal({ onClose, onUploaded }) {
 
       <div
         className="
+          pointer-events-none
           fixed inset-0
           z-50
-          flex items-center justify-center
-          p-4
+          flex items-end sm:items-center justify-center
+          sm:p-6
         "
       >
         <div
           className="
-          md:w-[30vw]
-          w-[90vw]
-            max-w-lg
+            pointer-events-auto
+            w-full sm:max-w-lg
+            max-h-[92dvh] sm:max-h-[88dvh]
+            overflow-y-auto overscroll-contain
             bg-white
-            rounded-3xl
+            rounded-t-3xl sm:rounded-3xl
             shadow-2xl
           "
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="p-6 border-b">
+          <div className="p-5 sm:p-6 border-b">
             <div className="flex items-center justify-between">
               <div className="flex gap-3">
                 <div
@@ -131,7 +133,7 @@ export default function UploadFileModal({ onClose, onUploaded }) {
             </div>
           </div>
 
-          <form onSubmit={handleUpload} className="p-6 space-y-5">
+          <form onSubmit={handleUpload} className="p-5 sm:p-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] space-y-5">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">
                 File Title

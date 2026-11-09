@@ -206,9 +206,9 @@ export default function StudentChecklistModal({ learnerId, isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-gray-50 rounded-3xl w-[90Vw] md:w-[30Vw] max-w-5xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-6">
+      <div className="bg-gray-50 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-2xl max-h-[92dvh] sm:max-h-[88dvh] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)] shadow-2xl">
+        <div className="sticky top-0 z-10 bg-white border-b px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-bold">My Checklist</h2>
 

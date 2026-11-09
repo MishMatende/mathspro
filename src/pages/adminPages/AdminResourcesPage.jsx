@@ -413,9 +413,9 @@ export default function AdminResourcesPage() {
       )}
 
       {modal && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] max-w-xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
-            <div className="sticky top-0 bg-white border-b px-6 py-5 flex justify-between">
+        <div className="fixed inset-0 z-100 flex items-end justify-center bg-slate-950/45 backdrop-blur-sm sm:items-center sm:p-6">
+          <div className="w-full sm:max-w-xl max-h-[92dvh] sm:max-h-[88dvh] overflow-y-auto overscroll-contain rounded-t-3xl sm:rounded-3xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl">
+            <div className="sticky top-0 z-10 bg-white border-b px-5 sm:px-6 py-4 sm:py-5 flex justify-between gap-3">
               <div>
                 <h2 className="text-xl font-bold">
                   {modal.type === "create"

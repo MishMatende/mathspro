@@ -148,8 +148,8 @@ export default function CreateUserModal({
     "w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 transition";
 
   return (
-    <BottomSheetModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-xs">
-      <div className="mx-auto w-full max-w-85 flex flex-col gap-4">
+    <BottomSheetModal isOpen={isOpen} onClose={onClose} maxWidth="max-w-lg">
+      <div className="flex w-full flex-col gap-4 sm:pr-12">
         {/* HEADER */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">

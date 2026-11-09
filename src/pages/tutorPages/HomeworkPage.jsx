@@ -722,16 +722,17 @@ export default function HomeworkPage() {
             fixed inset-0 z-50
             bg-black/40
             backdrop-blur-sm
-            flex items-center justify-center
-            px-4
+            flex items-end sm:items-center justify-center
+            sm:p-6
           "
         >
           <div
             className="
-              max-w-md
+              w-full sm:max-w-md
               bg-white
-              rounded-3xl
-              p-6
+              rounded-t-3xl sm:rounded-3xl
+              px-5 pt-6 sm:p-6
+              pb-[max(1.25rem,env(safe-area-inset-bottom))]
               shadow-xl
               border border-gray-100
             "

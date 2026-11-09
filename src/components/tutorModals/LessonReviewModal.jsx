@@ -150,9 +150,10 @@ export default function LessonReviewModal({
               damping: 24,
             }}
             className="
-            w-full sm:w-190
-            max-h-[95vh]
-            overflow-y-auto
+            w-full sm:max-w-3xl
+            max-h-[92dvh] sm:max-h-[88dvh]
+            overflow-y-auto overscroll-contain
+            pb-[env(safe-area-inset-bottom)]
             bg-white
             rounded-t-4xl sm:rounded-4xl
             shadow-[0_20px_80px_rgba(0,0,0,0.18)]

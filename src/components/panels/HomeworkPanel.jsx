@@ -468,8 +468,7 @@ export default function HomeworkPanel({ studentId }) {
           return (
             <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 backdrop-blur-sm sm:items-center sm:p-6">
               <div
-                className="md:w-[15vw]
-                w-[96vw] max-w-xl rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl sm:p-6"
+                className="w-full sm:max-w-lg max-h-[92dvh] sm:max-h-[88dvh] overflow-y-auto overscroll-contain rounded-t-3xl bg-white px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl sm:p-6"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>

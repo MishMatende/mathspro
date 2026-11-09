@@ -309,8 +309,8 @@ export default function AdminTestsPage() {
             onClick={() => setDeleteTest(null)}
           />
 
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="max-w-md bg-white rounded-3xl shadow-2xl p-6">
+          <div className="pointer-events-none fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-6">
+            <div className="pointer-events-auto w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl px-5 pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6">
               <h3 className="text-xl font-semibold text-slate-900">
                 Delete Test?
               </h3>

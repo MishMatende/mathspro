@@ -249,16 +249,19 @@ export default function CreateLessonModal({ open, onClose, onCreated }) {
         bg-black/40
         backdrop-blur-sm
         flex items-end sm:items-center justify-center
+        sm:p-6
       "
     >
       <div
         className="
-          w-full sm:w-150
+          w-full sm:max-w-2xl
           bg-white
           rounded-t-3xl sm:rounded-3xl
-          p-5 sm:p-6
-          max-h-[90vh]
-          overflow-y-auto
+          px-5 pt-5 sm:p-6
+          pb-[max(1.25rem,env(safe-area-inset-bottom))]
+          max-h-[92dvh] sm:max-h-[88dvh]
+          overflow-y-auto overscroll-contain
+          shadow-2xl
         "
       >
         {/* HEADER */}

@@ -149,9 +149,15 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
   }
 
   const modal = (
-    <div className="fixed inset-0 z-90 bg-black/40 backdrop-blur-sm flex justify-center items-center p-4">
-      <div className="bg-white rounded-3xl w-[94vw] md:w-[72vw] max-w-5xl h-[88vh] max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden shadow-2xl">
-        <div className="p-4 sm:p-6 border-b flex justify-between items-start gap-4 shrink-0">
+    <div
+      className="fixed inset-0 z-90 bg-slate-950/45 backdrop-blur-sm flex justify-center items-end sm:items-center sm:p-6"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-5xl h-[94dvh] sm:h-[88dvh] flex flex-col overflow-hidden shadow-2xl"
+      >
+        <div className="px-4 pt-4 pb-4 sm:p-6 border-b flex justify-between items-start gap-3 shrink-0">
           <div className="min-w-0">
             <h2 className="text-xl sm:text-3xl font-bold text-gray-900 truncate">
               {level.name}
@@ -172,7 +178,8 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
               aria-hidden={activeView !== "manage"}
               className={`
                 flex items-center gap-2
-                px-4 sm:px-5 py-3
+                h-12 px-4 sm:px-5
+                text-sm font-medium
                 rounded-2xl
                 border border-slate-200
                 bg-white
@@ -180,6 +187,7 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
                 ${activeView === "manage" ? "visible" : "invisible pointer-events-none"}
               `}
             >
+              <Plus size={16} />
               <span className="hidden sm:inline">Add topics</span>
             </button>
 
@@ -201,11 +209,11 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
         </div>
 
         {learner && (
-          <div className="border-b bg-slate-50 px-4 sm:px-6 py-3 flex gap-2">
+          <div className="border-b bg-slate-50 px-4 sm:px-6 py-3 flex gap-2 overflow-x-auto no-scrollbar shrink-0">
             <button
               type="button"
               onClick={() => setActiveView("progress")}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition ${
+              className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition ${
                 activeView === "progress"
                   ? "bg-white text-orange-700 shadow-sm ring-1 ring-slate-200"
                   : "text-slate-500 hover:bg-white"
@@ -218,7 +226,7 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
             <button
               type="button"
               onClick={() => setActiveView("manage")}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition ${
+              className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition ${
                 activeView === "manage"
                   ? "bg-white text-orange-700 shadow-sm ring-1 ring-slate-200"
                   : "text-slate-500 hover:bg-white"
@@ -281,20 +289,20 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
                     >
                       {/* Topic Header */}
 
-                      <div className="flex items-center justify-between px-5 py-4">
+                      <div className="flex items-center justify-between gap-3 px-3 sm:px-5 py-3 sm:py-4">
                         <div
-                          className="flex items-center gap-4 cursor-pointer flex-1"
+                          className="flex min-w-0 items-center gap-2 sm:gap-4 cursor-pointer flex-1"
                           onClick={() => toggleTopic(topic.id)}
                         >
                           <ChevronRight
                             size={18}
-                            className={`transition-transform ${
+                            className={`shrink-0 transition-transform ${
                               isExpanded ? "rotate-90" : ""
                             }`}
                           />
 
-                          <div>
-                            <h3 className="font-semibold text-lg text-gray-900">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-base sm:text-lg text-gray-900 break-words">
                               {topic.title}
                             </h3>
 
@@ -304,12 +312,14 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
                           </div>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex shrink-0 gap-1.5 sm:gap-2">
                           <button
                             onClick={() => {
                               setSelectedTopic(topic);
                               setShowCreateSubtopic(true);
                             }}
+                            title="Add subtopics (keeps existing progress)"
+                            aria-label={`Add subtopics to ${topic.title}`}
                             className="
                 h-10 w-10
                 rounded-xl
@@ -365,21 +375,21 @@ export default function ChecklistBuilderModal({ level, learner, onClose }) {
                               <div
                                 key={subtopic.id}
                                 className="
-                    flex items-center justify-between
-                    px-5 py-4
+                    flex items-center justify-between gap-3
+                    pl-9 pr-3 sm:px-5 py-3 sm:py-4
                     border-b border-gray-100
                     last:border-b-0
                   "
                               >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-2 h-2 rounded-full bg-orange-500" />
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <div className="w-2 h-2 shrink-0 rounded-full bg-orange-500" />
 
-                                  <span className="text-gray-800">
+                                  <span className="text-gray-800 break-words min-w-0">
                                     {subtopic.title}
                                   </span>
                                 </div>
 
-                                <div className="flex gap-2">
+                                <div className="flex shrink-0 gap-1.5 sm:gap-2">
                                   <button
                                     onClick={() => {
                                       setSelectedTopic(topic);

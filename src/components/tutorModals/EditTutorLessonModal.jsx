@@ -176,18 +176,21 @@ export default function EditTutorLessonModal({
         bg-black/40
         backdrop-blur-sm
         flex items-end sm:items-center justify-center
+        sm:p-6
       "
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className="
-          w-full sm:w-[600px]
+          w-full sm:max-w-2xl
           bg-white
           rounded-t-3xl sm:rounded-3xl
-          p-5 sm:p-6
-          max-h-[90vh]
-          overflow-y-auto
+          px-5 pt-5 sm:p-6
+          pb-[max(1.25rem,env(safe-area-inset-bottom))]
+          max-h-[92dvh] sm:max-h-[88dvh]
+          overflow-y-auto overscroll-contain
+          shadow-2xl
         "
       >
         {/* HEADER */}
@@ -412,8 +415,8 @@ export default function EditTutorLessonModal({
             onClick={() => setShowDeleteConfirm(false)}
           />
 
-          <div className="fixed inset-0 z-[71] flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 max-w-md w-[90Vw] md:w-[40Vw] shadow-xl">
+          <div className="pointer-events-none fixed inset-0 z-[71] flex items-end sm:items-center justify-center sm:p-6">
+            <div className="pointer-events-auto w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl px-5 pt-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-6 shadow-xl">
               <h3 className="text-lg font-semibold">Delete Lesson?</h3>
 
               <p className="text-sm text-gray-500 mt-2">

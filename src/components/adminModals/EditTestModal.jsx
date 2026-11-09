@@ -100,22 +100,23 @@ export default function EditTestModal({ test, onClose, onUpdated }) {
       />
 
       {/* MODAL */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
         <div
           onClick={(e) => e.stopPropagation()}
           className="
-            max-w-3xl
+            pointer-events-auto
+            w-full sm:max-w-2xl
             bg-white
-            rounded-3xl
+            rounded-t-3xl sm:rounded-3xl
             shadow-2xl
             overflow-hidden
-            max-h-[90vh]
+            max-h-[92dvh] sm:max-h-[88dvh]
             flex
             flex-col
           "
         >
           {/* HEADER */}
-          <div className="px-6 py-5 border-b border-slate-100">
+          <div className="shrink-0 px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-100">
             <div className="flex items-start justify-between">
               <div className="flex gap-4">
                 <div
@@ -162,8 +163,10 @@ export default function EditTestModal({ test, onClose, onUpdated }) {
             onSubmit={handleUpdate}
             className="
               flex-1
-              overflow-y-auto
-              p-6
+              min-h-0
+              overflow-y-auto overscroll-contain
+              p-5 sm:p-6
+              pb-[max(1.25rem,env(safe-area-inset-bottom))]
               space-y-5
             "
           >
@@ -297,7 +300,7 @@ export default function EditTestModal({ test, onClose, onUpdated }) {
             </div>
 
             {/* FOOTER */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 pt-4 border-t border-slate-100">
               <button
                 type="button"
                 onClick={onClose}

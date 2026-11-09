@@ -307,19 +307,20 @@ export default function StudentFilesPage() {
 
           <div
             className="
+        pointer-events-none
         fixed inset-0
         z-50
-        flex items-center justify-center
-        p-4
+        flex items-end sm:items-center justify-center
+        sm:p-6
       "
           >
             <div
               className="
-           w-[90vw]
-           md:w-[30vw]
-           max-w-md
+          pointer-events-auto
+          w-full sm:max-w-md
+          pb-[env(safe-area-inset-bottom)]
           bg-white
-          rounded-3xl
+          rounded-t-3xl sm:rounded-3xl
           shadow-2xl
           overflow-hidden
         "
